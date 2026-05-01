@@ -73,18 +73,18 @@ jobs:
           echo "HASH_DARWIN_AMD64=${HASH_DARWIN_AMD64}" >> $GITHUB_OUTPUT
           echo "HASH_DARWIN_ARM64=${HASH_DARWIN_ARM64}" >> $GITHUB_OUTPUT
 
-       - name: Update flake.nix
-         run: |
-           VERSION=${{ steps.version.outputs.VERSION }}
-           
-           # Update version
-           sed -i "s|version = \".*\"|version = \"${VERSION}\"|" flake.nix
-           
-           # Update hashes (using | delimiter to avoid conflicts with / in hashes)
-           sed -i "s|x86_64-linux.*= \".*\"|x86_64-linux   = \"${{ steps.hashes.outputs.HASH_LINUX_AMD64 }}\"|" flake.nix
-           sed -i "s|aarch64-linux.*= \".*\"|aarch64-linux  = \"${{ steps.hashes.outputs.HASH_LINUX_ARM64 }}\"|" flake.nix
-           sed -i "s|x86_64-darwin.*= \".*\"|x86_64-darwin  = \"${{ steps.hashes.outputs.HASH_DARWIN_AMD64 }}\"|" flake.nix
-           sed -i "s|aarch64-darwin.*= \".*\"|aarch64-darwin = \"${{ steps.hashes.outputs.HASH_DARWIN_ARM64 }}\"|" flake.nix
+      - name: Update flake.nix
+        run: |
+          VERSION=${{ steps.version.outputs.VERSION }}
+          
+          # Update version
+          sed -i "s|version = \".*\"|version = \"${VERSION}\"|" flake.nix
+          
+          # Update hashes (using | delimiter to avoid conflicts with / in hashes)
+          sed -i "s|x86_64-linux.*= \".*\"|x86_64-linux   = \"${{ steps.hashes.outputs.HASH_LINUX_AMD64 }}\"|" flake.nix
+          sed -i "s|aarch64-linux.*= \".*\"|aarch64-linux  = \"${{ steps.hashes.outputs.HASH_LINUX_ARM64 }}\"|" flake.nix
+          sed -i "s|x86_64-darwin.*= \".*\"|x86_64-darwin  = \"${{ steps.hashes.outputs.HASH_DARWIN_AMD64 }}\"|" flake.nix
+          sed -i "s|aarch64-darwin.*= \".*\"|aarch64-darwin = \"${{ steps.hashes.outputs.HASH_DARWIN_ARM64 }}\"|" flake.nix
 
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v6
@@ -97,6 +97,6 @@ jobs:
             Automated flake.nix update for release v${{ steps.version.outputs.VERSION }}.
             
             Updated:
-            - version to ${VERSION}
+            - version to v${{ steps.version.outputs.VERSION }}
             - platform hashes for all 4 platforms (linux/darwin × amd64/arm64)
           labels: automated
