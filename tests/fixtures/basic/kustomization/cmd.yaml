@@ -1,0 +1,10 @@
+apiVersion: kfg.dev/v1alpha1
+kind: Cmd
+metadata:
+  name: test-cmd
+  commandName: testCmd
+spec:
+  run: echo "test command"
+  env:
+    - name: TEST_VAR
+      value: "test-value"

@@ -1,0 +1,60 @@
+# Binaries for programs and plugins
+/bin/
+/build/
+/dist/
+*.exe
+*.dll
+*.so
+*.dylib
+*.test
+
+# Go build / test outputs
+coverage.out
+*.coverprofile
+*.prof
+
+# Dependency directories (if you vendor, remove this line)
+vendor/
+
+# Go cache / binaries
+GOMODCACHE/
+GOBIN/
+
+# Environment / secrets
+.env
+.env.local
+*.secret
+secrets.yaml
+
+# IDEs and editors
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# Vim / editors
+*~
+*.swp
+*.swo
+.*.swp
+
+# macOS / Windows
+.DS_Store
+Thumbs.db
+
+# Logs and temp files
+*.log
+tmp/
+temp/
+
+# Test artifacts / integration helpers
+tests/tmp/
+tests/*.tmp
+
+# Generated files (update if your build produces other generated artifacts)
+generated/
+*.gen.go
+
+# Optional: ignore CI artifacts or local tools
+.github/workflows/*.local.yml
+bin-tools/

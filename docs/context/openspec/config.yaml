@@ -1,0 +1,83 @@
+schema: spec-driven
+context: |
+  Project: kfg, a standalone CLI for processing YAML manifests into shell functions.
+  Backward compatibility is NOT a project requirement.
+  
+  Source of truth:
+  - flake.nix defines Nix packaging and development shells
+  - docs/AGENTS.md provides agent operating context
+  - docs/context/openspec is the OpenSpec root
+  
+  Project structure:
+  - Manifests are loaded from KFG_MANIFEST_PATH
+  - Default: ${XDG_CONFIG_HOME:-$HOME/.config}/kfg/manifests:./.nixai/manifests
+  - Manifests use YAML format (*.yaml, *.yml)
+  - See docs/context/openspec/specs/project-structure/spec.md for full specification
+  
+  Architecture:
+  - Manifests define Steps, Cmds, and CmdWorkflows
+  - Steps are reusable units of work that can produce outputs
+  - Cmds are shell function definitions with before/after steps
+  - CmdWorkflows are named collections of commands
+  - CmdWorkflow is the required entry point for shell generation
+  - Sessions provide per-invocation correlation (KFG_SESSION_ID)
+  - Store operations use session-scoped backups for safe materialization
+  
+  Tech stack:
+  - Go for CLI implementation (src/cmd, src/internal)
+  - Cobra for CLI framework and command parsing
+  - Viper for configuration management (env vars, flags, defaults)
+  - Zap for structured logging (console and JSON formats)
+  - sigs.k8s.io/kustomize/api for kustomization loading and merging
+  - sigs.k8s.io/kustomize/kyaml for YAML parsing and manipulation
+  - text/template for shell code generation
+  - Nix for packaging and dev shells
+  - Bash for generated shell integration
+  - YAML for manifest definitions
+  - Environment variables for configuration
+  
+  Configuration conventions:
+  - Use KFG_ prefixed environment variables
+  - CLI flags override environment defaults
+  
+  Shell generation:
+  - Generates bash functions from manifests
+  - Internal helpers prefixed with __kfg_
+  - Outputs are ephemeral (scoped to single invocation)
+  - Sessions auto-generated per command wrapper
+  - Steps can have when conditions based on outputs
+  - Support for before/after steps with dependency resolution
+  
+  Testing requirements:
+  - Unit tests for parsing, validation, and resolution logic
+  - Integration tests for end-to-end manifest to shell
+  - Shell tests (Bats) for generated code validation
+  - All tests must be deterministic and reproducible
+rules:
+  proposal:
+    - Include motivation, scope, and non-goals
+    - Call out user-facing CLI and shell UX impact
+    - Avoid overcommitting to implementation details before specs are clear
+    - Document manifest model changes explicitly
+  specs:
+    - Use normative language such as MUST or SHALL
+    - Use Given/When/Then scenarios
+    - Keep capabilities focused and durable
+    - Provide complete examples for manifest resources
+    - Document validation rules for cross-resource references
+    - Document session-scoped behavior where applicable
+  design:
+    - Document manifest loading and merge semantics
+    - Document dependency resolution algorithm
+    - Document shell generation templates
+    - Include data structure definitions
+    - Document error handling and messages
+    - Describe when condition evaluation
+  tasks:
+    - Break work into concrete implementation steps
+    - Include validation for CLI UX and shell output
+    - Include documentation updates
+    - MUST include unit test tasks
+    - MUST include integration test tasks
+    - MUST include shell validation tasks (Bats)
+    - MUST include session-related test scenarios when specs define session behavior

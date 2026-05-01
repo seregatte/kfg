@@ -1,0 +1,10 @@
+apiVersion: kfg.dev/v1alpha1
+kind: CmdWorkflow
+metadata:
+  name: test-workflow
+  shell: bash
+spec:
+  cmds:
+    - test-cmd
+  before:
+    - step: test-setup

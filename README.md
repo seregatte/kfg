@@ -26,26 +26,26 @@ make install
 
 ```bash
 # Apply a kustomization directory
-kfg apply .nixai/overlay/dev
+kfg apply -k path/to/kustomization --workflow myworkflow
 
 # Apply with explicit file
-kfg apply -f manifest.yaml
+kfg apply -f manifest.yaml --workflow myworkflow
 
-# Apply with specific workflow
-kfg apply .nixai/overlay/dev --workflow dev
+# Apply from stdin
+kfg apply -f - --workflow myworkflow
 ```
 
 ### Run an Agent
 
 ```bash
 # Run a specific agent
-kfg run .nixai/overlay/dev claude
+kfg run -k path/to/kustomization myagent
 
 # List available agents
-kfg run .nixai/overlay/dev
+kfg run -k path/to/kustomization
 
 # Run with arguments
-kfg run .nixai/overlay/dev claude -- --model gpt-4
+kfg run -k path/to/kustomization myagent -- --option value
 ```
 
 ### Build an Image

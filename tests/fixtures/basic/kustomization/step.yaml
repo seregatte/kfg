@@ -1,0 +1,6 @@
+apiVersion: kfg.dev/v1alpha1
+kind: Step
+metadata:
+  name: test-setup
+spec:
+  run: echo "test setup step"
