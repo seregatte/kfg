@@ -4,6 +4,23 @@ KFG is a declarative shell compiler that transforms YAML manifests into bash fun
 
 ## Installation
 
+### Install via Nix (Recommended)
+
+The easiest way to get kfg is via Nix. Pre-built binaries are available from GitHub Releases:
+
+```bash
+# Build from GitHub Releases
+nix build github:seregatte/kfg
+
+# Run directly without installing
+nix run github:seregatte/kfg -- --help
+
+# Add to current shell temporarily
+nix shell github:seregatte/kfg
+```
+
+This works on Linux and macOS (x86_64 and ARM64).
+
 ### Build from Source
 
 ```bash
