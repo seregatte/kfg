@@ -3,9 +3,10 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    nixai.url = "github:seregatte/nixai";
   };
 
-  outputs = { self, nixpkgs }:
+  outputs = { self, nixpkgs, nixai }:
     let
       version = "2.1.0";
       
@@ -62,6 +63,11 @@
               platforms = supportedSystems;
             };
           };
+        });
+      
+      devShells = forAllSystems (system:
+        {
+          default = nixai.devShells.${system}.default;
         });
       
       lib.version = version;
