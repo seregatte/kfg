@@ -89,6 +89,7 @@ jobs:
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v6
         with:
+          base: main
           title: "flake: update to v${{ steps.version.outputs.VERSION }}"
           branch: "flake-update/v${{ steps.version.outputs.VERSION }}"
           commit-message: "flake: update to v${{ steps.version.outputs.VERSION }}"
