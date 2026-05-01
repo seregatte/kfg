@@ -7,7 +7,6 @@ on:
 
 permissions:
   contents: write
-  pull-requests: write
 
 jobs:
   release:
@@ -85,19 +84,5 @@ jobs:
           sed -i "s|x86_64-linux.*= \".*\"|x86_64-linux   = \"${{ steps.hashes.outputs.HASH_LINUX_AMD64 }}\"|" flake.nix
           sed -i "s|aarch64-linux.*= \".*\"|aarch64-linux  = \"${{ steps.hashes.outputs.HASH_LINUX_ARM64 }}\"|" flake.nix
           sed -i "s|x86_64-darwin.*= \".*\"|x86_64-darwin  = \"${{ steps.hashes.outputs.HASH_DARWIN_AMD64 }}\"|" flake.nix
-          sed -i "s|aarch64-darwin.*= \".*\"|aarch64-darwin = \"${{ steps.hashes.outputs.HASH_DARWIN_ARM64 }}\"|" flake.nix
+           sed -i "s|aarch64-darwin.*= \".*\"|aarch64-darwin = \"${{ steps.hashes.outputs.HASH_DARWIN_ARM64 }}\"|" flake.nix
 
-      - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v6
-        with:
-          base: main
-          title: "flake: update to v${{ steps.version.outputs.VERSION }}"
-          branch: "flake-update/v${{ steps.version.outputs.VERSION }}"
-          commit-message: "flake: update to v${{ steps.version.outputs.VERSION }}"
-          body: |
-            Automated flake.nix update for release v${{ steps.version.outputs.VERSION }}.
-            
-            Updated:
-            - version to v${{ steps.version.outputs.VERSION }}
-            - platform hashes for all 4 platforms (linux/darwin × amd64/arm64)
-          labels: automated
