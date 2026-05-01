@@ -1,0 +1,50 @@
+{{ .CommandName }}() {
+    local __kfg_status=0
+
+    # Generate session ID for this invocation (timestamp-random format)
+    NIXAI_SESSION_ID="$(date +%s)-$RANDOM"
+    export NIXAI_SESSION_ID
+
+    # Reset context
+    __kfg_ctx_reset
+
+{{- if .HasBeforeSteps }}
+    # Before steps
+{{- range .BeforeSteps }}
+{{- if .WhenCondition }}
+    if {{ .WhenCondition }}; then
+        __kfg_run_step_{{ .StepName }}{{- if .IgnoreFailure }} || true{{- else }} || return $?{{- end }}
+    fi{{- if not .IgnoreFailure }}  # Skipped if condition fails{{- end }}
+{{- else }}
+    __kfg_run_step_{{ .StepName }}{{- if .IgnoreFailure }} || true{{- else }} || return $?{{- end }}
+{{- end }}
+{{- end }}
+
+{{- end }}
+    # Main body
+    {{ .MainRun }}
+    __kfg_status=$?
+
+{{- if .HasAfterSteps }}
+    # After steps
+{{- range .AfterSteps }}
+{{- if .WhenCondition }}
+    if {{ .WhenCondition }}; then
+{{- if .IgnoreFailure }}
+        __kfg_run_step_{{ .StepName }} || true
+{{- else }}
+        [ $__kfg_status -eq 0 ] && __kfg_run_step_{{ .StepName }}
+{{- end }}
+    fi
+{{- else }}
+{{- if .IgnoreFailure }}
+    __kfg_run_step_{{ .StepName }} || true
+{{- else }}
+    [ $__kfg_status -eq 0 ] && __kfg_run_step_{{ .StepName }}
+{{- end }}
+{{- end }}
+{{- end }}
+
+{{- end }}
+    return $__kfg_status
+}

@@ -1,0 +1,40 @@
+__kfg_run_step_{{ .StepName }}() {
+{{- if .WhenCondition }}
+    # When condition
+    if ! {{ .WhenCondition }}; then
+        return 0  # Skipped
+    fi
+
+{{- end }}
+{{- if .Env }}
+    # Environment variables (defaults, caller overrides win)
+{{- range $key, $value := .Env }}
+    export {{ $key }}="{{ $value }}"
+{{- end }}
+
+{{- end }}
+{{- if .HasOutput }}
+    # Execute and capture output
+    local __output
+    __output="$( {{ .RunScript }} )" || return $?
+    __kfg_output_set "{{ .StepName }}" "{{ .OutputName }}" "$__output"
+{{- else }}
+    # Execute
+{{- if .IsMultiLine }}
+    (
+{{- range .RunLines }}
+        {{ . }}
+{{- end }}
+    ){{- if .IgnoreFailure }} || true{{- else }} || return $?{{- end }}
+{{- else }}
+    {{ .RunScript }}{{- if .IgnoreFailure }} || true{{- else }} || return $?{{- end }}
+{{- end }}
+{{- end }}
+{{- if .Artifacts }}
+
+    # Artifacts
+{{- range .Artifacts }}
+    __kfg_add_artifact "{{ . }}"
+{{- end }}
+{{- end }}
+}

@@ -1,0 +1,426 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "NixAI Custom Resource Definitions",
+    "version": "v1alpha1"
+  },
+  "definitions": {
+    "nixai.dev.v1alpha1.Step": {
+      "description": "Reusable shell snippet that can be referenced in workflows",
+      "type": "object",
+      "properties": {
+        "apiVersion": {
+          "type": "string",
+          "enum": ["nixai.dev/v1alpha1"]
+        },
+        "kind": {
+          "type": "string",
+          "enum": ["Step"]
+        },
+        "metadata": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "Unique identifier for the step"
+            }
+          },
+          "required": ["name"]
+        },
+        "spec": {
+          "type": "object",
+          "properties": {
+            "run": {
+              "type": "string",
+              "description": "Shell script to execute"
+            },
+            "output": {
+              "type": "object",
+              "description": "Output capture configuration",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "Name of the captured output"
+                },
+                "type": {
+                  "type": "string",
+                  "description": "Type of the output",
+                  "enum": ["string", "array", "object"]
+                }
+              }
+            },
+            "artifacts": {
+              "type": "array",
+              "description": "List of artifacts produced by this step",
+              "items": {
+                "type": "string"
+              },
+              "x-kubernetes-patch-strategy": "merge"
+            }
+          },
+          "required": ["run"]
+        }
+      },
+      "required": ["apiVersion", "kind", "metadata", "spec"],
+      "x-kubernetes-group-version-kind": [
+        {
+          "group": "nixai.dev",
+          "kind": "Step",
+          "version": "v1alpha1"
+        }
+      ]
+    },
+    "nixai.dev.v1alpha1.Cmd": {
+      "description": "Pure shell function without orchestration logic",
+      "type": "object",
+      "properties": {
+        "apiVersion": {
+          "type": "string",
+          "enum": ["nixai.dev/v1alpha1"]
+        },
+        "kind": {
+          "type": "string",
+          "enum": ["Cmd"]
+        },
+        "metadata": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "Unique identifier for the command"
+            },
+            "cmdName": {
+              "type": "string",
+              "description": "Bash function name (defaults to metadata.name)"
+            },
+            "description": {
+              "type": "string",
+              "description": "Human-readable description"
+            }
+          },
+          "required": ["name"]
+        },
+        "spec": {
+          "type": "object",
+          "properties": {
+            "run": {
+              "type": "string",
+              "description": "Shell script to execute"
+            },
+            "artifacts": {
+              "type": "array",
+              "description": "List of artifacts produced by this command",
+              "items": {
+                "type": "string"
+              },
+              "x-kubernetes-patch-strategy": "merge"
+            }
+          },
+          "required": ["run"]
+        }
+      },
+      "required": ["apiVersion", "kind", "metadata", "spec"],
+      "x-kubernetes-group-version-kind": [
+        {
+          "group": "nixai.dev",
+          "kind": "Cmd",
+          "version": "v1alpha1"
+        }
+      ]
+    },
+    "nixai.dev.v1alpha1.CmdWorkflow": {
+      "description": "Orchestration definition for multiple Cmds with before/after steps",
+      "type": "object",
+      "properties": {
+        "apiVersion": {
+          "type": "string",
+          "enum": ["nixai.dev/v1alpha1"]
+        },
+        "kind": {
+          "type": "string",
+          "enum": ["CmdWorkflow"]
+        },
+        "metadata": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "Unique identifier for the workflow"
+            }
+          },
+          "required": ["name"]
+        },
+        "spec": {
+          "type": "object",
+          "properties": {
+            "cmds": {
+              "type": "array",
+              "description": "List of Cmd names to orchestrate",
+              "items": {
+                "type": "string"
+              },
+              "x-kubernetes-patch-strategy": "merge"
+            },
+            "before": {
+              "type": "array",
+              "description": "Steps to run before all cmds",
+              "items": {
+                "$ref": "#/definitions/nixai.dev.v1alpha1.StepReference"
+              },
+              "x-kubernetes-patch-merge-key": "step",
+              "x-kubernetes-patch-strategy": "merge"
+            },
+            "after": {
+              "type": "array",
+              "description": "Steps to run after all cmds",
+              "items": {
+                "$ref": "#/definitions/nixai.dev.v1alpha1.StepReference"
+              },
+              "x-kubernetes-patch-merge-key": "step",
+              "x-kubernetes-patch-strategy": "merge"
+            }
+          }
+        }
+      },
+      "required": ["apiVersion", "kind", "metadata", "spec"],
+      "x-kubernetes-group-version-kind": [
+        {
+          "group": "nixai.dev",
+          "kind": "CmdWorkflow",
+          "version": "v1alpha1"
+        }
+      ]
+    },
+    "nixai.dev.v1alpha1.StepReference": {
+      "description": "Reference to a Step with optional conditions",
+      "type": "object",
+      "properties": {
+        "step": {
+          "type": "string",
+          "description": "Name of the Step to reference"
+        },
+        "when": {
+          "type": "object",
+          "description": "Conditional execution based on previous output",
+          "properties": {
+            "output": {
+              "type": "object",
+              "properties": {
+                "step": {
+                  "type": "string",
+                  "description": "Step name that produced the output"
+                },
+                "name": {
+                  "type": "string",
+                  "description": "Output variable name"
+                },
+                "equals": {
+                  "type": "string",
+                  "description": "Value to compare against"
+                }
+              }
+            }
+          }
+        },
+        "failurePolicy": {
+          "type": "string",
+          "description": "How to handle step failure",
+          "enum": ["Fail", "Ignore"]
+        }
+      },
+      "required": ["step"]
+    },
+    "nixai.dev.v1alpha1.CmdKustomization": {
+      "description": "Kustomization configuration for NixAI",
+      "type": "object",
+      "properties": {
+        "apiVersion": {
+          "type": "string",
+          "enum": ["nixai.dev/v1alpha1"]
+        },
+        "kind": {
+          "type": "string",
+          "enum": ["CmdKustomization"]
+        },
+        "metadata": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "Unique identifier for the kustomization"
+            },
+            "shell": {
+              "type": "string",
+              "description": "Shell type to generate",
+              "enum": ["bash", "zsh", "fish", "sh"],
+              "default": "bash"
+            }
+          },
+          "required": ["name"]
+        },
+        "spec": {
+          "type": "object",
+          "properties": {
+            "resources": {
+              "type": "array",
+              "description": "Paths or URLs to resources",
+              "items": {
+                "type": "string"
+              }
+            },
+            "patchesStrategicMerge": {
+              "type": "array",
+              "description": "Strategic merge patches to apply",
+              "items": {
+                "type": "string"
+              }
+            },
+            "cmds": {
+              "type": "array",
+              "description": "Filter: only these cmds",
+              "items": {
+                "type": "string"
+              },
+              "x-kubernetes-patch-strategy": "merge"
+            }
+          }
+        }
+      },
+      "required": ["apiVersion", "kind", "metadata"],
+      "x-kubernetes-group-version-kind": [
+        {
+          "group": "nixai.dev",
+          "kind": "CmdKustomization",
+          "version": "v1alpha1"
+        }
+      ]
+    },
+    "nixai.dev.v1alpha1.Schema": {
+      "description": "JSON Schema specification for validating Assets resources",
+      "type": "object",
+      "properties": {
+        "apiVersion": {
+          "type": "string",
+          "enum": ["nixai.dev/v1alpha1"]
+        },
+        "kind": {
+          "type": "string",
+          "enum": ["Schema"]
+        },
+        "metadata": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "Unique identifier for the schema (used in schema://<name> references)"
+            }
+          },
+          "required": ["name"]
+        },
+        "spec": {
+          "type": "object",
+          "description": "JSON Schema draft-07 specification",
+          "additionalProperties": true,
+          "x-kubernetes-patch-strategy": "merge"
+        }
+      },
+      "required": ["apiVersion", "kind", "metadata", "spec"],
+      "x-kubernetes-group-version-kind": [
+        {
+          "group": "nixai.dev",
+          "kind": "Schema",
+          "version": "v1alpha1"
+        }
+      ]
+    },
+    "nixai.dev.v1alpha1.Converter": {
+      "description": "Declarative transformation using template or yq-go",
+      "type": "object",
+      "properties": {
+        "apiVersion": {
+          "type": "string",
+          "enum": ["nixai.dev/v1alpha1"]
+        },
+        "kind": {
+          "type": "string",
+          "enum": ["Converter"]
+        },
+        "metadata": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "Unique identifier for the converter (namespace-style naming)"
+            }
+          },
+          "required": ["name"]
+        },
+        "spec": {
+          "type": "object",
+          "properties": {
+            "input": {
+              "type": "object",
+              "description": "Input specification",
+              "properties": {
+                "schemaRef": {
+                  "type": "string",
+                  "description": "Which Assets schemaRef this converter accepts"
+                },
+                "includeRelated": {
+                  "type": "array",
+                  "description": "Additional schemaRefs to include in template context",
+                  "items": {
+                    "type": "string"
+                  },
+                  "x-kubernetes-patch-strategy": "merge"
+                }
+              },
+              "required": ["schemaRef"]
+            },
+            "engine": {
+              "type": "object",
+              "description": "Engine specification",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "description": "Engine type",
+                  "enum": ["template", "yq"]
+                },
+                "template": {
+                  "type": "string",
+                  "description": "Go text/template (required when type is template)"
+                },
+                "expression": {
+                  "type": "string",
+                  "description": "yq-go expression (required when type is yq)"
+                }
+              },
+              "required": ["type"]
+            },
+            "output": {
+              "type": "object",
+              "description": "Output specification",
+              "properties": {
+                "format": {
+                  "type": "string",
+                  "description": "Output format",
+                  "enum": ["json", "yaml", "markdown"]
+                }
+              },
+              "required": ["format"]
+            }
+          },
+          "required": ["input", "engine", "output"]
+        }
+      },
+      "required": ["apiVersion", "kind", "metadata", "spec"],
+      "x-kubernetes-group-version-kind": [
+        {
+          "group": "nixai.dev",
+          "kind": "Converter",
+          "version": "v1alpha1"
+        }
+      ]
+    }
+  }
+}

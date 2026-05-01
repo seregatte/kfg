@@ -1,0 +1,131 @@
+# Internal context management
+
+__kfg_ctx_reset() {
+    declare -gA __kfg_outputs=()
+}
+
+__kfg_output_set() {
+    local step="$1"
+    local name="$2"
+    local value="$3"
+    __kfg_outputs["${step}.${name}"]="$value"
+}
+
+__kfg_output_get() {
+    local step="$1"
+    local name="$2"
+    printf '%s' "${__kfg_outputs["${step}.${name}"]:-}"
+}
+
+# When condition evaluation
+
+__kfg_when_equals() {
+    local step="$1"
+    local name="$2"
+    local expected="$3"
+    local actual="$(__kfg_output_get "$step" "$name")"
+    [ "$actual" = "$expected" ]
+}
+
+__kfg_when_in() {
+    local step="$1"
+    local name="$2"
+    local actual="$(__kfg_output_get "$step" "$name")"
+    shift 2
+    for expected in "$@"; do
+        [ "$actual" = "$expected" ] && return 0
+    done
+    return 1
+}
+
+__kfg_when_contains() {
+    local step="$1"
+    local name="$2"
+    local substring="$3"
+    local actual="$(__kfg_output_get "$step" "$name")"
+    [ -z "$actual" ] && return 1
+    [[ "$actual" == *"$substring"* ]]
+}
+
+__kfg_when_matches() {
+    local step="$1"
+    local name="$2"
+    local pattern="$3"
+    local actual="$(__kfg_output_get "$step" "$name")"
+    [ -z "$actual" ] && return 1
+    [[ "$actual" =~ $pattern ]]
+}
+
+__kfg_when_allof() {
+    for cond in "$@"; do
+        eval "$cond" || return 1
+    done
+    return 0
+}
+
+__kfg_when_anyof() {
+    for cond in "$@"; do
+        eval "$cond" && return 0
+    done
+    return 1
+}
+
+__kfg_when_not() {
+    local cond="$1"
+    eval "$cond" && return 1
+    return 0
+}
+
+# Logging helpers - delegate to kfg sys log subcommand
+# These helpers produce identical output to the Go logger.
+# Usage errors are written directly to stderr to avoid recursion.
+
+_kfg.log.error() {
+    local component="${1:-}"
+    local message="${2:-}"
+    if [ -z "$component" ]; then
+        echo "Usage: _kfg.log.error <component> [message]" >&2
+        return 1
+    fi
+    kfg sys log error "$component" "$message"
+}
+
+_kfg.log.warn() {
+    local component="${1:-}"
+    local message="${2:-}"
+    if [ -z "$component" ]; then
+        echo "Usage: _kfg.log.warn <component> [message]" >&2
+        return 1
+    fi
+    kfg sys log warn "$component" "$message"
+}
+
+_kfg.log.info() {
+    local component="${1:-}"
+    local message="${2:-}"
+    if [ -z "$component" ]; then
+        echo "Usage: _kfg.log.info <component> [message]" >&2
+        return 1
+    fi
+    kfg sys log info "$component" "$message"
+}
+
+_kfg.log.detail() {
+    local component="${1:-}"
+    local message="${2:-}"
+    if [ -z "$component" ]; then
+        echo "Usage: _kfg.log.detail <component> [message]" >&2
+        return 1
+    fi
+    kfg sys log detail "$component" "$message"
+}
+
+_kfg.log.debug() {
+    local component="${1:-}"
+    local message="${2:-}"
+    if [ -z "$component" ]; then
+        echo "Usage: _kfg.log.debug <component> [message]" >&2
+        return 1
+    fi
+    kfg sys log debug "$component" "$message"
+}
