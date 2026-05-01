@@ -1,0 +1,101 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          version: latest
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  update-flake:
+    needs: release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v27
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+
+      - name: Get version from tag
+        id: version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Compute hashes for all platforms
+        id: hashes
+        run: |
+          VERSION=${{ steps.version.outputs.VERSION }}
+          
+          # Compute hash for each platform
+          HASH_LINUX_AMD64=$(nix store prefetch-file --json \
+            "https://github.com/seregatte/kfg/releases/download/v${VERSION}/kfg_${VERSION}_linux_amd64.tar.gz" \
+            | jq -r '.hash')
+          
+          HASH_LINUX_ARM64=$(nix store prefetch-file --json \
+            "https://github.com/seregatte/kfg/releases/download/v${VERSION}/kfg_${VERSION}_linux_arm64.tar.gz" \
+            | jq -r '.hash')
+          
+          HASH_DARWIN_AMD64=$(nix store prefetch-file --json \
+            "https://github.com/seregatte/kfg/releases/download/v${VERSION}/kfg_${VERSION}_darwin_amd64.tar.gz" \
+            | jq -r '.hash')
+          
+          HASH_DARWIN_ARM64=$(nix store prefetch-file --json \
+            "https://github.com/seregatte/kfg/releases/download/v${VERSION}/kfg_${VERSION}_darwin_arm64.tar.gz" \
+            | jq -r '.hash')
+          
+          echo "HASH_LINUX_AMD64=${HASH_LINUX_AMD64}" >> $GITHUB_OUTPUT
+          echo "HASH_LINUX_ARM64=${HASH_LINUX_ARM64}" >> $GITHUB_OUTPUT
+          echo "HASH_DARWIN_AMD64=${HASH_DARWIN_AMD64}" >> $GITHUB_OUTPUT
+          echo "HASH_DARWIN_ARM64=${HASH_DARWIN_ARM64}" >> $GITHUB_OUTPUT
+
+      - name: Update flake.nix
+        run: |
+          VERSION=${{ steps.version.outputs.VERSION }}
+          
+          # Update version
+          sed -i "s/version = \".*\"/version = \"${VERSION}\"/" flake.nix
+          
+          # Update hashes
+          sed -i "s/x86_64-linux.*= \".*\"/x86_64-linux   = \"${{ steps.hashes.outputs.HASH_LINUX_AMD64 }}\"/" flake.nix
+          sed -i "s/aarch64-linux.*= \".*\"/aarch64-linux  = \"${{ steps.hashes.outputs.HASH_LINUX_ARM64 }}\"/" flake.nix
+          sed -i "s/x86_64-darwin.*= \".*\"/x86_64-darwin  = \"${{ steps.hashes.outputs.HASH_DARWIN_AMD64 }}\"/" flake.nix
+          sed -i "s/aarch64-darwin.*= \".*\"/aarch64-darwin = \"${{ steps.hashes.outputs.HASH_DARWIN_ARM64 }}\"/" flake.nix
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v6
+        with:
+          title: "flake: update to v${{ steps.version.outputs.VERSION }}"
+          branch: "flake-update/v${{ steps.version.outputs.VERSION }}"
+          commit-message: "flake: update to v${{ steps.version.outputs.VERSION }}"
+          body: |
+            Automated flake.nix update for release v${{ steps.version.outputs.VERSION }}.
+            
+            Updated:
+            - version to ${VERSION}
+            - platform hashes for all 4 platforms (linux/darwin × amd64/arm64)
+          labels: automated
