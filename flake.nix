@@ -66,8 +66,21 @@
         });
       
       devShells = forAllSystems (system:
+        let
+          pkgs = nixpkgs.legacyPackages.${system};
+          shell = pkgs.mkShell {
+            inputsFrom = [ nixai.devShells.${system}.default ];
+            shellHook = ''
+              echo "Welcome to the kfg development environment!"
+              alias kfg="go run ./src/cmd/kfg"
+              ln -s docs/context/openspec ./ 2>/dev/null || true
+              source <(kfg apply -k $NIXAI_DIR/.nixai/overlay/dev)
+            '';
+          };
+        in
         {
-          default = nixai.devShells.${system}.default;
+          default = shell;
+          dev = shell;
         });
       
       lib.version = version;

@@ -1,6 +1,44 @@
 {
   "nodes": {
+    "kfg": {
+      "inputs": {
+        "nixai": "nixai_2",
+        "nixpkgs": "nixpkgs_2"
+      },
+      "locked": {
+        "lastModified": 1777662061,
+        "narHash": "sha256-pjB43vNIujPmJo2MADzUXTshdhHLEZfc1rd/1Msajv4=",
+        "owner": "seregatte",
+        "repo": "kfg",
+        "rev": "fecedf813f5b906053cff31a5270eabeff93a432",
+        "type": "github"
+      },
+      "original": {
+        "owner": "seregatte",
+        "repo": "kfg",
+        "type": "github"
+      }
+    },
     "nixai": {
+      "inputs": {
+        "kfg": "kfg",
+        "nixpkgs": "nixpkgs_3"
+      },
+      "locked": {
+        "lastModified": 1777664311,
+        "narHash": "sha256-yebfMimb4KolIb9VHK4UkkFRXReCw/U4SpKSR545xMc=",
+        "owner": "seregatte",
+        "repo": "nixai",
+        "rev": "0729e2ad75ca9838227853466ab92ec29e8a7393",
+        "type": "github"
+      },
+      "original": {
+        "owner": "seregatte",
+        "repo": "nixai",
+        "type": "github"
+      }
+    },
+    "nixai_2": {
       "inputs": {
         "nixpkgs": "nixpkgs"
       },
@@ -50,10 +88,42 @@
         "type": "github"
       }
     },
+    "nixpkgs_3": {
+      "locked": {
+        "lastModified": 1777268161,
+        "narHash": "sha256-bxrdOn8SCOv8tN4JbTF/TXq7kjo9ag4M+C8yzzIRYbE=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "1c3fe55ad329cbcb28471bb30f05c9827f724c76",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "nixos-unstable",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
+    "nixpkgs_4": {
+      "locked": {
+        "lastModified": 1777268161,
+        "narHash": "sha256-bxrdOn8SCOv8tN4JbTF/TXq7kjo9ag4M+C8yzzIRYbE=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "1c3fe55ad329cbcb28471bb30f05c9827f724c76",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "nixos-unstable",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
     "root": {
       "inputs": {
         "nixai": "nixai",
-        "nixpkgs": "nixpkgs_2"
+        "nixpkgs": "nixpkgs_4"
       }
     }
   },
