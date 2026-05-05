@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 
 	"github.com/spf13/cobra"
+	"github.com/seregatte/kfg/src/internal/config"
 	"github.com/seregatte/kfg/src/internal/generate"
 	"github.com/seregatte/kfg/src/internal/logger"
 	"github.com/seregatte/kfg/src/internal/manifest"
@@ -33,18 +34,35 @@ This command provides a one-shot "generate → source → execute" experience
 for running agents. It matches agents by their commandName (e.g., "claude")
 and auto-detects the workflow if not specified.
 
+The source can be provided as:
+  - The -k flag (kustomization path or GitHub URL)
+  - The -f flag (manifest file path or stdin)
+  - The KFG_KPATH environment variable (used as fallback)
+
+GitHub URLs are supported and will be cloned automatically:
+  - https://github.com/owner/repo//path
+  - https://github.com/owner/repo//path?ref=v1.0.0
+
 Arguments after '--' are passed directly to the agent.
 
 Examples:
   kfg run -k .nixai/overlay/dev claude
   kfg run -k .nixai/overlay/dev claude -- --model gpt-4
+  kfg run -k https://github.com/owner/repo//manifests claude
   kfg run -k .nixai/overlay/dev -w dev claude
   kfg run -f manifest.yaml claude
-  kfg run -k .nixai/overlay/dev (lists available agents)`,
+  kfg run -k .nixai/overlay/dev (lists available agents)
+  KFG_KPATH=./manifests kfg run claude
+  KFG_KPATH=https://github.com/owner/repo//manifests kfg run claude`,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		// KFG_KPATH fallback: if kustomize path is empty, use env var
+		if runKustomizePath == "" && runFile == "" {
+			runKustomizePath = config.GetKPath()
+		}
+
 		// Validate flags
 		if runKustomizePath == "" && runFile == "" {
-			logger.Error("run", "Either -k (kustomize path) or -f (file) is required")
+			logger.Error("run", "kustomization source required. Provide a path, use -k flag, -f flag, or set KFG_KPATH.")
 			cmd.Help()
 			os.Exit(2)
 		}
@@ -59,7 +77,7 @@ Examples:
 
 		// No agent name provided - list available agents
 		if agentName == "" {
-			// Run the apply pipeline to get the index
+			// Run the apply pipeline to get the index (GitHub URLs are passed directly to kustomize loader)
 			result, err := runApplyPipeline(runKustomizePath, runFile)
 			if err != nil {
 				logger.Error("run", err.Error())

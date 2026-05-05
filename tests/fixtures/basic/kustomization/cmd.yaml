@@ -6,5 +6,4 @@ metadata:
 spec:
   run: echo "test command"
   env:
-    - name: TEST_VAR
-      value: "test-value"
+    TEST_VAR: "test-value"

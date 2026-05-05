@@ -218,3 +218,43 @@ func TestSetDebugMode(t *testing.T) {
 	assert.Equal(t, "0", viper.GetString("verbose"))
 	assert.False(t, IsDebugMode())
 }
+
+func TestGetKPath(t *testing.T) {
+	// Reset viper
+	viper.Reset()
+	Initialize()
+
+	// Test default (empty)
+	assert.Equal(t, "", GetKPath())
+
+	// Test with environment variable
+	os.Setenv("KFG_KPATH", "./manifests")
+	viper.BindEnv("kpath", "KFG_KPATH")
+	assert.Equal(t, "./manifests", GetKPath())
+	os.Unsetenv("KFG_KPATH")
+
+	// Test with GitHub URL
+	os.Setenv("KFG_KPATH", "https://github.com/owner/repo//manifests")
+	viper.BindEnv("kpath", "KFG_KPATH")
+	assert.Equal(t, "https://github.com/owner/repo//manifests", GetKPath())
+	os.Unsetenv("KFG_KPATH")
+
+	// Test with viper set
+	viper.Set("kpath", "/path/to/manifests")
+	assert.Equal(t, "/path/to/manifests", GetKPath())
+}
+
+func TestGetKPathFromEnv(t *testing.T) {
+	// Test default (no env set)
+	assert.Equal(t, "", GetKPathFromEnv())
+
+	// Test with local path
+	os.Setenv("KFG_KPATH", "./manifests")
+	assert.Equal(t, "./manifests", GetKPathFromEnv())
+	os.Unsetenv("KFG_KPATH")
+
+	// Test with GitHub URL
+	os.Setenv("KFG_KPATH", "https://github.com/owner/repo//manifests")
+	assert.Equal(t, "https://github.com/owner/repo//manifests", GetKPathFromEnv())
+	os.Unsetenv("KFG_KPATH")
+}

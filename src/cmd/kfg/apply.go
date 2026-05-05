@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+	"github.com/seregatte/kfg/src/internal/config"
 	"github.com/seregatte/kfg/src/internal/generate"
 	"github.com/seregatte/kfg/src/internal/kustomize"
 	"github.com/seregatte/kfg/src/internal/manifest"
@@ -125,17 +126,27 @@ var applyCmd = &cobra.Command{
 This command processes a kustomization or manifest file, resolves the workflow,
 and generates shell functions that can be sourced or used interactively.
 
-The [path] argument can be a kustomization directory path or a manifest file.
-If not provided, the -k or -f flag must be used.
+The source can be provided as:
+  - A positional argument (path or GitHub URL)
+  - The -k flag (kustomization path or GitHub URL)
+  - The -f flag (manifest file path or stdin)
+  - The KFG_KPATH environment variable (used as fallback)
+
+GitHub URLs are supported and will be cloned automatically:
+  - https://github.com/owner/repo//path
+  - https://github.com/owner/repo//path?ref=v1.0.0
 
 Examples:
   kfg apply .nixai/overlay/dev
   kfg apply -k .nixai/overlay/dev
+  kfg apply -k https://github.com/owner/repo//manifests
   kfg apply .nixai/overlay/dev --workflow dev,openspec
   kfg apply -k .nixai/overlay/dev --workflow ai-agents
   kfg apply -k .nixai/overlay/dev --cmds claude
   kfg apply -f manifest.yaml
-  kfg apply -f - (read from stdin)`,
+  kfg apply -f - (read from stdin)
+  KFG_KPATH=./manifests kfg apply
+  KFG_KPATH=https://github.com/owner/repo//manifests kfg apply`,
 	Args: cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		// Handle positional argument - if provided, use it as kustomization path
@@ -152,9 +163,14 @@ Examples:
 			}
 		}
 
+		// KFG_KPATH fallback: if kustomize path is empty, use env var
+		if applyKustomizePath == "" && applyFile == "" {
+			applyKustomizePath = config.GetKPath()
+		}
+
 		// Validate flags/args
 		if applyKustomizePath == "" && applyFile == "" {
-			logger.Error("apply", "Either a positional path, -k (kustomize path), or -f (file) is required")
+			logger.Error("apply", "kustomization source required. Provide a path, use -k flag, -f flag, or set KFG_KPATH.")
 			cmd.Help()
 			os.Exit(2)
 		}
@@ -164,7 +180,7 @@ Examples:
 			os.Exit(2)
 		}
 
-		// Run the apply pipeline
+		// Run the apply pipeline (GitHub URLs are passed directly to kustomize loader)
 		result, err := runApplyPipeline(applyKustomizePath, applyFile)
 		if err != nil {
 			logger.Error("apply", err.Error())

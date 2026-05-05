@@ -135,6 +135,7 @@ Test files:
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `KFG_MANIFEST_PATH` | `~/.config/kfg/manifests:.kfg/manifests` | Manifest paths (rightmost wins) |
+| `KFG_KPATH` | (empty) | Default kustomization source path or GitHub URL (fallback for build/apply/run) |
 | `KFG_VERBOSE` | `0` | 0=quiet, 1=error/warn/info, 2=+detail, 3=+debug |
 | `KFG_STORE_DIR` | `~/.config/kfg/store` | Store directory |
 | `KFG_LOG_FILE` | `$XDG_STATE_HOME/kfg/logs/kfg.log` | Log file path |

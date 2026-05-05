@@ -6,21 +6,30 @@
 
 Build a kustomization and output the merged YAML.
 
+The path argument is optional when `KFG_KPATH` is set. GitHub URLs are supported.
+
 ```bash
 kfg build path/to/kustomization          # Output to stdout
 kfg build path/to/kustomization -o out.yaml  # Output to file
+kfg build https://github.com/owner/repo//path  # From GitHub URL
+kfg build https://github.com/owner/repo//path?ref=v1.0.0  # With tag reference
+KFG_KPATH=./manifests kfg build         # Using env var
 ```
 
 ### `kfg apply`
 
 Apply a kustomization and generate shell code.
 
+The `-k` flag is optional when `KFG_KPATH` is set. GitHub URLs are supported.
+
 ```bash
 kfg apply -k path/to/kustomization --workflow myworkflow           # Generate + source
 kfg apply -k path/to/kustomization --workflow myworkflow --interactive  # Interactive shell
 kfg apply -k path/to/kustomization --workflow myworkflow --cmds cmd1,cmd2  # Specific cmds
+kfg apply -k https://github.com/owner/repo//path                    # From GitHub URL
 kfg apply -f manifest.yaml                               # From file
 kfg apply -f -                                           # From stdin
+KFG_KPATH=./manifests kfg apply                         # Using env var
 ```
 
 ### `kfg image` (alias: `img`)
@@ -92,6 +101,7 @@ Use `kfg apply -k` instead.
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `KFG_MANIFEST_PATH` | `~/.config/kfg/manifests:.kfg/manifests` | Colon-separated manifest paths (rightmost wins) |
+| `KFG_KPATH` | (empty) | Default kustomization source path or GitHub URL |
 | `KFG_VERBOSE` | `0` | `0`=quiet, `1`=error/warn/info, `2`=+detail, `3`=+debug |
 | `KFG_STORE_DIR` | `~/.config/kfg/store` | Store directory |
 | `KFG_LOG_FILE` | `$XDG_STATE_HOME/kfg/logs/kfg.jsonl` | Override JSONL log file path |

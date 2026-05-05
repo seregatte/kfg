@@ -63,6 +63,7 @@ func Initialize() error {
 	viper.BindEnv("log_color", "KFG_LOG_COLOR")
 	viper.BindEnv("debug", "KFG_DEBUG")
 	viper.BindEnv("store_dir", "KFG_STORE_DIR")
+	viper.BindEnv("kpath", "KFG_KPATH")
 
 	// Set environment variable prefix
 	viper.SetEnvPrefix("KFG")
@@ -178,4 +179,14 @@ func GetStoreDir() string {
 // GetStoreDirFromEnv returns the KFG_STORE_DIR value directly from environment.
 func GetStoreDirFromEnv() string {
 	return os.Getenv("KFG_STORE_DIR")
+}
+
+// GetKPath returns the kustomization source path configuration.
+func GetKPath() string {
+	return viper.GetString("kpath")
+}
+
+// GetKPathFromEnv returns the KFG_KPATH value directly from environment.
+func GetKPathFromEnv() string {
+	return os.Getenv("KFG_KPATH")
 }

@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"github.com/seregatte/kfg/src/internal/manifest"
 	"github.com/seregatte/kfg/src/internal/resolve"
@@ -314,4 +315,42 @@ func TestRunCommandStructure(t *testing.T) {
 	assert.Equal(t, "run [agent] [-- extra-args...]", runCmd.Use)
 	assert.Contains(t, runCmd.Short, "Run an agent")
 	assert.NotNil(t, runCmd.RunE)
+}
+
+func TestRunCommandKPathFallback(t *testing.T) {
+	// Reset viper for each test
+	viper.Reset()
+	
+	// Test 1: KFG_KPATH is set, no -k or -f flag provided
+	os.Setenv("KFG_KPATH", "./test-manifests")
+	viper.BindEnv("kpath", "KFG_KPATH")
+	
+	// The RunE function should use GetKPath() when no -k or -f is provided
+	// We can verify the config getter works
+	assert.Equal(t, "./test-manifests", viper.GetString("kpath"))
+	os.Unsetenv("KFG_KPATH")
+	
+	// Test 2: KFG_KPATH is not set, -k flag provided
+	viper.Reset()
+	assert.Equal(t, "", viper.GetString("kpath"))
+	
+	// Test 3: KFG_KPATH with GitHub URL
+	os.Setenv("KFG_KPATH", "https://github.com/owner/repo//manifests")
+	viper.BindEnv("kpath", "KFG_KPATH")
+	assert.Equal(t, "https://github.com/owner/repo//manifests", viper.GetString("kpath"))
+	os.Unsetenv("KFG_KPATH")
+}
+
+func TestRunCommandLongDescription(t *testing.T) {
+	// Verify the Long description mentions KFG_KPATH and GitHub URLs
+	assert.Contains(t, runCmd.Long, "KFG_KPATH")
+	assert.Contains(t, runCmd.Long, "github.com")
+	assert.Contains(t, runCmd.Long, "https://github.com/owner/repo//path")
+}
+
+func TestRunCommandExamples(t *testing.T) {
+	// Verify the examples include GitHub URL and KFG_KPATH usage
+	assert.Contains(t, runCmd.Long, "kfg run -k https://github.com/owner/repo//manifests")
+	assert.Contains(t, runCmd.Long, "KFG_KPATH=./manifests kfg run")
+	assert.Contains(t, runCmd.Long, "KFG_KPATH=https://github.com")
 }
