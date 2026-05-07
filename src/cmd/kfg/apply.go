@@ -8,6 +8,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/seregatte/kfg/src/internal/config"
+	"github.com/seregatte/kfg/src/internal/converter"
 	"github.com/seregatte/kfg/src/internal/generate"
 	"github.com/seregatte/kfg/src/internal/kustomize"
 	"github.com/seregatte/kfg/src/internal/manifest"
@@ -22,6 +23,8 @@ var (
 	applyOutput        string
 	applyWorkflow      string
 	applyCmds          string
+	applyConvert       string
+	applyUse           string
 )
 
 // ApplyResult holds the result of the apply pipeline (load → validate → index → resolve).
@@ -126,6 +129,13 @@ var applyCmd = &cobra.Command{
 This command processes a kustomization or manifest file, resolves the workflow,
 and generates shell functions that can be sourced or used interactively.
 
+Modes:
+  1. Shell generation (default): Generate shell functions from Cmd/CmdWorkflow resources
+     using -w/--workflow and -c/--cmds flags.
+
+  2. Conversion mode: Transform Asset data using a Converter resource with --convert
+     and --use flags. Outputs data in the Converter's specified format.
+
 The source can be provided as:
   - A positional argument (path or GitHub URL)
   - The -k flag (kustomization path or GitHub URL)
@@ -137,6 +147,7 @@ GitHub URLs are supported and will be cloned automatically:
   - https://github.com/owner/repo//path?ref=v1.0.0
 
 Examples:
+  # Shell generation
   kfg apply .nixai/overlay/dev
   kfg apply -k .nixai/overlay/dev
   kfg apply -k https://github.com/owner/repo//manifests
@@ -146,7 +157,11 @@ Examples:
   kfg apply -f manifest.yaml
   kfg apply -f - (read from stdin)
   KFG_KPATH=./manifests kfg apply
-  KFG_KPATH=https://github.com/owner/repo//manifests kfg apply`,
+  KFG_KPATH=https://github.com/owner/repo//manifests kfg apply
+
+  # Conversion mode
+  kfg apply -f manifest.yaml --convert my-asset --use my-converter
+  kfg apply -f manifest.yaml --convert my-asset --use my-converter -o output.json`,
 	Args: cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		// Handle positional argument - if provided, use it as kustomization path
@@ -180,6 +195,29 @@ Examples:
 			os.Exit(2)
 		}
 
+		// Validate conversion mode mutual exclusivity
+		if applyConvert != "" || applyUse != "" {
+			// --convert and --use must be used together
+			if applyConvert == "" {
+				logger.Error("apply", "--use requires --convert to be specified")
+				os.Exit(2)
+			}
+			if applyUse == "" {
+				logger.Error("apply", "--convert requires --use to be specified")
+				os.Exit(2)
+			}
+			// --convert/--use cannot be used with -w/--workflow
+			if applyWorkflow != "" {
+				logger.Error("apply", "--convert/--use cannot be used with --workflow/-w (shell generation flag)")
+				os.Exit(2)
+			}
+			// --convert/--use cannot be used with -c/--cmds
+			if applyCmds != "" {
+				logger.Error("apply", "--convert/--use cannot be used with --cmds/-c (shell generation flag)")
+				os.Exit(2)
+			}
+		}
+
 		// Run the apply pipeline (GitHub URLs are passed directly to kustomize loader)
 		result, err := runApplyPipeline(applyKustomizePath, applyFile)
 		if err != nil {
@@ -188,6 +226,16 @@ Examples:
 			os.Exit(1)
 		}
 
+		// Conversion mode
+		if applyConvert != "" && applyUse != "" {
+			if err := runConversion(result.Resources, applyConvert, applyUse, applyOutput); err != nil {
+				logger.Error("apply", err.Error())
+				os.Exit(1)
+			}
+			return
+		}
+
+		// Shell generation mode (existing behavior)
 		// Resolve cmd filter
 		var cmdFilter []string
 		if applyCmds != "" {
@@ -277,6 +325,8 @@ func init() {
 	applyCmd.Flags().StringVarP(&applyOutput, "output", "o", "", "Output file path (default: stdout)")
 	applyCmd.Flags().StringVarP(&applyWorkflow, "workflow", "w", "", "CmdWorkflow name(s), comma-separated (default: all workflows)")
 	applyCmd.Flags().StringVarP(&applyCmds, "cmds", "c", "", "Comma-separated list of cmds to generate")
+	applyCmd.Flags().StringVar(&applyConvert, "convert", "", "Asset name for conversion mode")
+	applyCmd.Flags().StringVar(&applyUse, "use", "", "Converter name for conversion mode")
 }
 
 func printApplyError(err error, path string) {
@@ -441,4 +491,68 @@ func resolveAndGenerateMultiWorkflow(resolver *resolve.Resolver, index *resolve.
 	}
 
 	return shellCode, kustomizationName, shell, nil
+}
+
+// runConversion executes the conversion pipeline: find Asset + Converter, run engine, output result.
+func runConversion(resources []manifest.ParsedResource, assetName, converterName, outputFile string) error {
+	// Find Asset by metadata.name
+	var foundAsset *manifest.Assets
+	var availableAssets []string
+	for _, res := range resources {
+		if res.Assets != nil {
+			availableAssets = append(availableAssets, res.Assets.Metadata.Name)
+			if res.Assets.Metadata.Name == assetName {
+				foundAsset = res.Assets
+			}
+		}
+	}
+	if foundAsset == nil {
+		msg := fmt.Sprintf("Asset not found: %s", assetName)
+		if len(availableAssets) > 0 {
+			msg += fmt.Sprintf(" (available: %s)", strings.Join(availableAssets, ", "))
+		}
+		return fmt.Errorf("%s", msg)
+	}
+
+	// Find Converter by metadata.name
+	var foundConverter *manifest.Converter
+	var availableConverters []string
+	for _, res := range resources {
+		if res.Converter != nil {
+			availableConverters = append(availableConverters, res.Converter.Metadata.Name)
+			if res.Converter.Metadata.Name == converterName {
+				foundConverter = res.Converter
+			}
+		}
+	}
+	if foundConverter == nil {
+		msg := fmt.Sprintf("Converter not found: %s", converterName)
+		if len(availableConverters) > 0 {
+			msg += fmt.Sprintf(" (available: %s)", strings.Join(availableConverters, ", "))
+		}
+		return fmt.Errorf("%s", msg)
+	}
+
+	// Map manifest types to converter types
+	asset := converter.MapManifestAssets(foundAsset)
+	conv := converter.MapManifestConverter(foundConverter)
+
+	// Run the conversion engine
+	engine := converter.NewEngine()
+	result, err := engine.Apply(conv, asset)
+	if err != nil {
+		return fmt.Errorf("conversion failed: %w", err)
+	}
+
+	// Output result
+	if outputFile != "" {
+		if err := os.WriteFile(outputFile, []byte(result), 0644); err != nil {
+			return fmt.Errorf("failed to write output file: %w", err)
+		}
+		logger.Info("apply", fmt.Sprintf("Wrote conversion output to %s", outputFile))
+	} else {
+		fmt.Print(result)
+	}
+
+	return nil
 }

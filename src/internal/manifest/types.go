@@ -2,6 +2,7 @@ package manifest
 
 import (
 	"fmt"
+	"strings"
 )
 
 // ============================================================================
@@ -365,4 +366,201 @@ var SupportedKinds = []string{
 	"Step",
 	"Cmd",
 	"CmdWorkflow",
+	"Assets",
+	"Converter",
+}
+
+// SupportedInputFormats are the supported input formats for Assets and Converters.
+var SupportedInputFormats = []string{
+	"yaml", "json", "xml", "props", "csv", "tsv", "toml",
+	"hcl", "lua", "ini", "shell", "base64", "uri", "kyaml",
+}
+
+// SupportedOutputFormats are the supported output formats for Converters.
+var SupportedOutputFormats = []string{
+	"yaml", "json", "xml", "props", "csv", "tsv", "toml",
+	"hcl", "lua", "ini", "shell", "base64", "uri", "kyaml",
+	"raw",
+}
+
+// ============================================================================
+// Assets and Converter Types
+// ============================================================================
+
+// Assets represents an Assets resource kind for declaring data payloads.
+type Assets struct {
+	APIVersion string      `yaml:"apiVersion"`
+	Kind       string      `yaml:"kind"`
+	Metadata   Metadata    `yaml:"metadata"`
+	Spec       AssetsSpec  `yaml:"spec"`
+}
+
+// Identity returns the assets' unique identity.
+func (a Assets) Identity() ResourceIdentity {
+	return ResourceIdentity{
+		APIVersion: a.APIVersion,
+		Kind:       a.Kind,
+		Name:       a.Metadata.Name,
+	}
+}
+
+// AssetsSpec is the spec for Assets resources.
+type AssetsSpec struct {
+	Input InputSpec `yaml:"input"`       // Input format configuration
+	Data  any       `yaml:"data"`        // Data payload (map for YAML, string for others)
+}
+
+// InputSpec defines input format configuration.
+type InputSpec struct {
+	Format string `yaml:"format"` // Data format (default: yaml)
+}
+
+// Converter represents a Converter resource kind for declaring transformations.
+type Converter struct {
+	APIVersion string         `yaml:"apiVersion"`
+	Kind       string         `yaml:"kind"`
+	Metadata   Metadata       `yaml:"metadata"`
+	Spec       ConverterSpec  `yaml:"spec"`
+}
+
+// Identity returns the converter's unique identity.
+func (c Converter) Identity() ResourceIdentity {
+	return ResourceIdentity{
+		APIVersion: c.APIVersion,
+		Kind:       c.Kind,
+		Name:       c.Metadata.Name,
+	}
+}
+
+// ConverterSpec is the spec for Converter resources.
+type ConverterSpec struct {
+	Input    InputSpec  `yaml:"input"`    // Input format configuration
+	Engine   EngineSpec `yaml:"engine"`   // Transformation engine configuration
+	Output   OutputSpec `yaml:"output"`   // Output format configuration
+}
+
+// EngineSpec defines the transformation engine configuration.
+type EngineSpec struct {
+	Expression string `yaml:"expression"` // yq-go expression to evaluate
+}
+
+// OutputSpec defines output format configuration.
+type OutputSpec struct {
+	Format string `yaml:"format"` // Output format (default: yaml)
+}
+
+// ============================================================================
+// Validation
+// ============================================================================
+
+// ValidateAPIVersion checks if the apiVersion is correct for Assets.
+func (a Assets) ValidateAPIVersion() error {
+	if a.APIVersion != APIVersion {
+		return fmt.Errorf("apiVersion must be %s, got %s", APIVersion, a.APIVersion)
+	}
+	return nil
+}
+
+// ValidateKind checks if the kind is correct for Assets.
+func (a Assets) ValidateKind() error {
+	if a.Kind != "Assets" {
+		return fmt.Errorf("kind must be Assets, got %s", a.Kind)
+	}
+	return nil
+}
+
+// ValidateAPIVersion checks if the apiVersion is correct for Converter.
+func (c Converter) ValidateAPIVersion() error {
+	if c.APIVersion != APIVersion {
+		return fmt.Errorf("apiVersion must be %s, got %s", APIVersion, c.APIVersion)
+	}
+	return nil
+}
+
+// ValidateKind checks if the kind is correct for Converter.
+func (c Converter) ValidateKind() error {
+	if c.Kind != "Converter" {
+		return fmt.Errorf("kind must be Converter, got %s", c.Kind)
+	}
+	return nil
+}
+
+// ValidateAssets validates an Assets resource.
+func (a Assets) Validate() error {
+	if err := a.ValidateAPIVersion(); err != nil {
+		return err
+	}
+	if err := a.ValidateKind(); err != nil {
+		return err
+	}
+	if err := ValidateName(a.Metadata.Name); err != nil {
+		return err
+	}
+	// Validate input format
+	format := a.Spec.Input.Format
+	if format == "" {
+		format = "yaml"
+	}
+	if !isSupportedInputFormat(format) {
+		return fmt.Errorf("spec.input.format '%s' is not supported (supported: %s)", format, strings.Join(SupportedInputFormats, ", "))
+	}
+	// Validate data is present
+	if a.Spec.Data == nil {
+		return fmt.Errorf("spec.data is required for Assets resources")
+	}
+	return nil
+}
+
+// ValidateConverter validates a Converter resource.
+func (c Converter) Validate() error {
+	if err := c.ValidateAPIVersion(); err != nil {
+		return err
+	}
+	if err := c.ValidateKind(); err != nil {
+		return err
+	}
+	if err := ValidateName(c.Metadata.Name); err != nil {
+		return err
+	}
+	// Validate input format
+	inputFormat := c.Spec.Input.Format
+	if inputFormat == "" {
+		inputFormat = "yaml"
+	}
+	if !isSupportedInputFormat(inputFormat) {
+		return fmt.Errorf("spec.input.format '%s' is not supported (supported: %s)", inputFormat, strings.Join(SupportedInputFormats, ", "))
+	}
+	// Validate output format
+	outputFormat := c.Spec.Output.Format
+	if outputFormat == "" {
+		outputFormat = "yaml"
+	}
+	if !isSupportedOutputFormat(outputFormat) {
+		return fmt.Errorf("spec.output.format '%s' is not supported (supported: %s)", outputFormat, strings.Join(SupportedOutputFormats, ", "))
+	}
+	// Validate expression is present
+	if c.Spec.Engine.Expression == "" {
+		return fmt.Errorf("spec.engine.expression is required for Converter resources")
+	}
+	return nil
+}
+
+// isSupportedInputFormat checks if a format is a supported input format.
+func isSupportedInputFormat(format string) bool {
+	for _, f := range SupportedInputFormats {
+		if f == format {
+			return true
+		}
+	}
+	return false
+}
+
+// isSupportedOutputFormat checks if a format is a supported output format.
+func isSupportedOutputFormat(format string) bool {
+	for _, f := range SupportedOutputFormats {
+		if f == format {
+			return true
+		}
+	}
+	return false
 }

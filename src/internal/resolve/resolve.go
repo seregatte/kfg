@@ -5,6 +5,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/seregatte/kfg/src/internal/logger"
 	"github.com/seregatte/kfg/src/internal/manifest"
 )
 
@@ -38,7 +39,9 @@ func NewIndex(resources []manifest.ParsedResource) *Index {
 		case res.CmdWorkflow != nil:
 			idx.cmdWorkflows[res.CmdWorkflow.Metadata.Name] = res.CmdWorkflow
 		default:
-			// Unknown or empty ParsedResource - skip
+			// Source kinds (Assets, Converter) are explicitly skipped
+			// as they are not part of the execution model.
+			logger.Debug("resolve", fmt.Sprintf("skipping source kind: %s (%s)", res.Kind(), res.Name()))
 		}
 	}
 
