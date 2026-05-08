@@ -72,9 +72,11 @@
             inputsFrom = [ nixai.devShells.${system}.default ];
             shellHook = ''
               echo "Welcome to the kfg development environment!"
+              export KFG_VERBOSE=3
               alias kfg="go run ./src/cmd/kfg"
               ln -s docs/context/openspec ./ 2>/dev/null || true
-              source <(kfg apply -k $NIXAI_DIR/.nixai/overlay/dev)
+              source <(kfg apply -k $HOME/.nixai/manifests/overlay/dev)
+              # source <(go run ./src/cmd/kfg apply -k .manifests/overlay/dev)
             '';
           };
         in
