@@ -1,0 +1,41 @@
+apiVersion: kfg.dev/v1alpha1
+kind: Assets
+metadata:
+  name: kfg.agent.gemini
+spec:
+  input:
+    format: yaml
+  data:
+    model: gemini-2.5-pro
+    permissions:
+      allow:
+        - "Read(/{env:HOME}/Downloads/**)"
+        - "Read(/**)"
+        - "Edit(/**)"
+        - "Bash(/**)"
+      deny: []
+    mcpServers:
+      context7:
+        command: "npx"
+        args:
+          - "-y"
+          - "@upstash/context7-mcp"
+      chrome-devtools:
+        command: "npx"
+        args:
+          - "-y"
+          - "@agentdeskai/chrome-devtools-mcp"
+      playwright:
+        command: "npx"
+        args:
+          - "-y"
+          - "@anthropic/mcp-playwright"
+    settings:
+      outputStyle: "stream"
+      autoCompact: true
+      includeShellSnippets: true
+    scaffold:
+      settingsFile: ".gemini/settings.json"
+      mcpFile: ".gemini/settings.json"
+      skillsDir: ".gemini/skills"
+      commandsDir: ".gemini/commands"

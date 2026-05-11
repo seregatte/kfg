@@ -1,0 +1,27 @@
+apiVersion: kfg.dev/v1alpha1
+kind: Assets
+metadata:
+  name: kfg.extension.self.subagents.review-minimal
+spec:
+  input:
+    format: yaml
+  data:
+    name: review-minimal
+    description: Lightweight code review for quick pull request feedback
+    model: claude-sonnet-4-20250514
+    tools:
+      - Read
+      - Bash
+    permissions:
+      allow:
+        - Read(/**)
+        - Bash(git diff*)
+    prompt: |
+      You are a minimal code review assistant.
+      
+      Review the provided code changes and provide concise feedback focusing on:
+      - Critical bugs or security issues
+      - Obvious performance problems
+      - Missing error handling
+      
+      Skip: style preferences, naming debates, and architectural discussions unless critical.

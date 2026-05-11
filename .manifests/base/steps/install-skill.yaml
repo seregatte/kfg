@@ -1,0 +1,41 @@
+apiVersion: kfg.dev/v1alpha1
+kind: Step
+metadata:
+  name: kfg.install-skill
+spec:
+  run: |
+    # Install a skill into the agent's skills directory
+    local skill_asset="${SKILL_ASSET:-}"
+    local skills_dir="${SKILLS_DIR:-}"
+
+    if [ -z "$skill_asset" ]; then
+      _kfg.log.error "SKILL_ASSET is required"
+      return 1
+    fi
+
+    if [ -z "$skills_dir" ]; then
+      _kfg.log.error "SKILLS_DIR is required"
+      return 1
+    fi
+
+    local skill_data
+    skill_data=$(yq eval-all "select(.kind == \"Assets\" and .metadata.name == \"${skill_asset}\") | .spec.data" "$KFG_BUILD_RESULT_FILE" 2>/dev/null)
+
+    if [ -z "$skill_data" ] || [ "$skill_data" = "null" ]; then
+      _kfg.log.warn "no skill data for asset '${skill_asset}'"
+      return 0
+    fi
+
+    local skill_name
+    skill_name=$(echo "$skill_data" | yq eval '.name' 2>/dev/null)
+    local skill_content
+    skill_content=$(echo "$skill_data" | yq eval '.content' 2>/dev/null)
+
+    if [ -n "$skill_name" ] && [ -n "$skill_content" ]; then
+      mkdir -p "${skills_dir}/${skill_name}"
+      echo "$skill_content" > "${skills_dir}/${skill_name}/SKILL.md"
+      _kfg.log.info "installed skill '${skill_name}' -> ${skills_dir}/${skill_name}/SKILL.md"
+    fi
+  env:
+    SKILL_ASSET: ""
+    SKILLS_DIR: ""

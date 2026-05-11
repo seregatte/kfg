@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Specifies how kfg generates and manages the build result YAML file in shell code, ensuring global-scope accessibility, single-file setup with no duplication across command wrappers, and proper cleanup via EXIT trap.
+Specifies how kfg generates and manages the build result YAML file in shell code, ensuring global-scope accessibility, single-file setup with no duplication across command wrappers. The build result temp file is NOT automatically cleaned up — cleanup is the responsibility of the user or explicit step configuration.
 
 ## Requirements
 
@@ -25,19 +25,19 @@ The generated shell code SHALL define `__kfg_build_result()` as a global functio
 - **THEN** the Step can call `__kfg_build_result | kfg assets convert --use <converter>`
 - **AND** the command accesses the same shared global file
 
-### Requirement: Cleanup via global EXIT trap
+### Requirement: No automatic cleanup of build result file
 
-The generated shell code SHALL register a global `EXIT` trap that removes the build result temp file when the shell exits (sourced shell session ends, or non-interactive shell completes).
+The generated shell code SHALL NOT register any EXIT trap or automatic cleanup mechanism for the build result temp file. The file persists after shell exit to allow consecutive runs without regeneration. Cleanup is the responsibility of the user or explicit workflow step configuration.
 
-#### Scenario: Interactive shell session cleanup
+#### Scenario: Temp file persists after shell exit
 - **WHEN** the generated shell is sourced interactively and the user exits the shell
-- **THEN** the `EXIT` trap fires and removes `$KFG_BUILD_RESULT_FILE`
-- **AND** no dangling temp files remain
+- **THEN** the `$KFG_BUILD_RESULT_FILE` remains on disk
+- **AND** consecutive `kfg apply/run` invocations can reuse the same file path
 
-#### Scenario: Non-interactive shell execution cleanup
-- **WHEN** generated shell code runs in a subshell or non-interactive context
-- **THEN** the `EXIT` trap fires when the shell exits
-- **AND** cleanup occurs identically to interactive mode
+#### Scenario: Explicit cleanup via workflow step
+- **WHEN** a workflow includes a cleanup step that removes `$KFG_BUILD_RESULT_FILE`
+- **THEN** the file is removed at the end of workflow execution
+- **AND** cleanup is controlled by the workflow author, not automatic
 
 ### Requirement: No per-Cmd build result duplication
 

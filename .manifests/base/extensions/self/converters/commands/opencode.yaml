@@ -1,0 +1,12 @@
+apiVersion: kfg.dev/v1alpha1
+kind: Converter
+metadata:
+  name: kfg.convert.self.command.opencode
+spec:
+  input:
+    format: yaml
+  engine:
+    expression: |
+      "---\nname: " + .name + "\ndescription: " + .description + "\n---\n\n" + .prompt
+  output:
+    format: raw

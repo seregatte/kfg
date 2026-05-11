@@ -40,6 +40,20 @@ test:
 	@echo "Running tests..."
 	cd src && $(GOTEST) -v ./...
 
+## test-bats: Run Bats integration tests
+test-bats: build
+	@echo "Running Bats tests..."
+	bats tests/bats
+
+## test-manifests: Run manifest Bats tests
+test-manifests: build
+	@echo "Running manifest tests..."
+	bats .manifests/tests
+
+## test-all: Run all tests (unit, bats, manifests)
+test-all: test test-bats test-manifests
+	@echo "All tests complete."
+
 ## test-coverage: Run tests with coverage
 test-coverage:
 	@echo "Running tests with coverage..."

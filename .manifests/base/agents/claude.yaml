@@ -1,0 +1,42 @@
+apiVersion: kfg.dev/v1alpha1
+kind: Assets
+metadata:
+  name: kfg.agent.claude
+spec:
+  input:
+    format: yaml
+  data:
+    model: claude-sonnet-4-20250514
+    permissions:
+      allow:
+        - "Read(/{env:HOME}/Downloads/**)"
+        - "Read(/**)"
+        - "Edit(/**)"
+        - "Bash(/**)"
+      deny: []
+    mcpServers:
+      context7:
+        command: "npx"
+        args:
+          - "-y"
+          - "@upstash/context7-mcp"
+      chrome-devtools:
+        command: "npx"
+        args:
+          - "-y"
+          - "@agentdeskai/chrome-devtools-mcp"
+      playwright:
+        command: "npx"
+        args:
+          - "-y"
+          - "@anthropic/mcp-playwright"
+    settings:
+      outputStyle: "stream"
+      autoCompact: true
+      includeShellSnippets: true
+    scaffold:
+      settingsFile: ".claude/settings.json"
+      mcpFile: ".claude/settings.local.json"
+      skillsDir: ".claude/skills"
+      commandsDir: ".claude/commands"
+      subagentsDir: ".claude/settings.local.json"

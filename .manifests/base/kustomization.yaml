@@ -1,0 +1,53 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  # Base agent assets
+  - agents/claude.yaml
+  - agents/gemini.yaml
+  - agents/opencode.yaml
+  - agents/pi.yaml
+
+  # Agent commands
+  - cmds/agents.yaml
+
+  # Core steps
+  - steps/detect-agent.yaml
+  - steps/copy-context.yaml
+  - steps/materialize-scaffold.yaml
+  - steps/cleanup.yaml
+  - steps/install-skill.yaml
+  - steps/convert.yaml
+
+  # Self extension — assets
+  - extensions/self/assets/commands/git-commit.yaml
+  - extensions/self/assets/commands/refactor-pure.yaml
+  - extensions/self/assets/commands/review-code.yaml
+  - extensions/self/assets/commands/review-search.yaml
+  - extensions/self/assets/subagents/review-minimal.yaml
+  - extensions/self/assets/mcp/context7.yaml
+  - extensions/self/assets/mcp/chrome-devtools.yaml
+  - extensions/self/assets/mcp/playwright.yaml
+
+  # Self extension — converters
+  - extensions/self/converters/commands/claude.yaml
+  - extensions/self/converters/commands/gemini.yaml
+  - extensions/self/converters/commands/opencode.yaml
+  - extensions/self/converters/commands/pi.yaml
+  - extensions/self/converters/mcp/claude.yaml
+  - extensions/self/converters/mcp/opencode.yaml
+  - extensions/self/converters/mcp/gemini.yaml
+  - extensions/self/converters/subagents/claude.yaml
+  - extensions/self/converters/subagents/opencode.yaml
+
+  # Other extension assets
+  - extensions/ctx7/assets/mcp.yaml
+  - extensions/playwright/assets/mcp.yaml
+  - extensions/chrome-devtools/assets/mcp.yaml
+  - extensions/openspec/assets/skill.yaml
+  - extensions/gws/assets/skill.yaml
+  - extensions/notebooklm/assets/skill.yaml
+  - extensions/ccr/assets/config.yaml
+
+  # Extension-specific steps
+  - extensions/ctx7/steps/install-skills.yaml

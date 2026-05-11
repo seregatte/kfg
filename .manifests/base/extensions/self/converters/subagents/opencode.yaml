@@ -1,0 +1,12 @@
+apiVersion: kfg.dev/v1alpha1
+kind: Converter
+metadata:
+  name: kfg.convert.self.subagent.opencode
+spec:
+  input:
+    format: yaml
+  engine:
+    expression: |
+      "---\nname: " + .name + "\nmode: subagent\ndescription: " + .description + "\nmodel: " + .model + "\n---\n\n" + .prompt
+  output:
+    format: raw

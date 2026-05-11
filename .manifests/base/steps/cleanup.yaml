@@ -1,0 +1,10 @@
+apiVersion: kfg.dev/v1alpha1
+kind: Step
+metadata:
+  name: kfg.cleanup
+spec:
+  run: |
+    _kfg.log.info "cleaning up artifacts..."
+    rm -rf $PATHS
+  env:
+    PATHS: ""

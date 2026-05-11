@@ -1,0 +1,41 @@
+apiVersion: kfg.dev/v1alpha1
+kind: Assets
+metadata:
+  name: kfg.agent.opencode
+spec:
+  input:
+    format: yaml
+  data:
+    model: anthropic/claude-sonnet-4-20250514
+    permissions:
+      allow:
+        - "Read(/{env:HOME}/Downloads/**)"
+        - "Read(/**)"
+        - "Edit(/**)"
+        - "Bash(/**)"
+      deny: []
+    mcpServers:
+      context7:
+        command: "npx"
+        args:
+          - "-y"
+          - "@upstash/context7-mcp"
+      chrome-devtools:
+        command: "npx"
+        args:
+          - "-y"
+          - "@agentdeskai/chrome-devtools-mcp"
+      playwright:
+        command: "npx"
+        args:
+          - "-y"
+          - "@anthropic/mcp-playwright"
+    settings:
+      outputStyle: "stream"
+      autoCompact: true
+    scaffold:
+      settingsFile: "opencode.json"
+      mcpFile: "opencode.json"
+      skillsDir: ".opencode/skills"
+      commandsDir: ".opencode/commands"
+      subagentsDir: ".opencode/subagents"

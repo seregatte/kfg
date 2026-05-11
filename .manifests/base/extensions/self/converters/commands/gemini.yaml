@@ -1,0 +1,12 @@
+apiVersion: kfg.dev/v1alpha1
+kind: Converter
+metadata:
+  name: kfg.convert.self.command.gemini
+spec:
+  input:
+    format: yaml
+  engine:
+    expression: |
+      "name = \"" + .name + "\"\ndescription = \"" + .description + "\"\nprompt = \"\"\"\n" + .prompt + "\n\"\"\"\n"
+  output:
+    format: raw

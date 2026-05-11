@@ -1,0 +1,17 @@
+apiVersion: kfg.dev/v1alpha1
+kind: Step
+metadata:
+  name: kfg.cleanup-paths
+spec:
+  run: |
+    # Remove temporary build artifacts and intermediate directories
+    local cleanup_paths=("$TMPDIR/__kfg_*" "/tmp/__kfg_*")
+    for pattern in "${cleanup_paths[@]}"; do
+      for path in $pattern; do
+        if [ -e "$path" ]; then
+          rm -rf "$path"
+          _kfg.log.debug "cleaned up path: ${path}"
+        fi
+      done
+    done
+    _kfg.log.info "cleanup-paths completed"

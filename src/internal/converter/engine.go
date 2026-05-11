@@ -61,7 +61,30 @@ func (e *Engine) Apply(conv Converter, asset Asset) (string, error) {
 		return "", fmt.Errorf("expression evaluation failed: %w", err)
 	}
 
+	// 7. Strip ANSI escape codes from output
+	result = stripANSI(result)
+
 	return result, nil
+}
+
+// stripANSI removes ANSI escape codes from a string.
+func stripANSI(s string) string {
+	var result []rune
+	inEscape := false
+	for _, r := range s {
+		if r == 27 { // ESC character
+			inEscape = true
+			continue
+		}
+		if inEscape {
+			if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') {
+				inEscape = false
+			}
+			continue
+		}
+		result = append(result, r)
+	}
+	return string(result)
 }
 
 // serializeAsset converts asset data to a string representation.

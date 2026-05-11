@@ -1,0 +1,24 @@
+apiVersion: kfg.dev/v1alpha1
+kind: Assets
+metadata:
+  name: kfg.extension.chrome-devtools.mcp
+spec:
+  input:
+    format: yaml
+  data:
+    name: chrome-devtools
+    description: Chrome DevTools MCP server for browser automation and debugging
+    enabled: true
+    server:
+      command: npx
+      args:
+        - -y
+        - "@agentdeskai/chrome-devtools-mcp"
+      env: {}
+    tools:
+      - name: navigate
+        description: Navigate to a URL
+      - name: screenshot
+        description: Take a screenshot of the current page
+      - name: evaluate
+        description: Execute JavaScript in the browser

@@ -1,0 +1,278 @@
+apiVersion: kfg.dev/v1alpha1
+kind: CmdWorkflow
+metadata:
+  name: kfg.workflow.agents
+  shell: bash
+spec:
+  cmds:
+    - kfg.agent.cmd.claude
+    - kfg.agent.cmd.gemini
+    - kfg.agent.cmd.opencode
+    - kfg.agent.cmd.pi
+  before:
+    # Phase 1: Detection
+    - step: kfg.detect-agent
+
+    # Phase 2: Scaffold (per-agent)
+    - step: kfg.materialize-scaffold
+      when:
+        output:
+          step: kfg.detect-agent
+          name: AGENT
+          equals: "claude"
+      env:
+        DIRECTORIES: ".claude:.claude/skills:.claude/commands:.claude/subagents"
+
+    - step: kfg.materialize-scaffold
+      when:
+        output:
+          step: kfg.detect-agent
+          name: AGENT
+          equals: "opencode"
+      env:
+        DIRECTORIES: ".opencode:.opencode/skills:.opencode/commands:.opencode/subagents"
+
+    - step: kfg.materialize-scaffold
+      when:
+        output:
+          step: kfg.detect-agent
+          name: AGENT
+          equals: "gemini"
+      env:
+        DIRECTORIES: ".gemini:.gemini/skills:.gemini/commands"
+
+    - step: kfg.materialize-scaffold
+      when:
+        output:
+          step: kfg.detect-agent
+          name: AGENT
+          equals: "pi"
+      env:
+        DIRECTORIES: ".pi:.pi/skills:.pi/prompts"
+
+    # Phase 3: Context (per-file, per-agent)
+    - step: kfg.copy-context
+      weight: -60
+      failurePolicy: Ignore
+      env:
+        SRC: "docs/AGENTS.md"
+        DEST: "CLAUDE.md"
+      when:
+        output:
+          step: kfg.detect-agent
+          name: AGENT
+          equals: "claude"
+
+    - step: kfg.copy-context
+      weight: -60
+      failurePolicy: Ignore
+      env:
+        SRC: "docs/AGENTS.md"
+      artifacts:
+        - AGENTS.md
+      when:
+        output:
+          step: kfg.detect-agent
+          name: AGENT
+          in: ["opencode", "gemini", "pi"]
+
+    # Phase 4: Command generation (per-asset, per-agent)
+    # Claude commands
+    - step: kfg.convert
+      env:
+        ASSET: "kfg.extension.self.commands.git-commit"
+        CONVERTER: "kfg.convert.self.command.claude"
+        OUTPUT: ".claude/commands/git-commit.md"
+      when:
+        output:
+          step: kfg.detect-agent
+          name: AGENT
+          equals: "claude"
+    # Gemini commands
+    - step: kfg.convert
+      env:
+        ASSET: "kfg.extension.self.commands.git-commit"
+        CONVERTER: "kfg.convert.self.command.gemini"
+        OUTPUT: ".gemini/commands/git-commit.toml"
+      when:
+        output:
+          step: kfg.detect-agent
+          name: AGENT
+          equals: "gemini"
+    # Opencode commands
+    - step: kfg.convert
+      env:
+        ASSET: "kfg.extension.self.commands.git-commit"
+        CONVERTER: "kfg.convert.self.command.opencode"
+        OUTPUT: ".opencode/commands/git-commit.md"
+      when:
+        output:
+          step: kfg.detect-agent
+          name: AGENT
+          equals: "opencode"
+    
+    # Pi commands
+    - step: kfg.convert
+      env:
+        ASSET: "kfg.extension.self.commands.git-commit"
+        CONVERTER: "kfg.convert.self.command.pi"
+        OUTPUT: ".pi/prompts/git-commit.md"
+      when:
+        output:
+          step: kfg.detect-agent
+          name: AGENT
+          equals: "pi"
+
+    # # Phase 5: MCP installation (per-asset, per-agent)
+    # # Claude MCP
+    # - step: kfg.convert
+    #   env:
+    #     ASSET: "kfg.extension.self.mcp.context7"
+    #     CONVERTER: "kfg.convert.self.mcp.claude"
+    #     OUTPUT: ".claude/settings.local.json"
+    #   when:
+    #     output:
+    #       step: kfg.detect-agent
+    #       name: AGENT
+    #       equals: "claude"
+
+    # - step: kfg.convert
+    #   env:
+    #     ASSET: "kfg.extension.self.mcp.chrome-devtools"
+    #     CONVERTER: "kfg.convert.self.mcp.claude"
+    #     OUTPUT: ".claude/settings.local.json"
+    #   when:
+    #     output:
+    #       step: kfg.detect-agent
+    #       name: AGENT
+    #       equals: "claude"
+
+    # - step: kfg.convert
+    #   env:
+    #     ASSET: "kfg.extension.self.mcp.playwright"
+    #     CONVERTER: "kfg.convert.self.mcp.claude"
+    #     OUTPUT: ".claude/settings.local.json"
+    #   when:
+    #     output:
+    #       step: kfg.detect-agent
+    #       name: AGENT
+    #       equals: "claude"
+
+    # # Gemini MCP
+    # - step: kfg.convert
+    #   env:
+    #     ASSET: "kfg.extension.self.mcp.context7"
+    #     CONVERTER: "kfg.convert.self.mcp.gemini"
+    #     OUTPUT: ".gemini/settings.json"
+    #   when:
+    #     output:
+    #       step: kfg.detect-agent
+    #       name: AGENT
+    #       equals: "gemini"
+
+    # - step: kfg.convert
+    #   env:
+    #     ASSET: "kfg.extension.self.mcp.chrome-devtools"
+    #     CONVERTER: "kfg.convert.self.mcp.gemini"
+    #     OUTPUT: ".gemini/settings.json"
+    #   when:
+    #     output:
+    #       step: kfg.detect-agent
+    #       name: AGENT
+    #       equals: "gemini"
+
+    # - step: kfg.convert
+    #   env:
+    #     ASSET: "kfg.extension.self.mcp.playwright"
+    #     CONVERTER: "kfg.convert.self.mcp.gemini"
+    #     OUTPUT: ".gemini/settings.json"
+    #   when:
+    #     output:
+    #       step: kfg.detect-agent
+    #       name: AGENT
+    #       equals: "gemini"
+
+    # Opencode MCP
+    # - step: kfg.convert
+    #   env:
+    #     ASSET: "kfg.extension.self.mcp.context7"
+    #     CONVERTER: "kfg.convert.self.mcp.opencode"
+    #     OUTPUT: "opencode.json"
+    #   when:
+    #     output:
+    #       step: kfg.detect-agent
+    #       name: AGENT
+    #       equals: "opencode"
+
+    # - step: kfg.convert
+    #   env:
+    #     ASSET: "kfg.extension.self.mcp.chrome-devtools"
+    #     CONVERTER: "kfg.convert.self.mcp.opencode"
+    #     OUTPUT: "opencode.json"
+    #   when:
+    #     output:
+    #       step: kfg.detect-agent
+    #       name: AGENT
+    #       equals: "opencode"
+
+    # - step: kfg.convert
+    #   env:
+    #     ASSET: "kfg.extension.self.mcp.playwright"
+    #     CONVERTER: "kfg.convert.self.mcp.opencode"
+    #     OUTPUT: "opencode.json"
+    #   when:
+    #     output:
+    #       step: kfg.detect-agent
+    #       name: AGENT
+    #       equals: "opencode"
+
+    # Phase 6: Subagent generation (per-asset, per-agent)
+    # Claude subagents
+    - step: kfg.convert
+      env:
+        ASSET: "kfg.extension.self.subagents.review-minimal"
+        CONVERTER: "kfg.convert.self.subagent.claude"
+        OUTPUT: ".claude/agents/review-minimal.md"
+      when:
+        output:
+          step: kfg.detect-agent
+          name: AGENT
+          equals: "claude"
+
+    # Opencode subagents
+    - step: kfg.convert
+      env:
+        ASSET: "kfg.extension.self.subagents.review-minimal"
+        CONVERTER: "kfg.convert.self.subagent.opencode"
+        OUTPUT: ".opencode/agents/review-minimal.md"
+      when:
+        output:
+          step: kfg.detect-agent
+          name: AGENT
+          equals: "opencode"
+
+    # # Phase 7: Extension skills
+    # - step: kfg.extension.ctx7.install-skills
+    #   when:
+    #     output:
+    #       step: kfg.detect-agent
+    #       name: AGENT
+    #       in: ["claude", "gemini", "opencode", "pi"]
+    #   env:
+    #     AGENT_HOME: "{env:HOME}"
+    #     SKILLS_OUTPUT_DIR: ".skills/context7"
+
+    # - step: kfg.install-skill
+    #   when:
+    #     output:
+    #       step: kfg.detect-agent
+    #       name: AGENT
+    #       equals: "claude"
+    #   env:
+    #     SKILL_ASSET: "kfg.extension.openspec.skill"
+    #     SKILLS_DIR: ".claude/skills"
+
+  after:
+    - step: kfg.cleanup
+      env:
+        PATHS: ".claude .gemini .opencode .pi opencode.json AGENTS.md CLAUDE.md"

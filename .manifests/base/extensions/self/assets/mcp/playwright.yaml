@@ -1,0 +1,26 @@
+apiVersion: kfg.dev/v1alpha1
+kind: Assets
+metadata:
+  name: kfg.extension.self.mcp.playwright
+spec:
+  input:
+    format: yaml
+  data:
+    name: playwright
+    description: Playwright MCP server for end-to-end browser testing
+    enabled: true
+    server:
+      command: npx
+      args:
+        - -y
+        - "@anthropic/mcp-playwright"
+      env: {}
+    tools:
+      - name: browser_navigate
+        description: Navigate to a URL
+      - name: browser_click
+        description: Click an element
+      - name: browser_fill
+        description: Fill a form field
+      - name: browser_screenshot
+        description: Take a screenshot

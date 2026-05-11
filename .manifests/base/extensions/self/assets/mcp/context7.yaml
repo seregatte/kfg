@@ -1,0 +1,22 @@
+apiVersion: kfg.dev/v1alpha1
+kind: Assets
+metadata:
+  name: kfg.extension.self.mcp.context7
+spec:
+  input:
+    format: yaml
+  data:
+    name: context7
+    description: Context7 MCP server for retrieving up-to-date library documentation
+    enabled: true
+    server:
+      command: npx
+      args:
+        - -y
+        - "@upstash/context7-mcp"
+      env: {}
+    tools:
+      - name: get-library-docs
+        description: Fetch documentation for a specific library
+      - name: search-library-docs
+        description: Search documentation across libraries

@@ -284,7 +284,7 @@ func (g *Generator) generateArtifactsDeclaration(code *strings.Builder, rk *reso
 
 // generateGlobalBuildResult generates the build result file setup at global scope.
 // This includes creating the temp file, decoding the base64-encoded YAML, exporting
-// the environment variable, defining the helper function, and registering the EXIT trap.
+// the environment variable, and defining the helper function.
 func (g *Generator) generateGlobalBuildResult(code *strings.Builder) {
 	if g.buildResultYAML == "" {
 		return // No build result to emit
@@ -303,10 +303,6 @@ func (g *Generator) generateGlobalBuildResult(code *strings.Builder) {
 	code.WriteString("__kfg_build_result() {\n")
 	code.WriteString("    cat \"$KFG_BUILD_RESULT_FILE\"\n")
 	code.WriteString("}\n")
-	code.WriteString("\n")
-
-	code.WriteString("# Cleanup trap for build result file on shell exit\n")
-	code.WriteString("trap 'rm -f \"$__kfg_build_result_file\"' EXIT\n")
 	code.WriteString("\n")
 }
 

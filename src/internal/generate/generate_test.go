@@ -283,7 +283,6 @@ spec:
 	assert.Contains(t, code, "KFG_BUILD_RESULT_FILE")
 	assert.Contains(t, code, "__kfg_build_result()")
 	assert.Contains(t, code, "base64 -d")
-	assert.Contains(t, code, "trap 'rm -f \"$__kfg_build_result_file\"' EXIT")
 }
 
 func TestGeneratorNoBuildResultSetup(t *testing.T) {
@@ -370,9 +369,6 @@ func TestGeneratorBuildResultHelper(t *testing.T) {
 	assert.Contains(t, code, "__kfg_build_result() {")
 	assert.Contains(t, code, "cat \"$KFG_BUILD_RESULT_FILE\"")
 	assert.Contains(t, code, "}")
-
-	// Verify cleanup trap uses EXIT (not RETURN) for global scope
-	assert.Contains(t, code, "trap 'rm -f \"$__kfg_build_result_file\"' EXIT")
 }
 
 func TestGeneratorBuildResultWithMultipleCmds(t *testing.T) {
