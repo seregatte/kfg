@@ -1,0 +1,12 @@
+apiVersion: kfg.dev/v1alpha1
+kind: Converter
+metadata:
+  name: kfg.agents.convert.to-json
+spec:
+  input:
+    format: yaml
+  engine:
+    expression: |
+      .
+  output:
+    format: json

@@ -1,0 +1,18 @@
+apiVersion: kfg.dev/v1alpha1
+kind: Step
+metadata:
+  name: kfg.agents.steps.settings
+spec:
+  run: |
+    _kfg.log.info "cleaning up artifacts..."
+    local agent="${AGENT:-}"
+    local output="${OUTPUT:-}"
+    
+    [ -z "$agent" ] && { _kfg.log.warn "no agent specified"; return 0; }
+    
+    kfg apply -f "$KFG_BUILD_RESULT_FILE" --convert kfg.agent.${agent} --use kfg.agents.convert.to-json -o "$output"
+
+  artifacts:
+  env:
+    AGENT: ""
+    OUTPUT: ""

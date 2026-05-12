@@ -6,35 +6,24 @@ spec:
   input:
     format: yaml
   data:
-    model: anthropic/claude-sonnet-4-20250514
-    permissions:
-      allow:
-        - "Read(/{env:HOME}/Downloads/**)"
-        - "Read(/**)"
-        - "Edit(/**)"
-        - "Bash(/**)"
-      deny: []
-    mcpServers:
-      context7:
-        command: "npx"
-        args:
-          - "-y"
-          - "@upstash/context7-mcp"
-      chrome-devtools:
-        command: "npx"
-        args:
-          - "-y"
-          - "@agentdeskai/chrome-devtools-mcp"
-      playwright:
-        command: "npx"
-        args:
-          - "-y"
-          - "@anthropic/mcp-playwright"
-    settings:
-      outputStyle: "stream"
-      autoCompact: true
-    scaffold:
-      settingsFile: ".pi/settings.json"
-      mcpFile: ".pi/settings.json"
-      skillsDir: ".pi/skills"
-      commandsDir: ".pi/commands"
+    defaultProvider: ""
+    defaultModel: ""
+    defaultThinkingLevel: medium
+    theme: dark
+    compaction:
+      enabled: true
+      reserveTokens: 16384
+      keepRecentTokens: 20000
+    retry:
+      enabled: true
+      maxRetries: 3
+      baseDelayMs: 2000
+      maxDelayMs: 60000
+    packages: []
+    extensions: []
+    skills:
+      - ./skills
+    prompts:
+      - ./prompts
+    themes: []
+

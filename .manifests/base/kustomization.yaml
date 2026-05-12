@@ -7,6 +7,8 @@ resources:
   - agents/gemini.yaml
   - agents/opencode.yaml
   - agents/pi.yaml
+  - agents/converters/to-json.yaml
+  - agents/steps/settings.yaml
 
   # Agent commands
   - cmds/agents.yaml
