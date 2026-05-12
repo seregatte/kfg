@@ -14,14 +14,12 @@ resources:
   - cmds/agents.yaml
 
   # Core steps
-  - steps/detect-agent.yaml
-  - steps/copy-context.yaml
-  - steps/materialize-scaffold.yaml
-  - steps/cleanup.yaml
-  - steps/install-skill.yaml
-  - steps/convert.yaml
   - steps/aggregate-mcp.yaml
-  - steps/merge-config.yaml
+  - steps/cleanup.yaml
+  - steps/convert.yaml
+  - steps/copy-context.yaml
+  - steps/detect-agent.yaml
+  - steps/materialize-scaffold.yaml
 
   # Self extension — assets
   - extensions/self/assets/commands/git-commit.yaml
@@ -49,10 +47,3 @@ resources:
   - extensions/ctx7/assets/mcp.yaml
   - extensions/playwright/assets/mcp.yaml
   - extensions/chrome-devtools/assets/mcp.yaml
-  - extensions/openspec/assets/skill.yaml
-  - extensions/gws/assets/skill.yaml
-  - extensions/notebooklm/assets/skill.yaml
-  - extensions/ccr/assets/config.yaml
-
-  # Extension-specific steps
-  - extensions/ctx7/steps/install-skills.yaml
