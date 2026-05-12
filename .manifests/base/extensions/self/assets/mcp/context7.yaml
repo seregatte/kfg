@@ -15,8 +15,3 @@ spec:
         - -y
         - "@upstash/context7-mcp"
       env: {}
-    tools:
-      - name: get-library-docs
-        description: Fetch documentation for a specific library
-      - name: search-library-docs
-        description: Search documentation across libraries

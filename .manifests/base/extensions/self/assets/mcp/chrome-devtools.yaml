@@ -13,12 +13,5 @@ spec:
       command: npx
       args:
         - -y
-        - "@agentdeskai/chrome-devtools-mcp"
+        - chrome-devtools-mcp@latest
       env: {}
-    tools:
-      - name: navigate
-        description: Navigate to a URL
-      - name: screenshot
-        description: Take a screenshot of the current page
-      - name: evaluate
-        description: Execute JavaScript in the browser

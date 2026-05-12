@@ -13,14 +13,6 @@ spec:
       command: npx
       args:
         - -y
-        - "@anthropic/mcp-playwright"
+        - "@playwright/mcp@latest"
+        - "--extension"
       env: {}
-    tools:
-      - name: browser_navigate
-        description: Navigate to a URL
-      - name: browser_click
-        description: Click an element
-      - name: browser_fill
-        description: Fill a form field
-      - name: browser_screenshot
-        description: Take a screenshot
