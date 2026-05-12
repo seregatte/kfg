@@ -77,27 +77,35 @@ The CLI MUST support specific flags.
 
 The CLI MUST validate flag combinations.
 
-#### Scenario: No flags with KFG_KPATH
+#### Scenario: Required flag
 - **WHEN** user runs `kfg apply` without `-k` or `-f`
-- **AND** `KFG_KPATH` is set
-- **THEN** uses `KFG_KPATH` as source
-- **AND** succeeds
-
-#### Scenario: No flags without KFG_KPATH
-- **WHEN** user runs `kfg apply` without `-k` or `-f`
-- **AND** `KFG_KPATH` is not set
-- **THEN** exit code 1
-- **AND** error message indicates source required
+- **THEN** exit code 2 (usage error)
+- **AND** error message indicates required flag
 
 #### Scenario: Mutual exclusion
 - **WHEN** user runs `kfg apply -k path -f file`
 - **THEN** exit code 2 (usage error)
 - **AND** error message indicates flag conflict
 
-#### Scenario: Flag overrides KFG_KPATH
-- **WHEN** user runs `kfg apply -k ./manifests`
-- **AND** `KFG_KPATH=https://github.com/owner/repo` is set
-- **THEN** uses `-k ./manifests` (flag wins)
+#### Scenario: Conversion mode requires both flags
+- **WHEN** user runs `kfg apply -f manifest.yaml --convert prod-servers`
+- **THEN** exit code 2 (usage error)
+- **AND** error message indicates `--convert` and `--use` must be used together
+
+#### Scenario: Conversion mode requires both flags (reverse)
+- **WHEN** user runs `kfg apply -f manifest.yaml --use servers-to-json`
+- **THEN** exit code 2 (usage error)
+- **AND** error message indicates `--convert` and `--use` must be used together
+
+#### Scenario: Conversion flags incompatible with shell flags
+- **WHEN** user runs `kfg apply -f manifest.yaml --convert prod-servers --use servers-to-json -w dev`
+- **THEN** exit code 2 (usage error)
+- **AND** error message indicates `--workflow` cannot be used with `--convert`/`--use`
+
+#### Scenario: Shell flags incompatible with conversion flags
+- **WHEN** user runs `kfg apply -f manifest.yaml -w dev --convert prod-servers --use servers-to-json`
+- **THEN** exit code 2 (usage error)
+- **AND** error message indicates `--convert`/`--use` cannot be used with `--workflow`/`--cmds`
 
 ### Requirement: Shell generation
 

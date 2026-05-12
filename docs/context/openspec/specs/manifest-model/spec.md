@@ -8,11 +8,10 @@ kfg uses YAML manifests to define 3 resource kinds organized in one layer. These
 - Step: Reusable units of work
 - Cmd: Shell function definitions
 - CmdWorkflow: Entry point for shell generation
-
 ## Requirements
 ### Requirement: Resource Types
 
-The manifest model MUST support 3 resource types.
+The manifest model MUST support 5 resource types.
 
 #### Scenario: Step resource
 - GIVEN a manifest file
@@ -34,6 +33,20 @@ The manifest model MUST support 3 resource types.
 - AND the resource is the required entry point for shell generation
 - AND the resource specifies before/after steps
 
+#### Scenario: Assets resource
+- GIVEN a manifest file
+- WHEN a `kind: Assets` resource is defined
+- THEN the resource declares a data payload
+- AND the resource specifies its data format
+- AND the resource is NOT part of shell generation
+
+#### Scenario: Converter resource
+- GIVEN a manifest file
+- WHEN a `kind: Converter` resource is defined
+- THEN the resource declares a data transformation
+- AND the resource specifies input format, yq expression, and output format
+- AND the resource is NOT part of shell generation
+
 ### Requirement: Resource Identity
 
 Each resource MUST have a unique identity within its kind.
@@ -47,8 +60,8 @@ Each resource MUST have a unique identity within its kind.
 #### Scenario: Name constraints
 - GIVEN a resource's `metadata.name`
 - WHEN the name is validated
-- THEN it SHALL be a valid shell identifier
-- AND it SHALL contain only alphanumeric characters, hyphens, and underscores
+- THEN it SHALL be a valid namespace identifier
+- AND it SHALL contain only lowercase alphanumeric characters, hyphens, and dots
 - AND it SHALL not start with a digit
 
 ### Requirement: Step Resource Schema
@@ -290,3 +303,4 @@ Step dependencies MUST be resolved correctly.
 - WHEN execution order is determined
 - THEN the order SHALL be topologically sorted
 - AND tie-breaking SHALL be consistent and deterministic
+
