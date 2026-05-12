@@ -4,38 +4,60 @@ metadata:
   name: kfg.aggregate-mcp
 spec:
   run: |
-    local asset="${ASSET:-}"
+    local assets_str="${ASSETS:-}"
     local converter="${CONVERTER:-}"
     local target="${TARGET:-}"
+    local wrapper_key="${WRAPPER_KEY:-mcpServers}"
 
-    [ -z "$asset" ] && { _kfg.log.warn "no asset specified"; return 0; }
-    [ -z "$converter" ] && { _kfg.log.warn "no converter specified"; return 0; }
-    [ -z "$target" ] && { _kfg.log.warn "no target file specified"; return 0; }
+    [ -z "$assets_str" ] && { _kfg.log.warn "no assets specified"; return 1; }
+    [ -z "$converter" ] && { _kfg.log.warn "no converter specified"; return 1; }
+    [ -z "$target" ] && { _kfg.log.warn "no target file specified"; return 1; }
 
-    local target_dir
-    target_dir=$(dirname "$target")
-    mkdir -p "$target_dir"
+    # Split assets by ":" separator
+    IFS=':' read -ra assets <<< "$assets_str"
+    local count=${#assets[@]}
+    [ "$count" -eq 0 ] && { _kfg.log.warn "empty assets list"; return 1; }
 
-    # Convert the MCP asset to JSON
-    local converted
-    converted=$(kfg apply -f "$KFG_BUILD_RESULT_FILE" --convert "$asset" --use "$converter")
+    mkdir -p "$(dirname "$target")"
 
+    # Phase 1: Convert each asset (collect in memory)
+    local multi_doc=""
+    for asset in "${assets[@]}"; do
+      local converted
+      converted=$(kfg apply -f "$KFG_BUILD_RESULT_FILE" --convert "$asset" --use "$converter")
+      if [ -n "$multi_doc" ]; then
+        multi_doc="${multi_doc}"$'\n---\n'"${converted}"
+      else
+        multi_doc="$converted"
+      fi
+    done
+
+    # Phase 2: Merge all MCPs into single object
+    local merged
+    merged=$(printf '%s\n' "$multi_doc" | kfg apply -f - --with '. as $item ireduce ({}; . * $item)')
+
+    # Phase 3: Wrap in configurable key
+    local wrapped
+    wrapped=$(printf '%s\n' "$merged" | kfg apply -f - --with "{\"${wrapper_key}\": .}")
+
+    # Phase 4: Write to target (atomic)
     if [ -f "$target" ]; then
-      # Target exists: merge converted data into existing file
-      # Use multi-document merge with documentIndex (di) for deep merge
-      printf '%s\n---\n%s\n' "$(cat "$target")" "$converted" \
-        | kfg apply -f - --with 'select(di == 0) * select(di == 1)' -o "$target"
-      _kfg.log.info "merged MCP '${asset}' -> ${target}"
+      # Read-modify-write: deep merge existing with new wrapper key
+      local tmp="${target}.tmp"
+      printf '%s\n---\n%s\n' "$(cat "$target")" "$wrapped" \
+        | kfg apply -f - --with '. as $item ireduce ({}; . * $item)' > "$tmp" \
+        && mv "$tmp" "$target"
+      _kfg.log.info "merged ${count} MCP(s) into ${target}"
     else
-      # Target doesn't exist: write converted data directly
-      echo "$converted" > "$target"
-      _kfg.log.info "created MCP '${asset}' -> ${target}"
+      printf '%s\n' "$wrapped" > "$target"
+      _kfg.log.info "created ${target} with ${count} MCP(s)"
     fi
 
     __kfg_add_artifact "${target}"
   artifacts:
     - mcp-config
   env:
-    ASSET: ""
+    ASSETS: ""
     CONVERTER: ""
     TARGET: ""
+    WRAPPER_KEY: "mcpServers"

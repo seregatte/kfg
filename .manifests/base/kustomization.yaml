@@ -18,6 +18,8 @@ resources:
   - steps/cleanup.yaml
   - steps/install-skill.yaml
   - steps/convert.yaml
+  - steps/aggregate-mcp.yaml
+  - steps/merge-config.yaml
 
   # Self extension — assets
   - extensions/self/assets/commands/git-commit.yaml
@@ -34,6 +36,7 @@ resources:
   - extensions/self/converters/commands/gemini.yaml
   - extensions/self/converters/commands/opencode.yaml
   - extensions/self/converters/commands/pi.yaml
+  - extensions/self/converters/config/opencode.yaml
   - extensions/self/converters/mcp/claude.yaml
   - extensions/self/converters/mcp/opencode.yaml
   - extensions/self/converters/mcp/gemini.yaml

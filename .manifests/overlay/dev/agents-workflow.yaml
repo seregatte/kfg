@@ -123,35 +123,13 @@ spec:
           name: AGENT
           equals: "pi"
 
-    # Phase 5: MCP aggregation (per-agent, incremental merge)
+    # Phase 5: MCP aggregation (batch per-agent)
     # Claude MCPs
     - step: kfg.aggregate-mcp
       env:
-        ASSET: "kfg.extension.self.mcp.context7"
+        ASSETS: "kfg.extension.self.mcp.context7:kfg.extension.self.mcp.chrome-devtools:kfg.extension.self.mcp.playwright"
         CONVERTER: "kfg.convert.self.mcp.claude"
-        TARGET: ".claude/settings.local.json"
-      when:
-        output:
-          step: kfg.detect-agent
-          name: AGENT
-          equals: "claude"
-
-    - step: kfg.aggregate-mcp
-      env:
-        ASSET: "kfg.extension.self.mcp.chrome-devtools"
-        CONVERTER: "kfg.convert.self.mcp.claude"
-        TARGET: ".claude/settings.local.json"
-      when:
-        output:
-          step: kfg.detect-agent
-          name: AGENT
-          equals: "claude"
-
-    - step: kfg.aggregate-mcp
-      env:
-        ASSET: "kfg.extension.self.mcp.playwright"
-        CONVERTER: "kfg.convert.self.mcp.claude"
-        TARGET: ".claude/settings.local.json"
+        TARGET: ".mcp.json"
       when:
         output:
           step: kfg.detect-agent
@@ -161,29 +139,7 @@ spec:
     # Gemini MCPs
     - step: kfg.aggregate-mcp
       env:
-        ASSET: "kfg.extension.self.mcp.context7"
-        CONVERTER: "kfg.convert.self.mcp.gemini"
-        TARGET: ".gemini/settings.json"
-      when:
-        output:
-          step: kfg.detect-agent
-          name: AGENT
-          equals: "gemini"
-
-    - step: kfg.aggregate-mcp
-      env:
-        ASSET: "kfg.extension.self.mcp.chrome-devtools"
-        CONVERTER: "kfg.convert.self.mcp.gemini"
-        TARGET: ".gemini/settings.json"
-      when:
-        output:
-          step: kfg.detect-agent
-          name: AGENT
-          equals: "gemini"
-
-    - step: kfg.aggregate-mcp
-      env:
-        ASSET: "kfg.extension.self.mcp.playwright"
+        ASSETS: "kfg.extension.self.mcp.context7:kfg.extension.self.mcp.chrome-devtools:kfg.extension.self.mcp.playwright"
         CONVERTER: "kfg.convert.self.mcp.gemini"
         TARGET: ".gemini/settings.json"
       when:
@@ -195,30 +151,32 @@ spec:
     # Opencode MCPs
     - step: kfg.aggregate-mcp
       env:
-        ASSET: "kfg.extension.self.mcp.context7"
+        ASSETS: "kfg.extension.self.mcp.context7:kfg.extension.self.mcp.chrome-devtools:kfg.extension.self.mcp.playwright"
         CONVERTER: "kfg.convert.self.mcp.opencode"
         TARGET: "opencode.json"
+        WRAPPER_KEY: "mcp"
       when:
         output:
           step: kfg.detect-agent
           name: AGENT
           equals: "opencode"
 
-    - step: kfg.aggregate-mcp
+    # Merge OpenCode base config (from agent asset) with generated MCP
+    - step: kfg.convert
       env:
-        ASSET: "kfg.extension.self.mcp.chrome-devtools"
-        CONVERTER: "kfg.convert.self.mcp.opencode"
-        TARGET: "opencode.json"
+        ASSET: "kfg.agent.opencode"
+        CONVERTER: "kfg.convert.self.config.opencode"
+        OUTPUT: ".opencode-base.json"
       when:
         output:
           step: kfg.detect-agent
           name: AGENT
           equals: "opencode"
 
-    - step: kfg.aggregate-mcp
+    - step: kfg.merge-config
       env:
-        ASSET: "kfg.extension.self.mcp.playwright"
-        CONVERTER: "kfg.convert.self.mcp.opencode"
+        BASE: ".opencode-base.json"
+        MCP: "opencode.json"
         TARGET: "opencode.json"
       when:
         output:
@@ -275,4 +233,4 @@ spec:
   after:
     - step: kfg.cleanup
       env:
-        PATHS: ".claude .gemini .opencode .pi opencode.json AGENTS.md CLAUDE.md"
+        PATHS: ".claude .gemini .opencode .pi opencode.json .opencode-base.json AGENTS.md CLAUDE.md .mcp.json"

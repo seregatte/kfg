@@ -7,6 +7,6 @@ spec:
     format: yaml
   engine:
     expression: |
-      (.name) as $n | {($n): {"command": .server.command, "args": .server.args, "env": .server.env}}
+      (.name) as $n | {($n): {"type": "local", "command": [.server.command] + .server.args, "environment": .server.env}}
   output:
     format: json
