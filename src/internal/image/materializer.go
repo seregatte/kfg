@@ -62,15 +62,15 @@ func (m *Materializer) Start(imageRef string, workspaceRoot string, instanceName
 	if imageRef == "" {
 		return fmt.Errorf("image reference is required")
 	}
-	
+
 	if workspaceRoot == "" {
 		return fmt.Errorf("workspace root directory is required")
 	}
-	
+
 	if instanceName == "" {
 		return fmt.Errorf("instance name is required")
 	}
-	
+
 	// Validate instance name format (alphanumeric, dashes, underscores)
 	if !isValidInstanceName(instanceName) {
 		return fmt.Errorf("instance name must contain only alphanumeric characters, dashes, and underscores")
@@ -413,13 +413,13 @@ func isValidInstanceName(name string) bool {
 	if name == "" {
 		return false
 	}
-	
+
 	for _, c := range name {
 		if !((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '-' || c == '_') {
 			return false
 		}
 	}
-	
+
 	return true
 }
 

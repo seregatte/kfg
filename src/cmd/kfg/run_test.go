@@ -6,18 +6,18 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/spf13/viper"
-	"github.com/stretchr/testify/assert"
 	"github.com/seregatte/kfg/src/internal/manifest"
 	"github.com/seregatte/kfg/src/internal/resolve"
+	"github.com/spf13/viper"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestParseLaunchArgs(t *testing.T) {
 	tests := []struct {
-		name            string
-		args            []string
-		expectedAgent   string
-		expectedExtra   []string
+		name          string
+		args          []string
+		expectedAgent string
+		expectedExtra []string
 	}{
 		{
 			name:          "no args",
@@ -115,12 +115,12 @@ func TestFindAgent(t *testing.T) {
 	index := resolve.NewIndex(resources)
 
 	tests := []struct {
-		name              string
-		agentName         string
-		workflowFilter    string
-		expectError       bool
-		expectedCmdName   string
-		expectedWorkflow  string
+		name             string
+		agentName        string
+		workflowFilter   string
+		expectError      bool
+		expectedCmdName  string
+		expectedWorkflow string
 	}{
 		{
 			name:             "agent found",
@@ -131,16 +131,16 @@ func TestFindAgent(t *testing.T) {
 			expectedWorkflow: "dev.workflows.dev",
 		},
 		{
-			name:             "agent not found",
-			agentName:        "nonexistent",
-			workflowFilter:   "",
-			expectError:      true,
+			name:           "agent not found",
+			agentName:      "nonexistent",
+			workflowFilter: "",
+			expectError:    true,
 		},
 		{
-			name:             "agent not in specified workflow",
-			agentName:        "claude",
-			workflowFilter:   "dev.workflows.openspec",
-			expectError:      true,
+			name:           "agent not in specified workflow",
+			agentName:      "claude",
+			workflowFilter: "dev.workflows.openspec",
+			expectError:    true,
 		},
 		{
 			name:             "workflow filter match",
@@ -320,20 +320,20 @@ func TestRunCommandStructure(t *testing.T) {
 func TestRunCommandKPathFallback(t *testing.T) {
 	// Reset viper for each test
 	viper.Reset()
-	
+
 	// Test 1: KFG_KPATH is set, no -k or -f flag provided
 	os.Setenv("KFG_KPATH", "./test-manifests")
 	viper.BindEnv("kpath", "KFG_KPATH")
-	
+
 	// The RunE function should use GetKPath() when no -k or -f is provided
 	// We can verify the config getter works
 	assert.Equal(t, "./test-manifests", viper.GetString("kpath"))
 	os.Unsetenv("KFG_KPATH")
-	
+
 	// Test 2: KFG_KPATH is not set, -k flag provided
 	viper.Reset()
 	assert.Equal(t, "", viper.GetString("kpath"))
-	
+
 	// Test 3: KFG_KPATH with GitHub URL
 	os.Setenv("KFG_KPATH", "https://github.com/owner/repo//manifests")
 	viper.BindEnv("kpath", "KFG_KPATH")

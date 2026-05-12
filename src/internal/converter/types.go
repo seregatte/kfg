@@ -5,15 +5,15 @@ package converter
 
 // Converter represents a transformation definition.
 type Converter struct {
-	Name          string
-	InputFormat   string
-	OutputFormat  string
-	Expression    string
+	Name         string
+	InputFormat  string
+	OutputFormat string
+	Expression   string
 }
 
 // Asset represents a data payload for conversion.
 type Asset struct {
-	Name       string
+	Name        string
 	InputFormat string
-	Data       any // map[string]any for YAML, string for other formats
+	Data        any // map[string]any for YAML, string for other formats
 }

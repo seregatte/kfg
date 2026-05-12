@@ -3,7 +3,9 @@
 ## Purpose
 
 Define the `kfg apply` command for applying kustomizations and generating shell code.
+
 ## Requirements
+
 ### Requirement: Apply command syntax
 
 The CLI MUST provide `kfg apply` for shell generation with optional source via `KFG_KPATH`.
@@ -35,6 +37,7 @@ The CLI MUST provide `kfg apply` for shell generation with optional source via `
 - **WHEN** user runs `kfg apply -k https://github.com/owner/repo//manifests?ref=v1.0.0`
 - **THEN** clones specified tag
 - **AND** processes kustomization.yaml
+- **AND** resolves workflow
 - **AND** generates shell functions
 
 #### Scenario: Apply without flags with KFG_KPATH
@@ -73,6 +76,10 @@ The CLI MUST support specific flags.
 - **WHEN** user runs `kfg apply -c claude,gemini`
 - **THEN** generates only specified commands
 
+#### Scenario: Inline expression flag
+- **WHEN** user runs `kfg apply -f manifest.yaml --convert my-asset --with '.data.key'`
+- **THEN** short flag `--with` accepts a raw yq expression
+
 ### Requirement: Flag validation
 
 The CLI MUST validate flag combinations.
@@ -87,15 +94,26 @@ The CLI MUST validate flag combinations.
 - **THEN** exit code 2 (usage error)
 - **AND** error message indicates flag conflict
 
-#### Scenario: Conversion mode requires both flags
+#### Scenario: Conversion mode requires --convert with --use or --with
 - **WHEN** user runs `kfg apply -f manifest.yaml --convert prod-servers`
 - **THEN** exit code 2 (usage error)
-- **AND** error message indicates `--convert` and `--use` must be used together
+- **AND** error message indicates `--convert` requires `--use` or `--with` to be specified
 
-#### Scenario: Conversion mode requires both flags (reverse)
+#### Scenario: --use requires --convert
 - **WHEN** user runs `kfg apply -f manifest.yaml --use servers-to-json`
 - **THEN** exit code 2 (usage error)
-- **AND** error message indicates `--convert` and `--use` must be used together
+- **AND** error message indicates `--use` requires `--convert` to be specified
+
+#### Scenario: --with requires --convert or stdin
+- **WHEN** user runs `kfg apply -f manifest.yaml --with '.data'`
+- **AND** no `--convert` flag is provided
+- **THEN** exit code 2 (usage error)
+- **AND** error message indicates `--with` requires `--convert` or `-f -` (stdin)
+
+#### Scenario: --with and --use mutual exclusivity
+- **WHEN** user runs `kfg apply -f manifest.yaml --convert my-asset --use my-converter --with '.expr'`
+- **THEN** exit code 2 (usage error)
+- **AND** error message indicates flags are mutually exclusive
 
 #### Scenario: Conversion flags incompatible with shell flags
 - **WHEN** user runs `kfg apply -f manifest.yaml --convert prod-servers --use servers-to-json -w dev`
@@ -106,6 +124,81 @@ The CLI MUST validate flag combinations.
 - **WHEN** user runs `kfg apply -f manifest.yaml -w dev --convert prod-servers --use servers-to-json`
 - **THEN** exit code 2 (usage error)
 - **AND** error message indicates `--convert`/`--use` cannot be used with `--workflow`/`--cmds`
+
+### Requirement: Conversion mode with --convert and --use
+
+The CLI SHALL provide a conversion mode accessible via `--convert` and `--use` flags that transforms Asset data using a Converter resource.
+
+#### Scenario: Basic conversion
+- **WHEN** user runs `kfg apply -f manifest.yaml --convert my-asset --use my-converter`
+- **THEN** the Asset with `metadata.name: my-asset` is found
+- **AND** the Converter with `metadata.name: my-converter` is found
+- **AND** the Converter's expression is applied to the Asset data
+- **AND** result is output to stdout in the Converter's specified format
+
+#### Scenario: Conversion with output file
+- **WHEN** user runs `kfg apply -f manifest.yaml --convert my-asset --use my-converter -o output.json`
+- **THEN** conversion result is written to `output.json`
+- **AND** nothing is printed to stdout
+
+#### Scenario: Conversion mode mutual exclusivity with shell generation
+- **WHEN** user runs `kfg apply -f manifest.yaml --convert my-asset --use my-converter -w my-workflow`
+- **THEN** exit code 2 (usage error)
+- **AND** error message indicates conversion mode cannot be used with workflow selection
+
+### Requirement: Raw string input for --convert
+
+The `--convert` flag SHALL accept a raw string literal (JSON/YAML) as input when no Asset with the matching name exists in the loaded manifests. When an Asset with the matching name exists, it SHALL take precedence over raw string interpretation.
+
+#### Scenario: Asset name resolution (existing behavior)
+- **WHEN** user runs `kfg apply -f manifest.yaml --convert my-asset --use my-converter`
+- **AND** an Asset with `metadata.name: my-asset` exists
+- **THEN** the Asset is used for conversion
+
+#### Scenario: Raw JSON string input
+- **WHEN** user runs `kfg apply -f manifest.yaml --convert '{"server":{"command":"npx","args":["-y","pkg"]}}' --use my-converter`
+- **AND** no Asset with matching name exists
+- **THEN** the string is parsed as JSON input
+- **AND** the Converter's expression is applied
+- **AND** result is output
+
+#### Scenario: Raw string with unknown asset and --use fails
+- **WHEN** user runs `kfg apply -f manifest.yaml --convert nonexistent --use my-converter`
+- **AND** no Asset with matching name exists
+- **AND** input is not valid JSON or YAML
+- **THEN** exit code 1
+- **AND** error message indicates asset not found and input is not valid JSON or YAML
+
+### Requirement: Inline expression with --with flag
+
+The CLI SHALL provide a `--with` flag for specifying a raw yq expression without requiring a Converter resource.
+
+#### Scenario: --with with Asset lookup
+- **WHEN** user runs `kfg apply -f manifest.yaml --convert my-asset --with '.data | {"key": .value}'`
+- **THEN** the Asset is loaded by name
+- **AND** the inline expression is applied
+- **AND** output is returned in YAML format
+
+#### Scenario: --with with raw string input
+- **WHEN** user runs `kfg apply -f manifest.yaml --convert '{"key":"value"}' --with '.key'`
+- **THEN** the raw string is parsed as JSON input
+- **AND** the inline expression is applied
+- **AND** output is returned
+
+### Requirement: Stdin pipeline with -f - and --with
+
+When `-f -` is used with `--with`, stdin content SHALL be passed directly to the conversion engine without manifest parsing. This enables multi-document merge operations.
+
+#### Scenario: Stdin data with inline expression
+- **WHEN** user runs `echo '{"a":1}---{"b":2}' | kfg apply -f - --with 'select(di == 0) * select(di == 1)'`
+- **THEN** stdin content is used as multi-document input
+- **AND** the expression is applied
+- **AND** merged result is output
+
+#### Scenario: Stdin with -o output file
+- **WHEN** user runs `echo '{"a":1}---{"b":2}' | kfg apply -f - --with 'select(di == 0) * select(di == 1)' -o merged.json`
+- **THEN** the merged result is written to `merged.json`
+- **AND** nothing is printed to stdout
 
 ### Requirement: Shell generation
 
@@ -181,4 +274,3 @@ The CLI MUST use consistent exit codes.
 - **WHEN** no `-k`, no `-f`, and no `KFG_KPATH`
 - **THEN** exit code 1
 - **AND** error message indicates source required
-

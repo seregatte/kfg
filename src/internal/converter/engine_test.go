@@ -386,3 +386,235 @@ func TestFormatConversion(t *testing.T) {
 		t.Errorf("expected YAML after JSON->YAML conversion, got: %s", result)
 	}
 }
+
+// --- Tasks 2.4-2.6: Raw input and format detection tests ---
+
+func TestDetectFormatJSON(t *testing.T) {
+	engine := NewEngine()
+
+	tests := []struct {
+		name  string
+		input string
+		want  string
+	}{
+		{"object", `{"key":"value"}`, "json"},
+		{"array", `[1,2,3]`, "json"},
+		{"string", `"hello"`, "json"},
+		{"number", `42`, "json"},
+		{"true", `true`, "json"},
+		{"false", `false`, "json"},
+		{"null", `null`, "json"},
+		{"nested", `{"a":{"b":{"c":[1,2,3]}}}`, "json"},
+		{"with whitespace", `  {"key":"value"}  `, "json"},
+		{"negative number", `-123`, "json"},
+		{"float", `3.14`, "json"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := engine.DetectFormat(tt.input)
+			if got != tt.want {
+				t.Errorf("DetectFormat(%q) = %q, want %q", tt.input, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestDetectFormatYAML(t *testing.T) {
+	engine := NewEngine()
+
+	tests := []struct {
+		name  string
+		input string
+		want  string
+	}{
+		{"yaml mapping", "key: value", "yaml"},
+		{"yaml list", "- item1\n- item2", "yaml"},
+		{"yaml multi", "name: test\ncount: 3", "yaml"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := engine.DetectFormat(tt.input)
+			if got != tt.want {
+				t.Errorf("DetectFormat(%q) = %q, want %q", tt.input, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestDetectFormatEdgeCases(t *testing.T) {
+	engine := NewEngine()
+
+	tests := []struct {
+		name  string
+		input string
+		want  string
+	}{
+		{"empty string", "", ""},
+		{"whitespace only", "   ", ""},
+		{"plain text is valid yaml", "this is not json or yaml", "yaml"}, // YAML accepts any scalar
+		{"partial json", `{"key":`, ""},                                  // not valid JSON or YAML
+		{"yaml is valid json too", `{"key": "value"}`, "json"},           // JSON is valid YAML, JSON detected first
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := engine.DetectFormat(tt.input)
+			if got != tt.want {
+				t.Errorf("DetectFormat(%q) = %q, want %q", tt.input, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestApplyRawJSONWithInlineExpression(t *testing.T) {
+	engine := NewEngine()
+
+	result, err := engine.ApplyRaw(`{"key":"value","num":42}`, "json", ".key")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	result = strings.TrimSpace(result)
+	if result != "value" {
+		t.Errorf("expected 'value', got %q", result)
+	}
+}
+
+func TestApplyRawYAMLWithInlineExpression(t *testing.T) {
+	engine := NewEngine()
+
+	result, err := engine.ApplyRaw("name: test\ncount: 3", "yaml", ".name")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	result = strings.TrimSpace(result)
+	if result != "test" {
+		t.Errorf("expected 'test', got %q", result)
+	}
+}
+
+func TestApplyRawJSONMerge(t *testing.T) {
+	engine := NewEngine()
+
+	// Multi-document merge via YAML format (yq's multi-doc processing is YAML-based)
+	// JSON objects are valid YAML, so we can use YAML decoder with --- separators
+	// Use "di" (documentIndex) for multi-document merge
+	input := `{"a":1}` + "\n---\n" + `{"b":2}`
+	result, err := engine.ApplyRaw(input, "yaml", "select(di == 0) * select(di == 1)")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if !strings.Contains(result, "a") || !strings.Contains(result, "b") {
+		t.Errorf("expected merged output with both a and b, got: %s", result)
+	}
+}
+
+func TestApplyRawInvalidExpression(t *testing.T) {
+	engine := NewEngine()
+
+	_, err := engine.ApplyRaw(`{"key":"value"}`, "json", "[invalid")
+	if err == nil {
+		t.Fatal("expected error for invalid expression, got nil")
+	}
+}
+
+func TestApplyRawUnsupportedFormat(t *testing.T) {
+	engine := NewEngine()
+
+	_, err := engine.ApplyRaw(`data`, "invalid_format_xyz", ".")
+	if err == nil {
+		t.Fatal("expected error for unsupported format, got nil")
+	}
+}
+
+func TestApplyRawWithConverter(t *testing.T) {
+	engine := NewEngine()
+
+	conv := Converter{
+		Name:         "raw-conv",
+		InputFormat:  "json",
+		OutputFormat: "yaml",
+		Expression:   ".",
+	}
+
+	result, err := engine.ApplyRawWithConverter(`{"name":"test","count":3}`, "json", conv)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if !strings.Contains(result, "name:") || !strings.Contains(result, "test") {
+		t.Errorf("expected YAML output, got: %s", result)
+	}
+}
+
+func TestApplyRawWithConverterFormatConversion(t *testing.T) {
+	engine := NewEngine()
+
+	// Input is JSON, converter expects YAML, so format conversion should happen
+	conv := Converter{
+		Name:         "format-conv",
+		InputFormat:  "yaml",
+		OutputFormat: "json",
+		Expression:   ".",
+	}
+
+	result, err := engine.ApplyRawWithConverter(`{"name":"test"}`, "json", conv)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Output should be JSON
+	if !strings.Contains(result, `"name"`) || !strings.Contains(result, `"test"`) {
+		t.Errorf("expected JSON output, got: %s", result)
+	}
+}
+
+func TestApplyWithExpression(t *testing.T) {
+	engine := NewEngine()
+
+	asset := Asset{
+		Name:        "test-asset",
+		InputFormat: "yaml",
+		Data: map[string]interface{}{
+			"server": map[string]interface{}{
+				"command": "npx",
+				"args":    []interface{}{"-y", "pkg"},
+			},
+		},
+	}
+
+	// Extract a nested value
+	result, err := engine.ApplyWithExpression(asset, ".server.command")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	result = strings.TrimSpace(result)
+	if result != "npx" {
+		t.Errorf("expected 'npx', got %q", result)
+	}
+}
+
+func TestApplyWithExpressionJSONAsset(t *testing.T) {
+	engine := NewEngine()
+
+	asset := Asset{
+		Name:        "json-asset",
+		InputFormat: "json",
+		Data:        `{"mcpServers":{"context7":{"command":"npx"}}}`,
+	}
+
+	result, err := engine.ApplyWithExpression(asset, ".mcpServers.context7.command")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	result = strings.TrimSpace(result)
+	if result != "npx" {
+		t.Errorf("expected 'npx', got %q", result)
+	}
+}

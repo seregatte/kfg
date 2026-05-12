@@ -39,11 +39,11 @@ type Config struct {
 // DefaultConfig returns the default configuration.
 func DefaultConfig() *Config {
 	return &Config{
-		Verbose:   1,
-		LogFile:   "",
-		LogDir:    "",
-		LogColor:  "auto",
-		StoreDir:  "",
+		Verbose:  1,
+		LogFile:  "",
+		LogDir:   "",
+		LogColor: "auto",
+		StoreDir: "",
 	}
 }
 
@@ -77,11 +77,11 @@ func Initialize() error {
 // Load returns the current configuration from viper.
 func Load() *Config {
 	return &Config{
-		Verbose:   GetVerbose(),
-		LogFile:   viper.GetString("log_file"),
-		LogDir:    viper.GetString("log_dir"),
-		LogColor:  viper.GetString("log_color"),
-		StoreDir:  viper.GetString("store_dir"),
+		Verbose:  GetVerbose(),
+		LogFile:  viper.GetString("log_file"),
+		LogDir:   viper.GetString("log_dir"),
+		LogColor: viper.GetString("log_color"),
+		StoreDir: viper.GetString("store_dir"),
 	}
 }
 

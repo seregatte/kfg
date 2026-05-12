@@ -89,7 +89,7 @@ func TestStartWithExistingFiles(t *testing.T) {
 	// Create workspace with existing file that CONFLICTS with image
 	os.MkdirAll(workspaceDir, 0755)
 	os.WriteFile(filepath.Join(workspaceDir, "new.txt"), []byte("existing content"), 0644) // Conflict!
-	os.WriteFile(filepath.Join(workspaceDir, "unrelated.txt"), []byte("unrelated"), 0644) // No conflict
+	os.WriteFile(filepath.Join(workspaceDir, "unrelated.txt"), []byte("unrelated"), 0644)  // No conflict
 
 	// Start image (should create scoped backup for conflicting file only)
 	materializer := NewMaterializer(storeDir)
@@ -144,7 +144,7 @@ func TestStopWithBackup(t *testing.T) {
 	// Create workspace with existing file that CONFLICTS with image
 	os.MkdirAll(workspaceDir, 0755)
 	originalContent := []byte("original content")
-	os.WriteFile(filepath.Join(workspaceDir, "original.txt"), originalContent, 0644) // Conflict!
+	os.WriteFile(filepath.Join(workspaceDir, "original.txt"), originalContent, 0644)              // Conflict!
 	os.WriteFile(filepath.Join(workspaceDir, "unrelated.txt"), []byte("unrelated content"), 0644) // No conflict
 
 	// Start instance (creates backup for conflicting file)
@@ -394,6 +394,7 @@ func containsStringHelper(s, substr string) bool {
 	}
 	return false
 }
+
 // --- Section 2: Scoped Backup Unit Tests (Tasks 2.8-2.11) ---
 
 func TestComputeArtifactPaths(t *testing.T) {

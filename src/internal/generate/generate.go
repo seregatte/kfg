@@ -89,11 +89,11 @@ func (g *Generator) GenerateKustomization(rk *resolve.ResolvedKustomization) (st
 
 // ResolvedMultiWorkflow represents the resolved output for multi-workflow shell generation.
 type ResolvedMultiWorkflow struct {
-	Name      string                      // Kustomization name (directory name)
-	Shell     string                      // Shell type from first workflow
+	Name      string                         // Kustomization name (directory name)
+	Shell     string                         // Shell type from first workflow
 	Workflows []*resolve.ResolvedCmdWorkflow // All resolved workflows
-	Steps     map[string]*manifest.Step   // All available steps
-	Cmds      map[string]*manifest.Cmd   // All available cmds
+	Steps     map[string]*manifest.Step      // All available steps
+	Cmds      map[string]*manifest.Cmd       // All available cmds
 }
 
 // GenerateAllWorkflows generates shell code from multiple resolved workflows.
@@ -188,7 +188,7 @@ func (g *Generator) generateMultiWorkflowStepFunctions(code *strings.Builder, wo
 		for _, entry := range rw.Cmds {
 			for _, step := range entry.BeforeSteps {
 				allSteps[step.Step.Metadata.Name] = step.Step
-		}
+			}
 			for _, step := range entry.AfterSteps {
 				allSteps[step.Step.Metadata.Name] = step.Step
 			}

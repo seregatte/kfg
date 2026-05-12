@@ -389,10 +389,10 @@ var SupportedOutputFormats = []string{
 
 // Assets represents an Assets resource kind for declaring data payloads.
 type Assets struct {
-	APIVersion string      `yaml:"apiVersion"`
-	Kind       string      `yaml:"kind"`
-	Metadata   Metadata    `yaml:"metadata"`
-	Spec       AssetsSpec  `yaml:"spec"`
+	APIVersion string     `yaml:"apiVersion"`
+	Kind       string     `yaml:"kind"`
+	Metadata   Metadata   `yaml:"metadata"`
+	Spec       AssetsSpec `yaml:"spec"`
 }
 
 // Identity returns the assets' unique identity.
@@ -406,8 +406,8 @@ func (a Assets) Identity() ResourceIdentity {
 
 // AssetsSpec is the spec for Assets resources.
 type AssetsSpec struct {
-	Input InputSpec `yaml:"input"`       // Input format configuration
-	Data  any       `yaml:"data"`        // Data payload (map for YAML, string for others)
+	Input InputSpec `yaml:"input"` // Input format configuration
+	Data  any       `yaml:"data"`  // Data payload (map for YAML, string for others)
 }
 
 // InputSpec defines input format configuration.
@@ -417,10 +417,10 @@ type InputSpec struct {
 
 // Converter represents a Converter resource kind for declaring transformations.
 type Converter struct {
-	APIVersion string         `yaml:"apiVersion"`
-	Kind       string         `yaml:"kind"`
-	Metadata   Metadata       `yaml:"metadata"`
-	Spec       ConverterSpec  `yaml:"spec"`
+	APIVersion string        `yaml:"apiVersion"`
+	Kind       string        `yaml:"kind"`
+	Metadata   Metadata      `yaml:"metadata"`
+	Spec       ConverterSpec `yaml:"spec"`
 }
 
 // Identity returns the converter's unique identity.
@@ -434,9 +434,9 @@ func (c Converter) Identity() ResourceIdentity {
 
 // ConverterSpec is the spec for Converter resources.
 type ConverterSpec struct {
-	Input    InputSpec  `yaml:"input"`    // Input format configuration
-	Engine   EngineSpec `yaml:"engine"`   // Transformation engine configuration
-	Output   OutputSpec `yaml:"output"`   // Output format configuration
+	Input  InputSpec  `yaml:"input"`  // Input format configuration
+	Engine EngineSpec `yaml:"engine"` // Transformation engine configuration
+	Output OutputSpec `yaml:"output"` // Output format configuration
 }
 
 // EngineSpec defines the transformation engine configuration.

@@ -859,17 +859,17 @@ func TestGenerateAllWorkflows_StepDeduplication(t *testing.T) {
 
 	// Create resolved workflows with shared step
 	resolvedWorkflow1 := &resolve.ResolvedCmdWorkflow{
-		Workflow: workflow1,
-		Cmds:     map[string]*resolve.ResolvedCmdEntry{"build": {Cmd: cmd1}},
+		Workflow:    workflow1,
+		Cmds:        map[string]*resolve.ResolvedCmdEntry{"build": {Cmd: cmd1}},
 		BeforeSteps: []resolve.ResolvedStep{{Step: sharedStep, FailurePolicy: "Fail"}},
-		Shell:    "bash",
+		Shell:       "bash",
 	}
 
 	resolvedWorkflow2 := &resolve.ResolvedCmdWorkflow{
-		Workflow: workflow2,
-		Cmds:     map[string]*resolve.ResolvedCmdEntry{"deploy": {Cmd: cmd2}},
+		Workflow:    workflow2,
+		Cmds:        map[string]*resolve.ResolvedCmdEntry{"deploy": {Cmd: cmd2}},
 		BeforeSteps: []resolve.ResolvedStep{{Step: sharedStep, FailurePolicy: "Fail"}},
-		Shell:    "bash",
+		Shell:       "bash",
 	}
 
 	multi := &ResolvedMultiWorkflow{

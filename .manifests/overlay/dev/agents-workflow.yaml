@@ -123,108 +123,108 @@ spec:
           name: AGENT
           equals: "pi"
 
-    # # Phase 5: MCP installation (per-asset, per-agent)
-    # # Claude MCP
-    # - step: kfg.convert
-    #   env:
-    #     ASSET: "kfg.extension.self.mcp.context7"
-    #     CONVERTER: "kfg.convert.self.mcp.claude"
-    #     OUTPUT: ".claude/settings.local.json"
-    #   when:
-    #     output:
-    #       step: kfg.detect-agent
-    #       name: AGENT
-    #       equals: "claude"
+    # Phase 5: MCP aggregation (per-agent, incremental merge)
+    # Claude MCPs
+    - step: kfg.aggregate-mcp
+      env:
+        ASSET: "kfg.extension.self.mcp.context7"
+        CONVERTER: "kfg.convert.self.mcp.claude"
+        TARGET: ".claude/settings.local.json"
+      when:
+        output:
+          step: kfg.detect-agent
+          name: AGENT
+          equals: "claude"
 
-    # - step: kfg.convert
-    #   env:
-    #     ASSET: "kfg.extension.self.mcp.chrome-devtools"
-    #     CONVERTER: "kfg.convert.self.mcp.claude"
-    #     OUTPUT: ".claude/settings.local.json"
-    #   when:
-    #     output:
-    #       step: kfg.detect-agent
-    #       name: AGENT
-    #       equals: "claude"
+    - step: kfg.aggregate-mcp
+      env:
+        ASSET: "kfg.extension.self.mcp.chrome-devtools"
+        CONVERTER: "kfg.convert.self.mcp.claude"
+        TARGET: ".claude/settings.local.json"
+      when:
+        output:
+          step: kfg.detect-agent
+          name: AGENT
+          equals: "claude"
 
-    # - step: kfg.convert
-    #   env:
-    #     ASSET: "kfg.extension.self.mcp.playwright"
-    #     CONVERTER: "kfg.convert.self.mcp.claude"
-    #     OUTPUT: ".claude/settings.local.json"
-    #   when:
-    #     output:
-    #       step: kfg.detect-agent
-    #       name: AGENT
-    #       equals: "claude"
+    - step: kfg.aggregate-mcp
+      env:
+        ASSET: "kfg.extension.self.mcp.playwright"
+        CONVERTER: "kfg.convert.self.mcp.claude"
+        TARGET: ".claude/settings.local.json"
+      when:
+        output:
+          step: kfg.detect-agent
+          name: AGENT
+          equals: "claude"
 
-    # # Gemini MCP
-    # - step: kfg.convert
-    #   env:
-    #     ASSET: "kfg.extension.self.mcp.context7"
-    #     CONVERTER: "kfg.convert.self.mcp.gemini"
-    #     OUTPUT: ".gemini/settings.json"
-    #   when:
-    #     output:
-    #       step: kfg.detect-agent
-    #       name: AGENT
-    #       equals: "gemini"
+    # Gemini MCPs
+    - step: kfg.aggregate-mcp
+      env:
+        ASSET: "kfg.extension.self.mcp.context7"
+        CONVERTER: "kfg.convert.self.mcp.gemini"
+        TARGET: ".gemini/settings.json"
+      when:
+        output:
+          step: kfg.detect-agent
+          name: AGENT
+          equals: "gemini"
 
-    # - step: kfg.convert
-    #   env:
-    #     ASSET: "kfg.extension.self.mcp.chrome-devtools"
-    #     CONVERTER: "kfg.convert.self.mcp.gemini"
-    #     OUTPUT: ".gemini/settings.json"
-    #   when:
-    #     output:
-    #       step: kfg.detect-agent
-    #       name: AGENT
-    #       equals: "gemini"
+    - step: kfg.aggregate-mcp
+      env:
+        ASSET: "kfg.extension.self.mcp.chrome-devtools"
+        CONVERTER: "kfg.convert.self.mcp.gemini"
+        TARGET: ".gemini/settings.json"
+      when:
+        output:
+          step: kfg.detect-agent
+          name: AGENT
+          equals: "gemini"
 
-    # - step: kfg.convert
-    #   env:
-    #     ASSET: "kfg.extension.self.mcp.playwright"
-    #     CONVERTER: "kfg.convert.self.mcp.gemini"
-    #     OUTPUT: ".gemini/settings.json"
-    #   when:
-    #     output:
-    #       step: kfg.detect-agent
-    #       name: AGENT
-    #       equals: "gemini"
+    - step: kfg.aggregate-mcp
+      env:
+        ASSET: "kfg.extension.self.mcp.playwright"
+        CONVERTER: "kfg.convert.self.mcp.gemini"
+        TARGET: ".gemini/settings.json"
+      when:
+        output:
+          step: kfg.detect-agent
+          name: AGENT
+          equals: "gemini"
 
-    # Opencode MCP
-    # - step: kfg.convert
-    #   env:
-    #     ASSET: "kfg.extension.self.mcp.context7"
-    #     CONVERTER: "kfg.convert.self.mcp.opencode"
-    #     OUTPUT: "opencode.json"
-    #   when:
-    #     output:
-    #       step: kfg.detect-agent
-    #       name: AGENT
-    #       equals: "opencode"
+    # Opencode MCPs
+    - step: kfg.aggregate-mcp
+      env:
+        ASSET: "kfg.extension.self.mcp.context7"
+        CONVERTER: "kfg.convert.self.mcp.opencode"
+        TARGET: "opencode.json"
+      when:
+        output:
+          step: kfg.detect-agent
+          name: AGENT
+          equals: "opencode"
 
-    # - step: kfg.convert
-    #   env:
-    #     ASSET: "kfg.extension.self.mcp.chrome-devtools"
-    #     CONVERTER: "kfg.convert.self.mcp.opencode"
-    #     OUTPUT: "opencode.json"
-    #   when:
-    #     output:
-    #       step: kfg.detect-agent
-    #       name: AGENT
-    #       equals: "opencode"
+    - step: kfg.aggregate-mcp
+      env:
+        ASSET: "kfg.extension.self.mcp.chrome-devtools"
+        CONVERTER: "kfg.convert.self.mcp.opencode"
+        TARGET: "opencode.json"
+      when:
+        output:
+          step: kfg.detect-agent
+          name: AGENT
+          equals: "opencode"
 
-    # - step: kfg.convert
-    #   env:
-    #     ASSET: "kfg.extension.self.mcp.playwright"
-    #     CONVERTER: "kfg.convert.self.mcp.opencode"
-    #     OUTPUT: "opencode.json"
-    #   when:
-    #     output:
-    #       step: kfg.detect-agent
-    #       name: AGENT
-    #       equals: "opencode"
+    - step: kfg.aggregate-mcp
+      env:
+        ASSET: "kfg.extension.self.mcp.playwright"
+        CONVERTER: "kfg.convert.self.mcp.opencode"
+        TARGET: "opencode.json"
+      when:
+        output:
+          step: kfg.detect-agent
+          name: AGENT
+          equals: "opencode"
 
     # Phase 6: Subagent generation (per-asset, per-agent)
     # Claude subagents

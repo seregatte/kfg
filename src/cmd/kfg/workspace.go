@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/spf13/cobra"
 	"github.com/seregatte/kfg/src/internal/image"
 	"github.com/seregatte/kfg/src/internal/logger"
+	"github.com/spf13/cobra"
 )
 
 var startImageRef string

@@ -250,7 +250,7 @@ func TestResolveMap(t *testing.T) {
 			},
 			envVars: map[string]string{
 				"EXP_API_KEY": "key123",
-				"KFG_MODEL": "gpt-4",
+				"KFG_MODEL":   "gpt-4",
 			},
 			expected: map[string]string{
 				"API_KEY": "$EXP_API_KEY",
@@ -260,12 +260,12 @@ func TestResolveMap(t *testing.T) {
 		{
 			name: "mixed values in env map",
 			input: map[string]string{
-				"RESOLVED":   "{env:VAR}",
+				"RESOLVED":     "{env:VAR}",
 				"NOT_RESOLVED": "static-value",
 			},
 			envVars: map[string]string{"VAR": "value"},
 			expected: map[string]string{
-				"RESOLVED":   "$VAR",
+				"RESOLVED":     "$VAR",
 				"NOT_RESOLVED": "static-value",
 			},
 		},

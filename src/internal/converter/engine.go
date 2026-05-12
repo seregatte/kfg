@@ -67,6 +67,131 @@ func (e *Engine) Apply(conv Converter, asset Asset) (string, error) {
 	return result, nil
 }
 
+// ApplyWithExpression applies an inline yq expression to an Asset,
+// bypassing Converter resource lookup.
+func (e *Engine) ApplyWithExpression(asset Asset, expression string) (string, error) {
+	// Serialize asset data to string
+	inputData, err := e.serializeAsset(asset)
+	if err != nil {
+		return "", fmt.Errorf("failed to serialize asset data: %w", err)
+	}
+
+	// Get encoder/decoder for the asset's format
+	encoder, err := e.getEncoder(asset.InputFormat)
+	if err != nil {
+		return "", fmt.Errorf("failed to get encoder for format %s: %w", asset.InputFormat, err)
+	}
+	decoder, err := e.getDecoder(asset.InputFormat)
+	if err != nil {
+		return "", fmt.Errorf("failed to get decoder for format %s: %w", asset.InputFormat, err)
+	}
+
+	// Evaluate expression
+	result, err := e.evaluator.Evaluate(expression, inputData, encoder, decoder)
+	if err != nil {
+		return "", fmt.Errorf("expression evaluation failed: %w", err)
+	}
+
+	// Strip ANSI escape codes
+	result = stripANSI(result)
+	return result, nil
+}
+
+// ApplyRaw applies an inline yq expression to a raw string input.
+// The input format must be specified (e.g., "json", "yaml").
+// Uses EvaluateAll to support multi-document input with documentIndex (di).
+func (e *Engine) ApplyRaw(input, inputFormat, expression string) (string, error) {
+	decoder, err := e.getDecoder(inputFormat)
+	if err != nil {
+		return "", fmt.Errorf("failed to get decoder for format %s: %w", inputFormat, err)
+	}
+	encoder, err := e.getEncoder(inputFormat)
+	if err != nil {
+		return "", fmt.Errorf("failed to get encoder for format %s: %w", inputFormat, err)
+	}
+
+	// Use EvaluateAll for multi-document support (enables di/documentIndex expressions)
+	result, err := e.evaluator.EvaluateAll(expression, input, encoder, decoder)
+	if err != nil {
+		return "", fmt.Errorf("expression evaluation failed: %w", err)
+	}
+
+	result = stripANSI(result)
+	return result, nil
+}
+
+// ApplyRawWithConverter applies a Converter to a raw string input.
+// The input format must be specified.
+func (e *Engine) ApplyRawWithConverter(input, inputFormat string, conv Converter) (string, error) {
+	// Convert input format to converter's expected input format if they differ
+	data := input
+	if inputFormat != conv.InputFormat {
+		var err error
+		data, err = e.convertFormat(input, inputFormat, conv.InputFormat)
+		if err != nil {
+			return "", fmt.Errorf("failed to convert format from %s to %s: %w", inputFormat, conv.InputFormat, err)
+		}
+	}
+
+	// Get decoder for converter's input format
+	decoder, err := e.getDecoder(conv.InputFormat)
+	if err != nil {
+		return "", fmt.Errorf("failed to get decoder for format %s: %w", conv.InputFormat, err)
+	}
+
+	// Handle raw output format
+	if conv.OutputFormat == "raw" {
+		return e.evaluateRaw(conv.Expression, data, decoder)
+	}
+
+	// Get encoder for output format
+	encoder, err := e.getEncoder(conv.OutputFormat)
+	if err != nil {
+		return "", fmt.Errorf("failed to get encoder for format %s: %w", conv.OutputFormat, err)
+	}
+
+	result, err := e.evaluator.Evaluate(conv.Expression, data, encoder, decoder)
+	if err != nil {
+		return "", fmt.Errorf("expression evaluation failed: %w", err)
+	}
+
+	result = stripANSI(result)
+	return result, nil
+}
+
+// DetectFormat attempts to detect the format of a raw string input.
+// Returns "json", "yaml", or empty string if detection fails.
+// Multi-document input (containing ---) is detected as "yaml" since
+// yq's multi-document processing is YAML-based.
+func (e *Engine) DetectFormat(input string) string {
+	trimmed := strings.TrimSpace(input)
+	if trimmed == "" {
+		return ""
+	}
+
+	// Detect multi-document input: contains --- separator
+	if strings.Contains(trimmed, "\n---") || strings.Contains(trimmed, "---\n") {
+		return "yaml"
+	}
+
+	// Try JSON first: must start with {, [, or be a JSON literal (true, false, null, number, string)
+	switch trimmed[0] {
+	case '{', '[', 't', 'f', 'n', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '-', '"':
+		var js json.RawMessage
+		if json.Unmarshal([]byte(trimmed), &js) == nil {
+			return "json"
+		}
+	}
+
+	// Try YAML: attempt to unmarshal as YAML
+	var doc yaml.Node
+	if yaml.Unmarshal([]byte(trimmed), &doc) == nil && doc.Kind != 0 {
+		return "yaml"
+	}
+
+	return ""
+}
+
 // stripANSI removes ANSI escape codes from a string.
 func stripANSI(s string) string {
 	var result []rune

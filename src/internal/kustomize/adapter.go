@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"strings"
 
-	yamlv3 "gopkg.in/yaml.v3"
 	"github.com/seregatte/kfg/src/internal/logger"
 	"github.com/seregatte/kfg/src/internal/manifest"
+	yamlv3 "gopkg.in/yaml.v3"
 	"sigs.k8s.io/kustomize/api/resmap"
 )
 

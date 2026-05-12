@@ -17,19 +17,19 @@ type Instruction interface {
 
 // FromInstruction represents a FROM instruction.
 type FromInstruction struct {
-	lineNum    int
-	ImageRef   string // Image reference (e.g., "claude-base:v2" or "scratch")
-	StageName  string // Optional stage name from AS clause (e.g., "claude")
+	lineNum   int
+	ImageRef  string // Image reference (e.g., "claude-base:v2" or "scratch")
+	StageName string // Optional stage name from AS clause (e.g., "claude")
 }
 
 func (i *FromInstruction) Line() int { return i.lineNum }
 
 // CopyInstruction represents a COPY instruction.
 type CopyInstruction struct {
-	lineNum    int
-	FromStage  string   // Optional --from=<stage> flag
-	Sources    []string // Source paths (files or directories)
-	Dest       string   // Destination path
+	lineNum   int
+	FromStage string   // Optional --from=<stage> flag
+	Sources   []string // Source paths (files or directories)
+	Dest      string   // Destination path
 }
 
 func (i *CopyInstruction) Line() int { return i.lineNum }
@@ -69,10 +69,10 @@ func (i *TagInstruction) Line() int { return i.lineNum }
 
 // Stage represents a build stage with its instructions.
 type Stage struct {
-	Name        string       // Stage name (from AS clause or generated)
-	From        *FromInstruction
-	Instructions []Instruction // COPY, ENV, RUN instructions
-	Tag         *TagInstruction // Optional TAG instruction (final stage only)
+	Name         string // Stage name (from AS clause or generated)
+	From         *FromInstruction
+	Instructions []Instruction   // COPY, ENV, RUN instructions
+	Tag          *TagInstruction // Optional TAG instruction (final stage only)
 }
 
 // AST represents the parsed Imagefile abstract syntax tree.

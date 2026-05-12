@@ -8,12 +8,12 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	"github.com/spf13/cobra"
 	"github.com/seregatte/kfg/src/internal/config"
 	"github.com/seregatte/kfg/src/internal/generate"
 	"github.com/seregatte/kfg/src/internal/logger"
 	"github.com/seregatte/kfg/src/internal/manifest"
 	"github.com/seregatte/kfg/src/internal/resolve"
+	"github.com/spf13/cobra"
 )
 
 var (

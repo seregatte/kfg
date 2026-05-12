@@ -1,0 +1,41 @@
+apiVersion: kfg.dev/v1alpha1
+kind: Step
+metadata:
+  name: kfg.aggregate-mcp
+spec:
+  run: |
+    local asset="${ASSET:-}"
+    local converter="${CONVERTER:-}"
+    local target="${TARGET:-}"
+
+    [ -z "$asset" ] && { _kfg.log.warn "no asset specified"; return 0; }
+    [ -z "$converter" ] && { _kfg.log.warn "no converter specified"; return 0; }
+    [ -z "$target" ] && { _kfg.log.warn "no target file specified"; return 0; }
+
+    local target_dir
+    target_dir=$(dirname "$target")
+    mkdir -p "$target_dir"
+
+    # Convert the MCP asset to JSON
+    local converted
+    converted=$(kfg apply -f "$KFG_BUILD_RESULT_FILE" --convert "$asset" --use "$converter")
+
+    if [ -f "$target" ]; then
+      # Target exists: merge converted data into existing file
+      # Use multi-document merge with documentIndex (di) for deep merge
+      printf '%s\n---\n%s\n' "$(cat "$target")" "$converted" \
+        | kfg apply -f - --with 'select(di == 0) * select(di == 1)' -o "$target"
+      _kfg.log.info "merged MCP '${asset}' -> ${target}"
+    else
+      # Target doesn't exist: write converted data directly
+      echo "$converted" > "$target"
+      _kfg.log.info "created MCP '${asset}' -> ${target}"
+    fi
+
+    __kfg_add_artifact "${target}"
+  artifacts:
+    - mcp-config
+  env:
+    ASSET: ""
+    CONVERTER: ""
+    TARGET: ""

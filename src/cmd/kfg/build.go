@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/spf13/cobra"
 	"github.com/seregatte/kfg/src/internal/config"
 	"github.com/seregatte/kfg/src/internal/kustomize"
 	"github.com/seregatte/kfg/src/internal/logger"
+	"github.com/spf13/cobra"
 )
 
 var (

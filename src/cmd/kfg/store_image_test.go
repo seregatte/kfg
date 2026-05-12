@@ -5,9 +5,9 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/seregatte/kfg/src/internal/image"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/seregatte/kfg/src/internal/image"
 )
 
 func TestGetStoreDir_WithOverride(t *testing.T) {

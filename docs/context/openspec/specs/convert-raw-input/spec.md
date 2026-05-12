@@ -48,7 +48,7 @@ The CLI SHALL provide a `--with` flag that accepts a raw yq expression string, b
 When `-f -` is used with `--with`, stdin content SHALL be passed directly to the yq-go engine without manifest parsing. This enables multi-document merge operations.
 
 #### Scenario: Multi-document JSON merge from stdin
-- **WHEN** user pipes two JSON documents separated by `---` to `kfg apply -f - --with 'select(fi == 0) * select(fi == 1)'`
+- **WHEN** user pipes two JSON documents separated by `---` to `kfg apply -f - --with 'select(di == 0) * select(di == 1)'`
 - **THEN** both documents are parsed
 - **AND** the deep merge expression is applied
 - **AND** merged result is output to stdout
@@ -84,6 +84,6 @@ When `--with` is used, the output format SHALL default to YAML. The `-o` flag co
 - **AND** no YAML document markers are present for scalar output
 
 #### Scenario: Multi-document merge outputs single document
-- **WHEN** user merges two documents with `--with 'select(fi == 0) * select(fi == 1)'`
+- **WHEN** user merges two documents with `--with 'select(di == 0) * select(di == 1)'`
 - **THEN** output is a single merged document
 - **AND** no `---` separator appears in output

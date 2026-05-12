@@ -154,10 +154,10 @@ func TestKPathEnvVarIntegration(t *testing.T) {
 // Priority: arg > flag > env var > error
 func TestSourceResolutionPriorityIntegration(t *testing.T) {
 	tests := []struct {
-		name            string
-		args            []string
-		kpathEnv        string
-		expectedSource  string
+		name           string
+		args           []string
+		kpathEnv       string
+		expectedSource string
 	}{
 		{
 			name:           "arg overrides env",

@@ -7,49 +7,49 @@ import (
 
 func TestParseFromInstruction(t *testing.T) {
 	tests := []struct {
-		name     string
-		input    string
-		wantErr  bool
-		wantRef  string
+		name      string
+		input     string
+		wantErr   bool
+		wantRef   string
 		wantStage string
 	}{
 		{
-			name:     "simple FROM",
-			input:    "FROM claude-base:v2",
-			wantErr:  false,
-			wantRef:  "claude-base:v2",
+			name:      "simple FROM",
+			input:     "FROM claude-base:v2",
+			wantErr:   false,
+			wantRef:   "claude-base:v2",
 			wantStage: "stage0",
 		},
 		{
-			name:     "FROM scratch",
-			input:    "FROM scratch",
-			wantErr:  false,
-			wantRef:  "scratch",
+			name:      "FROM scratch",
+			input:     "FROM scratch",
+			wantErr:   false,
+			wantRef:   "scratch",
 			wantStage: "stage0",
 		},
 		{
-			name:     "FROM with AS clause",
-			input:    "FROM claude-base:v2 AS claude",
-			wantErr:  false,
-			wantRef:  "claude-base:v2",
+			name:      "FROM with AS clause",
+			input:     "FROM claude-base:v2 AS claude",
+			wantErr:   false,
+			wantRef:   "claude-base:v2",
 			wantStage: "claude",
 		},
 		{
-			name:     "FROM case insensitive",
-			input:    "from claude-base:v2",
-			wantErr:  false,
-			wantRef:  "claude-base:v2",
+			name:      "FROM case insensitive",
+			input:     "from claude-base:v2",
+			wantErr:   false,
+			wantRef:   "claude-base:v2",
 			wantStage: "stage0",
 		},
 		{
-			name:     "FROM with no image",
-			input:    "FROM",
-			wantErr:  true,
+			name:    "FROM with no image",
+			input:   "FROM",
+			wantErr: true,
 		},
 		{
-			name:     "FROM with AS but no stage name",
-			input:    "FROM claude-base:v2 AS",
-			wantErr:  true,
+			name:    "FROM with AS but no stage name",
+			input:   "FROM claude-base:v2 AS",
+			wantErr: true,
 		},
 	}
 
@@ -89,12 +89,12 @@ func TestParseFromInstruction(t *testing.T) {
 
 func TestParseCopyInstruction(t *testing.T) {
 	tests := []struct {
-		name      string
-		input     string
-		wantErr   bool
-		wantFrom  string
-		wantSrc   []string
-		wantDest  string
+		name     string
+		input    string
+		wantErr  bool
+		wantFrom string
+		wantSrc  []string
+		wantDest string
 	}{
 		{
 			name:     "COPY from workspace",
@@ -120,9 +120,9 @@ func TestParseCopyInstruction(t *testing.T) {
 			wantDest: "./",
 		},
 		{
-			name:     "COPY missing destination",
-			input:    "FROM scratch\nCOPY file1.txt",
-			wantErr:  true,
+			name:    "COPY missing destination",
+			input:   "FROM scratch\nCOPY file1.txt",
+			wantErr: true,
 		},
 		{
 			name:     "COPY case insensitive",
@@ -217,14 +217,14 @@ func TestParseEnvInstruction(t *testing.T) {
 			wantVars: map[string]string{"DEBUG": "true"},
 		},
 		{
-			name:     "ENV missing value",
-			input:    "FROM scratch\nENV DEBUG",
-			wantErr:  true,
+			name:    "ENV missing value",
+			input:   "FROM scratch\nENV DEBUG",
+			wantErr: true,
 		},
 		{
-			name:     "ENV unterminated quote",
-			input:    "FROM scratch\nENV MESSAGE=\"Hello",
-			wantErr:  true,
+			name:    "ENV unterminated quote",
+			input:   "FROM scratch\nENV MESSAGE=\"Hello",
+			wantErr: true,
 		},
 	}
 
@@ -273,33 +273,33 @@ func TestParseEnvInstruction(t *testing.T) {
 
 func TestParseRunInstruction(t *testing.T) {
 	tests := []struct {
-		name      string
-		input     string
-		wantErr   bool
-		wantCmd   string
+		name    string
+		input   string
+		wantErr bool
+		wantCmd string
 	}{
 		{
-			name:     "simple RUN",
-			input:    "FROM scratch\nRUN echo hello",
-			wantErr:  false,
-			wantCmd:  "echo hello",
+			name:    "simple RUN",
+			input:   "FROM scratch\nRUN echo hello",
+			wantErr: false,
+			wantCmd: "echo hello",
 		},
 		{
-			name:     "RUN with shell",
-			input:    "FROM scratch\nRUN sh -c 'cat base.md override.md > AGENTS.md'",
-			wantErr:  false,
-			wantCmd:  "sh -c 'cat base.md override.md > AGENTS.md'",
+			name:    "RUN with shell",
+			input:   "FROM scratch\nRUN sh -c 'cat base.md override.md > AGENTS.md'",
+			wantErr: false,
+			wantCmd: "sh -c 'cat base.md override.md > AGENTS.md'",
 		},
 		{
-			name:     "RUN case insensitive",
-			input:    "FROM scratch\nrun echo hello",
-			wantErr:  false,
-			wantCmd:  "echo hello",
+			name:    "RUN case insensitive",
+			input:   "FROM scratch\nrun echo hello",
+			wantErr: false,
+			wantCmd: "echo hello",
 		},
 		{
-			name:     "RUN empty command",
-			input:    "FROM scratch\nRUN",
-			wantErr:  true,
+			name:    "RUN empty command",
+			input:   "FROM scratch\nRUN",
+			wantErr: true,
 		},
 	}
 
@@ -362,19 +362,19 @@ func TestParseTagInstruction(t *testing.T) {
 			wantTag:  "v1.0",
 		},
 		{
-			name:     "TAG missing tag",
-			input:    "FROM scratch\nTAG my-image",
-			wantErr:  true,
+			name:    "TAG missing tag",
+			input:   "FROM scratch\nTAG my-image",
+			wantErr: true,
 		},
 		{
-			name:     "TAG with no arguments",
-			input:    "FROM scratch\nTAG",
-			wantErr:  true,
+			name:    "TAG with no arguments",
+			input:   "FROM scratch\nTAG",
+			wantErr: true,
 		},
 		{
-			name:     "TAG in non-final stage",
-			input:    "FROM scratch AS base\nTAG base:v1.0\nFROM claude-base:v2",
-			wantErr:  true,
+			name:    "TAG in non-final stage",
+			input:   "FROM scratch AS base\nTAG base:v1.0\nFROM claude-base:v2",
+			wantErr: true,
 		},
 	}
 
@@ -422,27 +422,27 @@ func TestParseTagInstruction(t *testing.T) {
 
 func TestLineContinuation(t *testing.T) {
 	tests := []struct {
-		name     string
-		input    string
-		wantErr  bool
-		wantCmd  string
+		name    string
+		input   string
+		wantErr bool
+		wantCmd string
 	}{
 		{
-			name:     "RUN with continuation",
-			input:    "FROM scratch\nRUN echo hello \\\nworld",
-			wantErr:  false,
-			wantCmd:  "echo hello world",
+			name:    "RUN with continuation",
+			input:   "FROM scratch\nRUN echo hello \\\nworld",
+			wantErr: false,
+			wantCmd: "echo hello world",
 		},
 		{
-			name:     "RUN with multiple continuations",
-			input:    "FROM scratch\nRUN echo \\\nhello \\\nworld",
-			wantErr:  false,
-			wantCmd:  "echo hello world",
+			name:    "RUN with multiple continuations",
+			input:   "FROM scratch\nRUN echo \\\nhello \\\nworld",
+			wantErr: false,
+			wantCmd: "echo hello world",
 		},
 		{
-			name:     "unterminated continuation",
-			input:    "FROM scratch\nRUN echo \\",
-			wantErr:  true,
+			name:    "unterminated continuation",
+			input:   "FROM scratch\nRUN echo \\",
+			wantErr: true,
 		},
 	}
 
@@ -728,13 +728,14 @@ TAG my-config:v1.0`
 		t.Error("final stage missing TAG instruction")
 	}
 }
+
 // 6.7: WORKDIR parsing tests
 func TestParseWorkdirInstruction(t *testing.T) {
 	tests := []struct {
-		name       string
-		input      string
-		wantErr    bool
-		wantPath   string
+		name     string
+		input    string
+		wantErr  bool
+		wantPath string
 	}{
 		{
 			name:     "simple workdir absolute",
@@ -767,9 +768,9 @@ func TestParseWorkdirInstruction(t *testing.T) {
 			wantPath: "/app",
 		},
 		{
-			name:     "workdir empty",
-			input:    "FROM scratch\nWORKDIR",
-			wantErr:  true,
+			name:    "workdir empty",
+			input:   "FROM scratch\nWORKDIR",
+			wantErr: true,
 		},
 		{
 			name:     "workdir dot",
