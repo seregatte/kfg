@@ -21,15 +21,16 @@ load '../test_helper'
 @test "kfg --version output format matches expected pattern" {
     run "${KFG_BIN}" --version
     [ "$status" -eq 0 ]
-    # Expected format: kfg version <semver> (<commit>, <date>)
-    [[ "$output" =~ kfg\ version\ (dev|[0-9]+\.[0-9]+\.[0-9]+)\ \( ]]
+    # Expected format: kfg version <version> (<commit>, <date>)
+    # Version can be: dev, vX.Y.Z, vX.Y.Z-N-gHASH(-dirty), or unknown
+    [[ "$output" =~ kfg\ version\ (v?[0-9]+\.[0-9]+\.[0-9]+[a-z0-9-]*|dev|unknown)\ \( ]]
 }
 
 @test "kfg --version output contains commit hash" {
     run "${KFG_BIN}" --version
     [ "$status" -eq 0 ]
-    # Commit should be either 12-char hex or "unknown"
-    [[ "$output" =~ \([a-f0-9]{12}, ]] || [[ "$output" =~ \(unknown, ]]
+    # Commit should be 7-char short hash or "unknown"
+    [[ "$output" =~ \([a-f0-9]{7}, ]] || [[ "$output" =~ \(unknown, ]]
 }
 
 @test "kfg --version output contains build date" {

@@ -18,8 +18,12 @@ func TestDefaultConfig(t *testing.T) {
 }
 
 func TestInitialize(t *testing.T) {
-	// Reset viper for each test
+	// Reset viper and ensure clean environment for default value checks
 	viper.Reset()
+	os.Unsetenv("KFG_VERBOSE")
+	os.Unsetenv("KFG_LOG_FILE")
+	os.Unsetenv("KFG_LOG_DIR")
+	os.Unsetenv("KFG_LOG_COLOR")
 
 	err := Initialize()
 	assert.NoError(t, err)
@@ -32,8 +36,10 @@ func TestInitialize(t *testing.T) {
 }
 
 func TestLoad(t *testing.T) {
-	// Reset viper
+	// Reset viper and ensure clean environment
 	viper.Reset()
+	os.Unsetenv("KFG_VERBOSE")
+
 	Initialize()
 
 	cfg := Load()
@@ -42,18 +48,18 @@ func TestLoad(t *testing.T) {
 }
 
 func TestGetVerbose(t *testing.T) {
-	// Reset viper
+	// Reset viper and ensure clean environment
 	viper.Reset()
+	os.Unsetenv("KFG_VERBOSE")
 	Initialize()
 
 	// Test default (verbose=1)
 	assert.Equal(t, 1, GetVerbose())
 
 	// Test with environment variable
-	os.Setenv("KFG_VERBOSE", "2")
+	t.Setenv("KFG_VERBOSE", "2")
 	viper.BindEnv("verbose", "KFG_VERBOSE")
 	assert.Equal(t, 2, GetVerbose())
-	os.Unsetenv("KFG_VERBOSE")
 
 	// Test with viper set (string format)
 	viper.Reset()
@@ -75,18 +81,18 @@ func TestGetVerbose(t *testing.T) {
 }
 
 func TestGetLogFile(t *testing.T) {
-	// Reset viper
+	// Reset viper and ensure clean environment
 	viper.Reset()
+	os.Unsetenv("KFG_LOG_FILE")
 	Initialize()
 
 	// Test default
 	assert.Equal(t, "", GetLogFile())
 
 	// Test with environment variable
-	os.Setenv("KFG_LOG_FILE", "/tmp/test.jsonl")
+	t.Setenv("KFG_LOG_FILE", "/tmp/test.jsonl")
 	viper.BindEnv("log_file", "KFG_LOG_FILE")
 	assert.Equal(t, "/tmp/test.jsonl", GetLogFile())
-	os.Unsetenv("KFG_LOG_FILE")
 
 	// Test with viper set
 	viper.Set("log_file", "/var/log/nixai.jsonl")
@@ -94,18 +100,18 @@ func TestGetLogFile(t *testing.T) {
 }
 
 func TestGetLogDir(t *testing.T) {
-	// Reset viper
+	// Reset viper and ensure clean environment
 	viper.Reset()
+	os.Unsetenv("KFG_LOG_DIR")
 	Initialize()
 
 	// Test default
 	assert.Equal(t, "", GetLogDir())
 
 	// Test with environment variable
-	os.Setenv("KFG_LOG_DIR", "/tmp/logs")
+	t.Setenv("KFG_LOG_DIR", "/tmp/logs")
 	viper.BindEnv("log_dir", "KFG_LOG_DIR")
 	assert.Equal(t, "/tmp/logs", GetLogDir())
-	os.Unsetenv("KFG_LOG_DIR")
 
 	// Test with viper set
 	viper.Set("log_dir", "/var/log")
@@ -113,18 +119,18 @@ func TestGetLogDir(t *testing.T) {
 }
 
 func TestGetLogColor(t *testing.T) {
-	// Reset viper
+	// Reset viper and ensure clean environment
 	viper.Reset()
+	os.Unsetenv("KFG_LOG_COLOR")
 	Initialize()
 
 	// Test default
 	assert.Equal(t, "auto", GetLogColor())
 
 	// Test with environment variable
-	os.Setenv("KFG_LOG_COLOR", "always")
+	t.Setenv("KFG_LOG_COLOR", "always")
 	viper.BindEnv("log_color", "KFG_LOG_COLOR")
 	assert.Equal(t, "always", GetLogColor())
-	os.Unsetenv("KFG_LOG_COLOR")
 
 	// Test with viper set
 	viper.Set("log_color", "never")
@@ -132,66 +138,72 @@ func TestGetLogColor(t *testing.T) {
 }
 
 func TestGetVerboseFromEnv(t *testing.T) {
+	// Ensure clean environment before testing defaults
+	os.Unsetenv("KFG_VERBOSE")
+
 	// Test default (no env set)
 	assert.Equal(t, 1, GetVerboseFromEnv())
 
 	// Test with valid value
-	os.Setenv("KFG_VERBOSE", "2")
+	t.Setenv("KFG_VERBOSE", "2")
 	assert.Equal(t, 2, GetVerboseFromEnv())
-	os.Unsetenv("KFG_VERBOSE")
 
 	// Test with invalid value
-	os.Setenv("KFG_VERBOSE", "invalid")
+	t.Setenv("KFG_VERBOSE", "invalid")
 	assert.Equal(t, 0, GetVerboseFromEnv())
-	os.Unsetenv("KFG_VERBOSE")
 
 	// Test with value > 3
-	os.Setenv("KFG_VERBOSE", "10")
+	t.Setenv("KFG_VERBOSE", "10")
 	assert.Equal(t, 3, GetVerboseFromEnv())
-	os.Unsetenv("KFG_VERBOSE")
 }
 
 func TestGetLogColorFromEnv(t *testing.T) {
+	// Ensure clean environment before testing defaults
+	os.Unsetenv("KFG_LOG_COLOR")
+
 	// Test default (no env set)
 	assert.Equal(t, "auto", GetLogColorFromEnv())
 
 	// Test with valid value
-	os.Setenv("KFG_LOG_COLOR", "always")
+	t.Setenv("KFG_LOG_COLOR", "always")
 	assert.Equal(t, "always", GetLogColorFromEnv())
-	os.Unsetenv("KFG_LOG_COLOR")
 
 	// Test with never
-	os.Setenv("KFG_LOG_COLOR", "never")
+	t.Setenv("KFG_LOG_COLOR", "never")
 	assert.Equal(t, "never", GetLogColorFromEnv())
-	os.Unsetenv("KFG_LOG_COLOR")
 }
 
 func TestGetLogFileFromEnv(t *testing.T) {
+	// Ensure clean environment before testing defaults
+	os.Unsetenv("KFG_LOG_FILE")
+
 	// Test default (no env set)
 	assert.Equal(t, "", GetLogFileFromEnv())
 
 	// Test with value
-	os.Setenv("KFG_LOG_FILE", "/tmp/test.jsonl")
+	t.Setenv("KFG_LOG_FILE", "/tmp/test.jsonl")
 	assert.Equal(t, "/tmp/test.jsonl", GetLogFileFromEnv())
-	os.Unsetenv("KFG_LOG_FILE")
 }
 
 func TestGetLogDirFromEnv(t *testing.T) {
+	// Ensure clean environment before testing defaults
+	os.Unsetenv("KFG_LOG_DIR")
+
 	// Test default (no env set)
 	assert.Equal(t, "", GetLogDirFromEnv())
 
 	// Test with value
-	os.Setenv("KFG_LOG_DIR", "/tmp/logs")
+	t.Setenv("KFG_LOG_DIR", "/tmp/logs")
 	assert.Equal(t, "/tmp/logs", GetLogDirFromEnv())
-	os.Unsetenv("KFG_LOG_DIR")
 }
 
 func TestIsDebugMode(t *testing.T) {
-	// Reset viper
+	// Reset viper and ensure clean environment
 	viper.Reset()
+	os.Unsetenv("KFG_VERBOSE")
 	Initialize()
 
-	// Test default (verbose=0, so debug mode is false)
+	// Test default (verbose=1, so debug mode is false)
 	assert.False(t, IsDebugMode())
 
 	// Test with verbose=3 (debug mode is true)
@@ -204,8 +216,9 @@ func TestIsDebugMode(t *testing.T) {
 }
 
 func TestSetDebugMode(t *testing.T) {
-	// Reset viper
+	// Reset viper and ensure clean environment
 	viper.Reset()
+	os.Unsetenv("KFG_VERBOSE")
 	Initialize()
 
 	// Test setting debug mode to true (should set verbose=3)
@@ -220,24 +233,23 @@ func TestSetDebugMode(t *testing.T) {
 }
 
 func TestGetKPath(t *testing.T) {
-	// Reset viper
+	// Reset viper and ensure clean environment
 	viper.Reset()
+	os.Unsetenv("KFG_KPATH")
 	Initialize()
 
 	// Test default (empty)
 	assert.Equal(t, "", GetKPath())
 
 	// Test with environment variable
-	os.Setenv("KFG_KPATH", "./manifests")
+	t.Setenv("KFG_KPATH", "./manifests")
 	viper.BindEnv("kpath", "KFG_KPATH")
 	assert.Equal(t, "./manifests", GetKPath())
-	os.Unsetenv("KFG_KPATH")
 
 	// Test with GitHub URL
-	os.Setenv("KFG_KPATH", "https://github.com/owner/repo//manifests")
+	t.Setenv("KFG_KPATH", "https://github.com/owner/repo//manifests")
 	viper.BindEnv("kpath", "KFG_KPATH")
 	assert.Equal(t, "https://github.com/owner/repo//manifests", GetKPath())
-	os.Unsetenv("KFG_KPATH")
 
 	// Test with viper set
 	viper.Set("kpath", "/path/to/manifests")
@@ -245,16 +257,17 @@ func TestGetKPath(t *testing.T) {
 }
 
 func TestGetKPathFromEnv(t *testing.T) {
+	// Ensure clean environment before testing defaults
+	os.Unsetenv("KFG_KPATH")
+
 	// Test default (no env set)
 	assert.Equal(t, "", GetKPathFromEnv())
 
 	// Test with local path
-	os.Setenv("KFG_KPATH", "./manifests")
+	t.Setenv("KFG_KPATH", "./manifests")
 	assert.Equal(t, "./manifests", GetKPathFromEnv())
-	os.Unsetenv("KFG_KPATH")
 
 	// Test with GitHub URL
-	os.Setenv("KFG_KPATH", "https://github.com/owner/repo//manifests")
+	t.Setenv("KFG_KPATH", "https://github.com/owner/repo//manifests")
 	assert.Equal(t, "https://github.com/owner/repo//manifests", GetKPathFromEnv())
-	os.Unsetenv("KFG_KPATH")
 }

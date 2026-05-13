@@ -38,7 +38,7 @@ clean:
 ## test: Run tests
 test:
 	@echo "Running tests..."
-	cd src && $(GOTEST) -v ./...
+	cd src && KFG_VERBOSE= $(GOTEST) -v ./...
 
 ## test-bats: Run Bats integration tests (canonical entrypoint)
 test-bats: build

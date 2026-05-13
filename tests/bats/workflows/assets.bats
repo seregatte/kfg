@@ -8,6 +8,7 @@ load '../helpers/common'
 
 setup() {
   TMPDIR=$(mktemp -d)
+  unset KFG_VERBOSE
 }
 
 teardown() {
@@ -71,8 +72,8 @@ EOF
 @test "kfg apply --convert --use succeeds" {
   create_manifest
 
-  result="$($KFG_BIN apply -f "$TMPDIR/manifest.yaml" --convert test-data --use to-json)"
-  
+  run $KFG_BIN apply -f "$TMPDIR/manifest.yaml" --convert test-data --use to-json
+
   assert_success
   # Output should be JSON
   assert_output --partial '"server"'
@@ -151,8 +152,8 @@ EOF
 @test "kfg apply --convert --use raw output" {
   create_manifest
 
-  result="$($KFG_BIN apply -f "$TMPDIR/manifest.yaml" --convert test-data --use raw-output)"
-  
+  run $KFG_BIN apply -f "$TMPDIR/manifest.yaml" --convert test-data --use raw-output
+
   assert_success
   assert_output "production"
 }

@@ -607,9 +607,9 @@ func runConversion(resources []manifest.ParsedResource, assetName, converterName
 		return writeOutput(result, outputFile)
 	}
 
-	// Asset not found: only fallback to raw string mode if --with is provided
-	// With --use (no --with), missing asset is an error
-	if inlineExpression == "" {
+	// Asset not found: try raw string fallback
+	// Need either a converter or an inline expression to proceed
+	if inlineExpression == "" && converterName == "" {
 		msg := fmt.Sprintf("Asset not found: %s", assetName)
 		if len(availableAssets) > 0 {
 			msg += fmt.Sprintf(" (available: %s)", strings.Join(availableAssets, ", "))
@@ -617,8 +617,50 @@ func runConversion(resources []manifest.ParsedResource, assetName, converterName
 		return fmt.Errorf("%s", msg)
 	}
 
-	// --with mode: treat --convert value as raw string input
+	// Detect format for raw string fallback
 	inputFormat := engine.DetectFormat(assetName)
+
+	// Without --with, only accept structured JSON (objects/arrays) as raw input.
+	// Plain YAML scalars like "nonexistent" are valid YAML but likely meant
+	// to be asset names — don't silently treat them as raw input.
+	if inlineExpression == "" && inputFormat == "yaml" && !looksLikeStructuredJSON(assetName) {
+		msg := fmt.Sprintf("Asset not found: %s", assetName)
+		if len(availableAssets) > 0 {
+			msg += fmt.Sprintf(" (available: %s)", strings.Join(availableAssets, ", "))
+		}
+		return fmt.Errorf("%s", msg)
+	}
+
+	// 2. Find the converter (needed for both --with and raw input fallback)
+	var foundConverter *manifest.Converter
+	var availableConverters []string
+	for _, res := range resources {
+		if res.Converter != nil {
+			availableConverters = append(availableConverters, res.Converter.Metadata.Name)
+			if res.Converter.Metadata.Name == converterName {
+				foundConverter = res.Converter
+			}
+		}
+	}
+
+	// 3. Raw input with converter (no --with): apply converter's expression to raw string
+	if inlineExpression == "" && inputFormat != "" && converterName != "" {
+		if foundConverter == nil {
+			msg := fmt.Sprintf("Converter not found: %s", converterName)
+			if len(availableConverters) > 0 {
+				msg += fmt.Sprintf(" (available: %s)", strings.Join(availableConverters, ", "))
+			}
+			return fmt.Errorf("%s", msg)
+		}
+		conv := converter.MapManifestConverter(foundConverter)
+		result, err := engine.ApplyRawWithConverter(assetName, inputFormat, conv)
+		if err != nil {
+			return fmt.Errorf("conversion failed: %w", err)
+		}
+		return writeOutput(result, outputFile)
+	}
+
+	// 4. --with mode: detect format, apply raw with inline expression
 	if inputFormat == "" {
 		msg := fmt.Sprintf("Asset not found: %s", assetName)
 		if len(availableAssets) > 0 {
@@ -633,6 +675,14 @@ func runConversion(resources []manifest.ParsedResource, assetName, converterName
 		return fmt.Errorf("conversion failed: %w", err)
 	}
 	return writeOutput(result, outputFile)
+}
+
+// looksLikeStructuredJSON returns true if the input looks like a JSON
+// object or array (not a plain scalar). Used to distinguish intentional
+// raw JSON input from asset names that happen to be valid YAML scalars.
+func looksLikeStructuredJSON(input string) bool {
+	trimmed := strings.TrimSpace(input)
+	return strings.HasPrefix(trimmed, "{") || strings.HasPrefix(trimmed, "[")
 }
 
 // runStdinConversion reads stdin and applies an inline yq expression directly.

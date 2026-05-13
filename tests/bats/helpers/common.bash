@@ -14,6 +14,9 @@ KFG_BIN="${PROJECT_ROOT}/bin/kfg"
 # Setup function - runs before each test
 setup() {
     TEST_TMPDIR="$(mktemp -d)"
+
+    # Prevent environment verbose settings from leaking into test output
+    unset KFG_VERBOSE
 }
 
 # Teardown function - runs after each test
