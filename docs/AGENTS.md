@@ -12,7 +12,7 @@ make build         # Builds to ./bin/kfg
 
 # Test
 make test          # Go unit tests: cd src && go test ./...
-make test-bats     # Bats integration tests: bats tests/bats
+make test-bats     # Bats integration tests: bats tests/bats -r
 
 # Development
 make fmt           # Format code
@@ -122,13 +122,22 @@ Key test areas:
 
 ### Bats Integration Tests
 
-Integration tests are in `tests/bats/`. Run with `make test-bats`.
+Integration tests are in `tests/bats/`. Run with `make test-bats` (canonical entrypoint).
 
-Test files:
-- `cli.bats`: CLI command tests
-- `image_layer_system.bats`: Image build/push/start/stop
-- `imagefile_features.bats`: Imagefile parsing
-- `store_workspace.bats`: Workspace operations
+Directory structure:
+- `cli/`: CLI command tests
+- `workflows/`: Runtime/workflow tests (image, imagefile, store/workspace)
+- `manifests/base/steps/`: Manifest resource tests (mirrored from `.manifests/base/steps/`)
+- `helpers/`: Shared test helpers (common.bash, manifests.bash, vendor/)
+
+Key test files:
+- `cli/cli.bats`: CLI command tests
+- `workflows/image_layer_system.bats`: Image build/push/start/stop
+- `workflows/imagefile_features.bats`: Imagefile parsing
+- `workflows/store_workspace.bats`: Workspace operations
+- `manifests/base/steps/*.bats`: Step validation tests
+
+Compatibility alias: `make test-manifests` runs only manifest tests.
 
 ## Environment Variables
 

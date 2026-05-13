@@ -215,26 +215,6 @@ spec:
           step: kfg.detect-agent
           name: AGENT
           equals: "opencode"
-    # # Phase 7: Extension skills
-    # - step: kfg.extension.ctx7.install-skills
-    #   when:
-    #     output:
-    #       step: kfg.detect-agent
-    #       name: AGENT
-    #       in: ["claude", "gemini", "opencode", "pi"]
-    #   env:
-    #     AGENT_HOME: "{env:HOME}"
-    #     SKILLS_OUTPUT_DIR: ".skills/context7"
-
-    # - step: kfg.install-skill
-    #   when:
-    #     output:
-    #       step: kfg.detect-agent
-    #       name: AGENT
-    #       equals: "claude"
-    #   env:
-    #     SKILL_ASSET: "kfg.extension.openspec.skill"
-    #     SKILLS_DIR: ".claude/skills"
 
   after:
     - name: agents.cleanup
