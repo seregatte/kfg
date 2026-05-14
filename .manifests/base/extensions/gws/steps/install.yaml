@@ -1,0 +1,44 @@
+apiVersion: kfg.dev/v1alpha1
+kind: Step
+metadata:
+  name: kfg.extension.gws.install
+spec:
+  run: |
+    _kfg.log.info "Installing gws skills..."
+
+    # Validate required env vars
+    if [ -z "$SKILL_NAME" ]; then
+      _kfg.log.error "missing required env var: SKILL_NAME"
+      exit 1
+    fi
+
+    if [ -z "$AGENT_FLAG" ]; then
+      _kfg.log.error "missing required env var: AGENT_FLAG"
+      exit 1
+    fi
+
+    if [ -z "$AGENT_HOME" ]; then
+      _kfg.log.error "missing required env var: AGENT_HOME"
+      exit 1
+    fi
+
+    _kfg.log.debug "step:gws.install" "SKILL_NAME=$SKILL_NAME"
+    _kfg.log.debug "step:gws.install" "AGENT_FLAG=$AGENT_FLAG"
+    _kfg.log.debug "step:gws.install" "AGENT_HOME=$AGENT_HOME"
+
+    # Install skill via npx skills add
+    npx skills add "$SKILL_NAME" "$AGENT_FLAG" --copy --yes
+
+    # Copy skills from agent home
+    if [ -d "$AGENT_HOME/skills/" ]; then
+      cp -r "$AGENT_HOME/skills/"* "$OUTPUT_DIR/"
+      _kfg.log.info "step:gws.install" "Copied skills from $AGENT_HOME/skills/"
+    fi
+  env:
+    SKILL_NAME: "googleworkspace/cli"
+    AGENT_FLAG: "--agent claude-code"
+    AGENT_HOME: ".claude"
+    OUTPUT_DIR: ".claude/skills/"
+  output:
+    name: installed
+    type: string

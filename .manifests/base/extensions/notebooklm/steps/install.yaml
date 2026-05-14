@@ -1,0 +1,37 @@
+apiVersion: kfg.dev/v1alpha1
+kind: Step
+metadata:
+  name: kfg.extension.notebooklm.install
+spec:
+  run: |
+    _kfg.log.info "Installing notebooklm skills..."
+
+    # Validate required env vars
+    if [ -z "$INSTALL_CMD" ]; then
+      _kfg.log.error "missing required env var: INSTALL_CMD"
+      exit 1
+    fi
+
+    if [ -z "$AGENT_HOME" ]; then
+      _kfg.log.error "missing required env var: AGENT_HOME"
+      exit 1
+    fi
+
+    _kfg.log.debug "step:notebooklm.install" "INSTALL_CMD=$INSTALL_CMD"
+    _kfg.log.debug "step:notebooklm.install" "AGENT_HOME=$AGENT_HOME"
+
+    # Execute install command
+    eval "$INSTALL_CMD"
+
+    # Copy skills from agent home (notebooklm skills go in a subdirectory)
+    if [ -d "$AGENT_HOME/skills/notebooklm/" ]; then
+      cp -r "$AGENT_HOME/skills/notebooklm/"* "$OUTPUT_DIR/"
+      _kfg.log.info "step:notebooklm.install" "Copied skills from $AGENT_HOME/skills/notebooklm/"
+    fi
+  env:
+    INSTALL_CMD: "notebooklm skill install"
+    AGENT_HOME: ".claude"
+    OUTPUT_DIR: ".claude/skills/"
+  output:
+    name: installed
+    type: string

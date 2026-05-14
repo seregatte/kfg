@@ -1,0 +1,37 @@
+apiVersion: kfg.dev/v1alpha1
+kind: Step
+metadata:
+  name: kfg.extension.openspec.install
+spec:
+  run: |
+    _kfg.log.info "Installing openspec skills..."
+
+    # Validate required env vars
+    if [ -z "$TOOLS_FLAG" ]; then
+      _kfg.log.error "missing required env var: TOOLS_FLAG"
+      exit 1
+    fi
+
+    if [ -z "$AGENT_HOME" ]; then
+      _kfg.log.error "missing required env var: AGENT_HOME"
+      exit 1
+    fi
+
+    _kfg.log.debug "step:openspec.install" "TOOLS_FLAG=$TOOLS_FLAG"
+    _kfg.log.debug "step:openspec.install" "AGENT_HOME=$AGENT_HOME"
+
+    # Execute openspec init command
+    openspec init "$TOOLS_FLAG" --force
+
+    # Copy skills and commands from agent home
+    if [ -d "$AGENT_HOME/skills/" ]; then
+      cp -r "$AGENT_HOME/skills/"* "$OUTPUT_DIR/"
+      _kfg.log.info "step:openspec.install" "Copied skills from $AGENT_HOME/skills/"
+    fi
+  env:
+    TOOLS_FLAG: "--tools=claude"
+    AGENT_HOME: ".claude"
+    OUTPUT_DIR: ".claude/skills/"
+  output:
+    name: installed
+    type: string

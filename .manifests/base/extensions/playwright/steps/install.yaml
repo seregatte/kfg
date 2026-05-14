@@ -1,0 +1,44 @@
+apiVersion: kfg.dev/v1alpha1
+kind: Step
+metadata:
+  name: kfg.extension.playwright.install
+spec:
+  run: |
+    _kfg.log.info "Installing playwright skills..."
+
+    # Validate required env vars
+    if [ -z "$SKILL_NAME" ]; then
+      _kfg.log.error "missing required env var: SKILL_NAME"
+      exit 1
+    fi
+
+    if [ -z "$AGENT_FLAG" ]; then
+      _kfg.log.error "missing required env var: AGENT_FLAG"
+      exit 1
+    fi
+
+    if [ -z "$AGENT_HOME" ]; then
+      _kfg.log.error "missing required env var: AGENT_HOME"
+      exit 1
+    fi
+
+    _kfg.log.debug "step:playwright.install" "SKILL_NAME=$SKILL_NAME"
+    _kfg.log.debug "step:playwright.install" "AGENT_FLAG=$AGENT_FLAG"
+    _kfg.log.debug "step:playwright.install" "AGENT_HOME=$AGENT_HOME"
+
+    # Install skill via npx skills add
+    npx skills add "$SKILL_NAME" "$AGENT_FLAG" --copy --yes
+
+    # Copy skills from agent home
+    if [ -d "$AGENT_HOME/skills/" ]; then
+      cp -r "$AGENT_HOME/skills/"* "$OUTPUT_DIR/"
+      _kfg.log.info "step:playwright.install" "Copied skills from $AGENT_HOME/skills/"
+    fi
+  env:
+    SKILL_NAME: "@playwright/mcp"
+    AGENT_FLAG: "--agent opencode"
+    AGENT_HOME: ".agents"
+    OUTPUT_DIR: ".agents/skills/"
+  output:
+    name: installed
+    type: string
