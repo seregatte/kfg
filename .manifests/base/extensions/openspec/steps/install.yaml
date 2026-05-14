@@ -21,13 +21,7 @@ spec:
     _kfg.log.debug "step:openspec.install" "AGENT_HOME=$AGENT_HOME"
 
     # Execute openspec init command
-    openspec init "$TOOLS_FLAG" --force
-
-    # Copy skills and commands from agent home
-    if [ -d "$AGENT_HOME/skills/" ]; then
-      cp -r "$AGENT_HOME/skills/"* "$OUTPUT_DIR/"
-      _kfg.log.info "step:openspec.install" "Copied skills from $AGENT_HOME/skills/"
-    fi
+    command openspec init "$TOOLS_FLAG" --force
   env:
     TOOLS_FLAG: "--tools=claude"
     AGENT_HOME: ".claude"

@@ -9,6 +9,7 @@ spec:
     - kfg.agent.cmd.gemini
     - kfg.agent.cmd.opencode
     - kfg.agent.cmd.pi
+    - kfg.agent.cmd.openspec
   before:
     # Phase 1 (-90): Ensure gitignore
     - name: agents.ensure-gitignore
@@ -178,7 +179,61 @@ spec:
         FLAGS: "--opencode --yes"
         OUTPUT_DIR: ".pi/skills/"
 
-    # Phase 7 (-50): inject ctx7 context (per-agent)
+    # Phase 7 (-53): openspec install (per-agent)
+    - name: agents.openspec.install.claude
+      step: kfg.extension.openspec.install
+      weight: -53
+      failurePolicy: Ignore
+      when:
+        output:
+          step: kfg.detect-agent
+          name: AGENT
+          equals: "claude"
+      env:
+        TOOLS_FLAG: "--tools=claude"
+        AGENT_HOME: ".claude"
+        OUTPUT_DIR: ".claude/skills/"
+    - name: agents.openspec.install.gemini
+      step: kfg.extension.openspec.install
+      weight: -53
+      failurePolicy: Ignore
+      when:
+        output:
+          step: kfg.detect-agent
+          name: AGENT
+          equals: "gemini"
+      env:
+        TOOLS_FLAG: "--tools=gemini"
+        AGENT_HOME: ".gemini"
+        OUTPUT_DIR: ".gemini/skills/"
+    - name: agents.openspec.install.opencode
+      step: kfg.extension.openspec.install
+      weight: -53
+      failurePolicy: Ignore
+      when:
+        output:
+          step: kfg.detect-agent
+          name: AGENT
+          equals: "opencode"
+      env:
+        TOOLS_FLAG: "--tools=opencode"
+        AGENT_HOME: ".opencode"
+        OUTPUT_DIR: ".opencode/skills/"
+    - name: agents.openspec.install.pi
+      step: kfg.extension.openspec.install
+      weight: -53
+      failurePolicy: Ignore
+      when:
+        output:
+          step: kfg.detect-agent
+          name: AGENT
+          equals: "pi"
+      env:
+        TOOLS_FLAG: "--tools=pi"
+        AGENT_HOME: ".pi"
+        OUTPUT_DIR: ".pi/skills/"
+
+    # Phase 8 (-50): inject ctx7 context (per-agent)
     - name: agents.inject-ctx7-context.claude
       step: kfg.inject-ctx7-context
       weight: -50
@@ -200,7 +255,7 @@ spec:
       env:
         TARGET_FILE: "AGENTS.md"
 
-    # Phase 8 (-45): Commands (per-agent)
+    # Phase 9 (-45): Commands (per-agent)
     - name: agents.convert-claude-commands
       step: kfg.convert
       weight: -45
@@ -250,7 +305,7 @@ spec:
           name: AGENT
           equals: "pi"
 
-    # Phase 9 (-40): MCP (per-agent)
+    # Phase 10 (-40): MCP (per-agent)
     - name: agents.mcp.claude
       step: kfg.aggregate-mcp
       weight: -40
@@ -289,7 +344,7 @@ spec:
           name: AGENT
           equals: "opencode"
 
-    # Phase 10 (-35): Subagent (per-agent)
+    # Phase 11 (-35): Subagent (per-agent)
     - name: agents.subagent.claude
       step: kfg.convert
       weight: -35

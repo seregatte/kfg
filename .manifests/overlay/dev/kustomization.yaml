@@ -3,5 +3,4 @@ kind: Kustomization
 
 resources:
   - ../../base
-  - cmds.yaml
   - agents-workflow.yaml
