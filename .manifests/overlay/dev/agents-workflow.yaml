@@ -10,12 +10,21 @@ spec:
     - kfg.agent.cmd.opencode
     - kfg.agent.cmd.pi
   before:
-    # Phase 1: Detection
+    # Phase 1 (-90): Ensure gitignore
+    - name: agents.ensure-gitignore
+      step: kfg.ensure-gitignore
+      weight: -90
+      env:
+        GITIGNORE_ENTRIES: "/.opencode/:/.gemini/:/.pi/:/opencode.json:/.mcp.json"
+
+    # Phase 2 (-70): Detection
     - name: agents.detect-agent
       step: kfg.detect-agent
-    # Phase 2: Scaffold (per-agent)
+
+    # Phase 3 (-65): Scaffold (per-agent)
     - name: agents.materialize-scaffold-claude
       step: kfg.materialize-scaffold
+      weight: -65
       when:
         output:
           step: kfg.detect-agent
@@ -25,6 +34,7 @@ spec:
         DIRECTORIES: ".claude:.claude/skills:.claude/commands:.claude/subagents"
     - name: agents.materialize-scaffold-opencode
       step: kfg.materialize-scaffold
+      weight: -65
       when:
         output:
           step: kfg.detect-agent
@@ -34,6 +44,7 @@ spec:
         DIRECTORIES: ".opencode:.opencode/skills:.opencode/commands:.opencode/subagents"
     - name: agents.materialize-scaffold-gemini
       step: kfg.materialize-scaffold
+      weight: -65
       when:
         output:
           step: kfg.detect-agent
@@ -43,6 +54,7 @@ spec:
         DIRECTORIES: ".gemini:.gemini/skills:.gemini/commands"
     - name: agents.materialize-scaffold-pi
       step: kfg.materialize-scaffold
+      weight: -65
       when:
         output:
           step: kfg.detect-agent
@@ -50,17 +62,21 @@ spec:
           equals: "pi"
       env:
         DIRECTORIES: ".pi:.pi/skills:.pi/prompts"
+
+    # Phase 4 (-63): Settings (per-agent)
     - name: agents.settings-claude
       step: kfg.agents.steps.settings
+      weight: -63
       when:
         output:
           step: kfg.detect-agent
           name: AGENT
           equals: "claude"
       env:
-        OUTPUT: ".claude/settings.json"   
+        OUTPUT: ".claude/settings.json"
     - name: agents.settings-gemini
       step: kfg.agents.steps.settings
+      weight: -63
       when:
         output:
           step: kfg.detect-agent
@@ -70,6 +86,7 @@ spec:
         OUTPUT: ".gemini/settings.json"
     - name: agents.settings-pi
       step: kfg.agents.steps.settings
+      weight: -63
       when:
         output:
           step: kfg.detect-agent
@@ -79,6 +96,7 @@ spec:
         OUTPUT: ".pi/settings.json"
     - name: agents.settings-opencode
       step: kfg.agents.steps.settings
+      weight: -63
       when:
         output:
           step: kfg.detect-agent
@@ -86,7 +104,8 @@ spec:
           equals: "opencode"
       env:
         OUTPUT: "opencode.json"
-    # Phase 3: Context
+
+    # Phase 5 (-60): Context
     - name: agents.copy-context-claude
       step: kfg.copy-context
       weight: -60
@@ -112,9 +131,79 @@ spec:
           step: kfg.detect-agent
           name: AGENT
           in: ["opencode", "gemini", "pi"]
-    # Phase 4: Commands
+
+    # Phase 6 (-55): ctx7 install (per-agent)
+    - name: agents.ctx7.install.claude
+      step: kfg.extension.ctx7.install
+      weight: -55
+      when:
+        output:
+          step: kfg.detect-agent
+          name: AGENT
+          equals: "claude"
+      env:
+        FLAGS: "--claude --yes"
+        OUTPUT_DIR: ".claude/skills/"
+    - name: agents.ctx7.install.gemini
+      step: kfg.extension.ctx7.install
+      weight: -55
+      when:
+        output:
+          step: kfg.detect-agent
+          name: AGENT
+          equals: "gemini"
+      env:
+        FLAGS: "--opencode --yes"
+        OUTPUT_DIR: ".gemini/skills/"
+    - name: agents.ctx7.install.opencode
+      step: kfg.extension.ctx7.install
+      weight: -55
+      when:
+        output:
+          step: kfg.detect-agent
+          name: AGENT
+          equals: "opencode"
+      env:
+        FLAGS: "--opencode --yes"
+        OUTPUT_DIR: ".opencode/skills/"
+    - name: agents.ctx7.install.pi
+      step: kfg.extension.ctx7.install
+      weight: -55
+      when:
+        output:
+          step: kfg.detect-agent
+          name: AGENT
+          equals: "pi"
+      env:
+        FLAGS: "--opencode --yes"
+        OUTPUT_DIR: ".pi/skills/"
+
+    # Phase 7 (-50): inject ctx7 context (per-agent)
+    - name: agents.inject-ctx7-context.claude
+      step: kfg.inject-ctx7-context
+      weight: -50
+      when:
+        output:
+          step: kfg.detect-agent
+          name: AGENT
+          equals: "claude"
+      env:
+        TARGET_FILE: "CLAUDE.md"
+    - name: agents.inject-ctx7-context.others
+      step: kfg.inject-ctx7-context
+      weight: -50
+      when:
+        output:
+          step: kfg.detect-agent
+          name: AGENT
+          in: ["opencode", "gemini", "pi"]
+      env:
+        TARGET_FILE: "AGENTS.md"
+
+    # Phase 8 (-45): Commands (per-agent)
     - name: agents.convert-claude-commands
       step: kfg.convert
+      weight: -45
       env:
         ASSET: "kfg.extension.self.commands.git-commit"
         CONVERTER: "kfg.convert.self.command.claude"
@@ -126,6 +215,7 @@ spec:
           equals: "claude"
     - name: agents.convert-gemini-commands
       step: kfg.convert
+      weight: -45
       env:
         ASSET: "kfg.extension.self.commands.git-commit"
         CONVERTER: "kfg.convert.self.command.gemini"
@@ -137,6 +227,7 @@ spec:
           equals: "gemini"
     - name: agents.convert-opencode-commands
       step: kfg.convert
+      weight: -45
       env:
         ASSET: "kfg.extension.self.commands.git-commit"
         CONVERTER: "kfg.convert.self.command.opencode"
@@ -148,6 +239,7 @@ spec:
           equals: "opencode"
     - name: agents.convert-pi-commands
       step: kfg.convert
+      weight: -45
       env:
         ASSET: "kfg.extension.self.commands.git-commit"
         CONVERTER: "kfg.convert.self.command.pi"
@@ -157,9 +249,11 @@ spec:
           step: kfg.detect-agent
           name: AGENT
           equals: "pi"
-    # Phase 5: MCP
+
+    # Phase 9 (-40): MCP (per-agent)
     - name: agents.mcp.claude
       step: kfg.aggregate-mcp
+      weight: -40
       env:
         ASSETS: "kfg.extension.self.mcp.context7:kfg.extension.self.mcp.chrome-devtools:kfg.extension.self.mcp.playwright"
         CONVERTER: "kfg.convert.self.mcp.claude"
@@ -169,8 +263,9 @@ spec:
           step: kfg.detect-agent
           name: AGENT
           equals: "claude"
-    - name: agents.mcp.gemini"
+    - name: agents.mcp.gemini
       step: kfg.aggregate-mcp
+      weight: -40
       env:
         ASSETS: "kfg.extension.self.mcp.context7:kfg.extension.self.mcp.chrome-devtools:kfg.extension.self.mcp.playwright"
         CONVERTER: "kfg.convert.self.mcp.gemini"
@@ -182,6 +277,7 @@ spec:
           equals: "gemini"
     - name: agents.mcp.opencode
       step: kfg.aggregate-mcp
+      weight: -40
       env:
         ASSETS: "kfg.extension.self.mcp.context7:kfg.extension.self.mcp.chrome-devtools:kfg.extension.self.mcp.playwright"
         CONVERTER: "kfg.convert.self.mcp.opencode"
@@ -192,9 +288,11 @@ spec:
           step: kfg.detect-agent
           name: AGENT
           equals: "opencode"
-    # Phase 6: Subagent
+
+    # Phase 10 (-35): Subagent (per-agent)
     - name: agents.subagent.claude
       step: kfg.convert
+      weight: -35
       env:
         ASSET: "kfg.extension.self.subagents.review-minimal"
         CONVERTER: "kfg.convert.self.subagent.claude"
@@ -206,6 +304,7 @@ spec:
           equals: "claude"
     - name: agents.subagent.opencode
       step: kfg.convert
+      weight: -35
       env:
         ASSET: "kfg.extension.self.subagents.review-minimal"
         CONVERTER: "kfg.convert.self.subagent.opencode"
@@ -217,7 +316,7 @@ spec:
           equals: "opencode"
 
   after:
-    - name: agents.cleanup
+    - name: agents.cleanup.final
       step: kfg.cleanup
       env:
-        PATHS: ".claude .gemini .opencode .pi opencode.json .opencode-base.json AGENTS.md CLAUDE.md .mcp.json"
+        PATHS: ".agents .claude .gemini .opencode .pi opencode.json .opencode-base.json AGENTS.md CLAUDE.md .mcp.json"

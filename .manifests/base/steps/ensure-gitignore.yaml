@@ -1,0 +1,53 @@
+apiVersion: kfg.dev/v1alpha1
+kind: Step
+metadata:
+  name: kfg.ensure-gitignore
+spec:
+  run: |
+    _kfg.log.debug "step:ensure-gitignore" "GITIGNORE_FILE=${GITIGNORE_FILE:-.gitignore}"
+    _kfg.log.debug "step:ensure-gitignore" "GITIGNORE_ENTRIES=${GITIGNORE_ENTRIES:-}"
+
+    # Exit early if no entries configured
+    if [ -z "$GITIGNORE_ENTRIES" ]; then
+      _kfg.log.info "step:ensure-gitignore" "No entries to add, exiting"
+      exit 0
+    fi
+
+    GITIGNORE_FILE="${GITIGNORE_FILE:-.gitignore}"
+
+    # Create file if it doesn't exist
+    if [ ! -f "$GITIGNORE_FILE" ]; then
+      touch "$GITIGNORE_FILE"
+      _kfg.log.debug "step:ensure-gitignore" "Created $GITIGNORE_FILE"
+    fi
+
+    # Read existing entries into array
+    declare -A existing_entries
+    while IFS= read -r line || [ -n "$line" ]; do
+      # Skip empty lines (bash doesn't allow empty array subscripts)
+      if [ -n "$line" ]; then
+        existing_entries["$line"]=1
+      fi
+    done < "$GITIGNORE_FILE"
+
+    # Add new entries (idempotent, colon-separated like PATH)
+    IFS=':' read -ra new_entries <<< "$GITIGNORE_ENTRIES"
+    for entry in "${new_entries[@]}"; do
+      if [ -z "$entry" ]; then
+        continue
+      fi
+      if [ -z "${existing_entries[$entry]}" ]; then
+        echo "$entry" >> "$GITIGNORE_FILE"
+        _kfg.log.debug "step:ensure-gitignore" "Added entry: $entry"
+      else
+        _kfg.log.debug "step:ensure-gitignore" "Entry already exists: $entry"
+      fi
+    done
+
+    _kfg.log.info "step:ensure-gitignore" "Gitignore updated: $GITIGNORE_FILE"
+  env:
+    GITIGNORE_FILE: ".gitignore"
+    GITIGNORE_ENTRIES: ""
+  output:
+    name: gitignore
+    type: string

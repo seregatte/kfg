@@ -6,39 +6,30 @@ spec:
   run: |
     _kfg.log.info "Installing ctx7 skills..."
 
-    # Validate required env vars
-    if [ -z "$INSTALL_CMD" ]; then
-      _kfg.log.error "missing required env var: INSTALL_CMD"
+    if [ -z "$FLAGS" ]; then
+      _kfg.log.error "missing required env var: FLAGS"
       exit 1
     fi
 
-    if [ -z "$INSTALL_FLAGS" ]; then
-      _kfg.log.error "missing required env var: INSTALL_FLAGS"
-      exit 1
-    fi
-
-    if [ -z "$AGENT_HOME" ]; then
-      _kfg.log.error "missing required env var: AGENT_HOME"
-      exit 1
-    fi
-
-    _kfg.log.debug "step:ctx7.install" "INSTALL_CMD=$INSTALL_CMD"
-    _kfg.log.debug "step:ctx7.install" "INSTALL_FLAGS=$INSTALL_FLAGS"
-    _kfg.log.debug "step:ctx7.install" "AGENT_HOME=$AGENT_HOME"
+    _kfg.log.debug "step:ctx7.install" "FLAGS=$FLAGS"
 
     # Execute install command
-    eval "$INSTALL_CMD $INSTALL_FLAGS"
+    ctx7 setup --cli --project $FLAGS
 
-    # Copy skills from agent home
-    if [ -d "$AGENT_HOME/skills/" ]; then
-      cp -r "$AGENT_HOME/skills/"* "$OUTPUT_DIR/"
-      _kfg.log.info "step:ctx7.install" "Copied skills from $AGENT_HOME/skills/"
+    # If opencode is in FLAGS, move skills before cleanup
+    if echo "$FLAGS" | grep -q "opencode"; then
+      if [ -n "$OUTPUT_DIR" ]; then
+        mkdir -p "$OUTPUT_DIR"
+        _kfg.log.debug "step:ctx7.install" "copying skills to $OUTPUT_DIR"
+        cp -Rf .agents/skills/* "$OUTPUT_DIR/"
+      fi
+      _kfg.log.debug "step:ctx7.install" "removing .agents directory"
+      rm -rf .agents
     fi
+
   env:
-    INSTALL_CMD: "ctx7 setup --cli --project"
-    INSTALL_FLAGS: "--yes"
-    AGENT_HOME: ".claude"
-    OUTPUT_DIR: ".claude/skills/"
+    FLAGS: "--yes"
+    OUTPUT_DIR: ""
   output:
     name: installed
     type: string

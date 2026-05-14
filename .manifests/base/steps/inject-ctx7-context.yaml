@@ -1,0 +1,83 @@
+apiVersion: kfg.dev/v1alpha1
+kind: Step
+metadata:
+  name: kfg.inject-ctx7-context
+spec:
+  run: |
+    AGENT="${AGENT:-}"
+    TARGET_FILE="${TARGET_FILE:-AGENTS.md}"
+
+    _kfg.log.debug "step:inject-ctx7-context" "AGENT=$AGENT"
+    _kfg.log.debug "step:inject-ctx7-context" "TARGET_FILE=$TARGET_FILE"
+
+    # Source file path
+    SOURCE_FILE=".${AGENT}/ctx7-agents.md"
+
+    # Check if source file exists
+    if [ ! -f "$SOURCE_FILE" ]; then
+      _kfg.log.warn "step:inject-ctx7-context" "Source file not found: $SOURCE_FILE"
+      exit 0
+    fi
+
+    # Extract content between <!-- context7 --> markers
+    if ! grep -q '<!-- context7 -->' "$SOURCE_FILE"; then
+      _kfg.log.warn "step:inject-ctx7-context" "No <!-- context7 --> markers found in $SOURCE_FILE"
+      exit 0
+    fi
+
+    # Extract content between markers (handle multiple sections)
+    start_marker="<!-- context7 -->"
+    end_marker="<!-- context7 -->"
+    
+    # Get content between first start and end marker
+    content=$(sed -n '/^<!-- context7 -->$/,/^<!-- context7 -->$/p' "$SOURCE_FILE" | sed '1d;$d')
+
+    if [ -z "$content" ]; then
+      _kfg.log.warn "step:inject-ctx7-context" "No content found between <!-- context7 --> markers in $SOURCE_FILE"
+      exit 0
+    fi
+
+    # Create target file if it doesn't exist
+    if [ ! -f "$TARGET_FILE" ]; then
+      touch "$TARGET_FILE"
+      _kfg.log.debug "step:inject-ctx7-context" "Created $TARGET_FILE"
+    fi
+
+    # Check if target already has context7 section
+    if grep -q '<!-- context7 -->' "$TARGET_FILE"; then
+      # Replace existing section
+      temp_file=$(mktemp)
+      awk -v start="$start_marker" -v end="$end_marker" -v new_content="$content" '
+        BEGIN { in_section = 0; printed = 0 }
+        {
+          if ($0 ~ start && !in_section) {
+            in_section = 1
+            print start
+            print new_content
+            print end
+            printed = 1
+          } else if ($0 ~ end && in_section) {
+            in_section = 0
+          } else if (!in_section) {
+            print
+          }
+        }
+      ' "$TARGET_FILE" > "$temp_file"
+      mv "$temp_file" "$TARGET_FILE"
+      _kfg.log.info "step:inject-ctx7-context" "Replaced ctx7 section in $TARGET_FILE"
+    else
+      # Append new section
+      {
+        echo ""
+        echo "$start_marker"
+        echo "$content"
+        echo "$end_marker"
+      } >> "$TARGET_FILE"
+      _kfg.log.info "step:inject-ctx7-context" "Appended ctx7 section to $TARGET_FILE"
+    fi
+  env:
+    AGENT: ""
+    TARGET_FILE: "AGENTS.md"
+  output:
+    name: injected
+    type: string
