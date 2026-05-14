@@ -3,9 +3,7 @@
 ## Purpose
 
 The kfg CLI is a declarative shell compiler that generates bash functions from YAML manifests. This specification defines conventions for CLI commands and flags.
-
 ## Requirements
-
 ### Requirement: Apply Command
 
 The CLI MUST provide `kfg apply` for shell generation.
@@ -32,23 +30,24 @@ The CLI MUST provide `kfg apply` for shell generation.
 - **WHEN** user runs `kfg apply -k path -c claude,gemini`
 - **THEN** generates only specified commands
 
-### Requirement: Launch Command
+### Requirement: Run Command
 
-The CLI MUST provide `kfg launch` for one-shot agent execution.
+The CLI MUST provide `kfg run` for one-shot agent execution.
 
-#### Scenario: Basic launch
+#### Scenario: Basic run
 - **GIVEN** user wants to run an agent
-- **WHEN** user runs `kfg launch -k .kfg/overlay/dev claude`
+- **WHEN** user runs `kfg run -k .kfg/overlay/dev claude`
 - **THEN** generates shell code, sources it, and executes the agent
 - **AND** agent runs with inherited stdin/stdout/stderr
 - **AND** exits with the agent's exit code
 
-#### Scenario: Launch with extra args
-- **WHEN** user runs `kfg launch -k path claude -- --model gpt-4`
+#### Scenario: Run with extra args
+- **WHEN** user runs `kfg run -k path claude -- --model gpt-4`
 - **THEN** passes `--model gpt-4` to the agent
+- **AND** does not pass the `--` separator itself to the agent
 
-#### Scenario: Launch discovery
-- **WHEN** user runs `kfg launch -k path` without agent name
+#### Scenario: Run discovery
+- **WHEN** user runs `kfg run -k path` without agent name
 - **THEN** lists all available agents
 
 ### Requirement: Build Command
@@ -279,3 +278,4 @@ Error messages MUST be clear and actionable.
 #### Scenario: Command not in workflow
 - **WHEN** cmd not in workflow
 - **THEN** lists valid cmds
+

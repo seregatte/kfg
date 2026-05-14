@@ -6,26 +6,54 @@ spec:
   run: |
     _kfg.log.info "Installing ctx7 skills..."
 
+    # Validate required env vars
     if [ -z "$FLAGS" ]; then
       _kfg.log.error "missing required env var: FLAGS"
       exit 1
     fi
 
+    if [ -z "$OUTPUT_DIR" ]; then
+      _kfg.log.error "missing required env var: OUTPUT_DIR"
+      exit 1
+    fi
+
     _kfg.log.debug "step:ctx7.install" "FLAGS=$FLAGS"
+    _kfg.log.debug "step:ctx7.install" "OUTPUT_DIR=$OUTPUT_DIR"
+
+    # Ensure output directory exists
+    mkdir -p "$OUTPUT_DIR"
 
     # Execute install command
     ctx7 setup --cli --project $FLAGS
 
-    # If opencode is in FLAGS, move skills before cleanup
+    # Determine source directory based on FLAGS
+    SKILL_SRC=""
     if echo "$FLAGS" | grep -q "opencode"; then
-      if [ -n "$OUTPUT_DIR" ]; then
-        mkdir -p "$OUTPUT_DIR"
-        _kfg.log.debug "step:ctx7.install" "copying skills to $OUTPUT_DIR"
-        cp -Rf .agents/skills/* "$OUTPUT_DIR/"
-      fi
+      SKILL_SRC=".agents/skills"
+    elif echo "$FLAGS" | grep -q "claude"; then
+      SKILL_SRC=".claude/skills"
+    elif echo "$FLAGS" | grep -q "gemini"; then
+      SKILL_SRC=".gemini/skills"
+    elif echo "$FLAGS" | grep -q "pi"; then
+      SKILL_SRC=".pi/skills"
+    fi
+
+    # Copy generated skills into OUTPUT_DIR
+    if [ -n "$SKILL_SRC" ] && [ -d "$SKILL_SRC" ]; then
+      cp -Rf "$SKILL_SRC"/* "$OUTPUT_DIR/" 2>/dev/null || true
+      _kfg.log.info "step:ctx7.install" "Copied skills from $SKILL_SRC to $OUTPUT_DIR"
+      __kfg_add_artifact "$OUTPUT_DIR"
+    else
+      _kfg.log.debug "step:ctx7.install" "No skills directory found at $SKILL_SRC"
+    fi
+
+    # Cleanup temporary agent home if opencode
+    if echo "$FLAGS" | grep -q "opencode"; then
       _kfg.log.debug "step:ctx7.install" "removing .agents directory"
       rm -rf .agents
     fi
+
+    _kfg.log.info "step:ctx7.install" "installed"
 
   env:
     FLAGS: "--yes"

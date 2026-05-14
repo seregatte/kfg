@@ -120,6 +120,7 @@ type StepReference struct {
 	When          *WhenClause       `yaml:"when"`          // Optional: contextual condition
 	FailurePolicy string            `yaml:"failurePolicy"` // Optional: "Fail" (default) or "Ignore"
 	Env           map[string]string `yaml:"env"`           // Optional: environment variable overrides
+	Artifacts     []string          `yaml:"artifacts"`     // Optional: additional artifacts produced by this step reference
 }
 
 // WhenClause defines conditional execution.

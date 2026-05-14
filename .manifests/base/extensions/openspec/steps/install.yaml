@@ -17,11 +17,26 @@ spec:
       exit 1
     fi
 
+    if [ -z "$OUTPUT_DIR" ]; then
+      _kfg.log.error "missing required env var: OUTPUT_DIR"
+      exit 1
+    fi
+
     _kfg.log.debug "step:openspec.install" "TOOLS_FLAG=$TOOLS_FLAG"
     _kfg.log.debug "step:openspec.install" "AGENT_HOME=$AGENT_HOME"
+    _kfg.log.debug "step:openspec.install" "OUTPUT_DIR=$OUTPUT_DIR"
+
+    # Ensure output directory exists
+    mkdir -p "$OUTPUT_DIR"
 
     # Execute openspec init command
     command openspec init "$TOOLS_FLAG" --force
+    
+    # Track the created agent home directory
+    __kfg_add_artifact "$AGENT_HOME"
+    
+    _kfg.log.info "step:openspec.install" "installed"
+
   env:
     TOOLS_FLAG: "--tools=claude"
     AGENT_HOME: ".claude"

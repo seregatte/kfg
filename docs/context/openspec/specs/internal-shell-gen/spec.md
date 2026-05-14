@@ -36,6 +36,14 @@ Generated shell code MUST use namespaced internal helpers. The build result help
 - AND all Cmd wrappers can call `__kfg_build_result` without defining the helper themselves
 - AND the helper outputs the contents of `$KFG_BUILD_RESULT_FILE`
 
+#### Scenario: Artifact tracking helpers and variable
+- GIVEN generated shell code with artifact-producing steps
+- WHEN the shell code is examined
+- THEN it declares a global bash array named `KFG_ARTIFACTS`
+- AND it defines `__kfg_add_artifact()` in global scope
+- AND each call to `__kfg_add_artifact()` appends the artifact path to `KFG_ARTIFACTS`
+- AND steps and command wrappers can read `KFG_ARTIFACTS` later in the same shell session for explicit cleanup
+
 ### Requirement: Command Execution Flow
 
 Generated functions MUST execute steps and the command in the correct order. Build result initialization MUST occur before any Cmd wrappers are defined, ensuring all steps can access it.

@@ -7,38 +7,33 @@ spec:
     _kfg.log.info "Installing playwright skills..."
 
     # Validate required env vars
-    if [ -z "$SKILL_NAME" ]; then
-      _kfg.log.error "missing required env var: SKILL_NAME"
+    if [ -z "$OUTPUT_DIR" ]; then
+      _kfg.log.error "missing required env var: OUTPUT_DIR"
       exit 1
     fi
 
-    if [ -z "$AGENT_FLAG" ]; then
-      _kfg.log.error "missing required env var: AGENT_FLAG"
-      exit 1
+    _kfg.log.debug "step:playwright.install" "OUTPUT_DIR=$OUTPUT_DIR"
+
+    # Ensure output directory exists
+    mkdir -p "$OUTPUT_DIR"
+
+    # Install playwright CLI skills (installs to .claude/skills/playwright-cli/)
+    npx --yes @playwright/cli install --skills
+
+    # Copy generated skills to output directory
+    if [ -d ".claude/skills/playwright-cli" ]; then
+      cp -R ".claude/skills/playwright-cli" "$OUTPUT_DIR/" 2>/dev/null || true
+      _kfg.log.info "step:playwright.install" "Copied playwright-cli skills to $OUTPUT_DIR"
     fi
 
-    if [ -z "$AGENT_HOME" ]; then
-      _kfg.log.error "missing required env var: AGENT_HOME"
-      exit 1
-    fi
+    # Cleanup temporary .claude directory if it was created by this install
+    # (only cleanup the playwright-cli subdirectory to avoid affecting other skills)
+    rm -rf ".claude/skills/playwright-cli" 2>/dev/null || true
 
-    _kfg.log.debug "step:playwright.install" "SKILL_NAME=$SKILL_NAME"
-    _kfg.log.debug "step:playwright.install" "AGENT_FLAG=$AGENT_FLAG"
-    _kfg.log.debug "step:playwright.install" "AGENT_HOME=$AGENT_HOME"
+    _kfg.log.info "step:playwright.install" "installed"
 
-    # Install skill via npx skills add
-    npx skills add "$SKILL_NAME" "$AGENT_FLAG" --copy --yes
-
-    # Copy skills from agent home
-    if [ -d "$AGENT_HOME/skills/" ]; then
-      cp -r "$AGENT_HOME/skills/"* "$OUTPUT_DIR/"
-      _kfg.log.info "step:playwright.install" "Copied skills from $AGENT_HOME/skills/"
-    fi
   env:
-    SKILL_NAME: "@playwright/mcp"
-    AGENT_FLAG: "--agent opencode"
-    AGENT_HOME: ".agents"
-    OUTPUT_DIR: ".agents/skills/"
+    OUTPUT_DIR: ".claude/skills/"
   output:
     name: installed
     type: string

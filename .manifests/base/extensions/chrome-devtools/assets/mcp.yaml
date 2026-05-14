@@ -13,7 +13,7 @@ spec:
       command: npx
       args:
         - -y
-        - "@agentdeskai/chrome-devtools-mcp"
+        - chrome-devtools-mcp@latest
       env: {}
     tools:
       - name: navigate

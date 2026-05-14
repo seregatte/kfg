@@ -376,19 +376,33 @@ func (g *Generator) convertWorkflowCmdToTemplateData(rw *resolve.ResolvedCmdWork
 	allArtifacts := entry.Cmd.Spec.Artifacts
 	for _, step := range entry.BeforeSteps {
 		allArtifacts = append(allArtifacts, step.Step.Spec.Artifacts...)
+		allArtifacts = append(allArtifacts, step.Artifacts...)
 	}
 	for _, step := range entry.AfterSteps {
 		allArtifacts = append(allArtifacts, step.Step.Spec.Artifacts...)
+		allArtifacts = append(allArtifacts, step.Artifacts...)
 	}
 	// Also include global workflow steps
 	for _, step := range rw.BeforeSteps {
 		allArtifacts = append(allArtifacts, step.Step.Spec.Artifacts...)
+		allArtifacts = append(allArtifacts, step.Artifacts...)
 	}
 	for _, step := range rw.AfterSteps {
 		allArtifacts = append(allArtifacts, step.Step.Spec.Artifacts...)
+		allArtifacts = append(allArtifacts, step.Artifacts...)
 	}
 	// Sort for determinism
 	sort.Strings(allArtifacts)
+	// Remove duplicates
+	if len(allArtifacts) > 0 {
+		uniqueArtifacts := allArtifacts[:1]
+		for i := 1; i < len(allArtifacts); i++ {
+			if allArtifacts[i] != allArtifacts[i-1] {
+				uniqueArtifacts = append(uniqueArtifacts, allArtifacts[i])
+			}
+		}
+		allArtifacts = uniqueArtifacts
+	}
 
 	data := templates.WorkflowCmdData{
 		CmdName:   entry.Cmd.Metadata.CommandName,
@@ -502,6 +516,15 @@ func (g *Generator) generateWorkflowCmdCode(data templates.WorkflowCmdData) stri
 		sort.Strings(keys)
 		for _, k := range keys {
 			code.WriteString("    export " + k + "=\"" + data.Env[k] + "\"\n")
+		}
+		code.WriteString("\n")
+	}
+
+	// Artifacts from cmd and steps
+	if len(data.Artifacts) > 0 {
+		code.WriteString("    # Artifacts\n")
+		for _, artifact := range data.Artifacts {
+			code.WriteString("    __kfg_add_artifact \"" + artifact + "\"\n")
 		}
 		code.WriteString("\n")
 	}

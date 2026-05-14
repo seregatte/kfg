@@ -12,53 +12,88 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestParseLaunchArgs(t *testing.T) {
+func TestSplitArgsAtDash(t *testing.T) {
 	tests := []struct {
 		name          string
+		dashIndex     int
 		args          []string
 		expectedAgent string
 		expectedExtra []string
 	}{
 		{
 			name:          "no args",
+			dashIndex:     -1,
 			args:          []string{},
 			expectedAgent: "",
 			expectedExtra: []string{},
 		},
 		{
 			name:          "agent only",
+			dashIndex:     -1,
 			args:          []string{"claude"},
 			expectedAgent: "claude",
 			expectedExtra: []string{},
 		},
 		{
-			name:          "agent with extra args",
-			args:          []string{"claude", "--", "--model", "gpt-4"},
+			name:          "agent with forwarded args after --",
+			dashIndex:     1,
+			args:          []string{"claude", "--model", "gpt-4"},
 			expectedAgent: "claude",
 			expectedExtra: []string{"--model", "gpt-4"},
 		},
 		{
-			name:          "separator only",
-			args:          []string{"--", "--model", "gpt-4"},
+			name:          "separator only (no agent before --)",
+			dashIndex:     0,
+			args:          []string{"--model", "gpt-4"},
 			expectedAgent: "",
 			expectedExtra: []string{"--model", "gpt-4"},
 		},
 		{
-			name:          "multiple extra args",
-			args:          []string{"opencode", "--", "--help", "--verbose"},
+			name:          "multiple forwarded args",
+			dashIndex:     1,
+			args:          []string{"opencode", "--help", "--verbose"},
 			expectedAgent: "opencode",
 			expectedExtra: []string{"--help", "--verbose"},
+		},
+		{
+			name:          "single forwarded arg",
+			dashIndex:     1,
+			args:          []string{"claude", "--model"},
+			expectedAgent: "claude",
+			expectedExtra: []string{"--model"},
+		},
+		{
+			name:          "no separator with multiple args (all before --)",
+			dashIndex:     -1,
+			args:          []string{"claude", "extra"},
+			expectedAgent: "claude",
+			expectedExtra: []string{},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Create a dummy command for testing
-			agentName, extraArgs := parseLaunchArgs(nil, tt.args)
+			agentName, extraArgs := splitArgsAtDash(tt.dashIndex, tt.args)
 			assert.Equal(t, tt.expectedAgent, agentName)
 			assert.Equal(t, tt.expectedExtra, extraArgs)
 		})
 	}
+}
+
+func TestParseLaunchArgs(t *testing.T) {
+	// parseLaunchArgs delegates to splitArgsAtDash using cmd.ArgsLenAtDash().
+	// When cmd is nil (unit test convenience), dashIndex defaults to -1.
+	t.Run("nil cmd returns first arg as agent", func(t *testing.T) {
+		agentName, extraArgs := parseLaunchArgs(nil, []string{"claude"})
+		assert.Equal(t, "claude", agentName)
+		assert.Empty(t, extraArgs)
+	})
+
+	t.Run("nil cmd with empty args", func(t *testing.T) {
+		agentName, extraArgs := parseLaunchArgs(nil, []string{})
+		assert.Empty(t, agentName)
+		assert.Empty(t, extraArgs)
+	})
 }
 
 func TestFindAgent(t *testing.T) {

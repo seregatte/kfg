@@ -13,7 +13,8 @@ spec:
       command: npx
       args:
         - -y
-        - "@anthropic/mcp-playwright"
+        - "@playwright/mcp@latest"
+        - "--extension"
       env: {}
     tools:
       - name: browser_navigate

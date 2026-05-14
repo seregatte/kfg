@@ -131,31 +131,41 @@ func init() {
 	runCmd.Flags().StringVarP(&runCmds, "cmds", "c", "", "Comma-separated list of cmds (overrides agent matching)")
 }
 
-// parseLaunchArgs splits args at '--' into agent name and extra args.
+// parseLaunchArgs splits args using Cobra's dash boundary into agent name and extra args.
+// When the user passes `--`, Cobra strips the separator and records the split point
+// via cmd.ArgsLenAtDash(). This function uses that metadata as the source of truth.
 // Returns (agentName, extraArgs).
 func parseLaunchArgs(cmd *cobra.Command, args []string) (string, []string) {
-	// Find the separator '--'
-	separatorIndex := -1
-	for i, arg := range args {
-		if arg == "--" {
-			separatorIndex = i
-			break
-		}
+	dashIndex := -1
+	if cmd != nil {
+		dashIndex = cmd.ArgsLenAtDash()
 	}
+	return splitArgsAtDash(dashIndex, args)
+}
 
-	if separatorIndex == -1 {
-		// No separator found - first arg is agent name, no extra args
+// splitArgsAtDash splits args at the dash boundary into agent name and extra args.
+// dashIndex: -1 if no `--` was present, 0 if `--` was before any positional args,
+// or > 0 if there were positional args before `--`.
+// Returns (agentName, extraArgs).
+func splitArgsAtDash(dashIndex int, args []string) (string, []string) {
+	if dashIndex == -1 {
+		// No separator - first arg is agent name, no extra args
 		if len(args) > 0 {
 			return args[0], []string{}
 		}
 		return "", []string{}
 	}
 
-	// Separator found - first arg before separator is agent name, rest are extra args
-	if separatorIndex > 0 {
-		return args[0], args[separatorIndex+1:]
+	// dashIndex == 0: separator was before any positional args, all args are extra
+	if dashIndex == 0 {
+		return "", args
 	}
-	return "", args[separatorIndex+1:]
+
+	// dashIndex > 0: agent is args[0], extra args start at the dash boundary
+	if len(args) > 0 {
+		return args[0], args[dashIndex:]
+	}
+	return "", []string{}
 }
 
 // findAgent matches an agent by commandName and finds its workflow.

@@ -21,6 +21,7 @@ spec:
     # Phase 2 (-70): Detection
     - name: agents.detect-agent
       step: kfg.detect-agent
+      weight: -70
 
     # Phase 3 (-65): Scaffold (per-agent)
     - name: agents.materialize-scaffold-claude
@@ -33,6 +34,8 @@ spec:
           equals: "claude"
       env:
         DIRECTORIES: ".claude:.claude/skills:.claude/commands:.claude/subagents"
+      artifacts:
+        - .claude/
     - name: agents.materialize-scaffold-opencode
       step: kfg.materialize-scaffold
       weight: -65
@@ -43,6 +46,8 @@ spec:
           equals: "opencode"
       env:
         DIRECTORIES: ".opencode:.opencode/skills:.opencode/commands:.opencode/subagents"
+      artifacts:
+        - .opencode/
     - name: agents.materialize-scaffold-gemini
       step: kfg.materialize-scaffold
       weight: -65
@@ -53,6 +58,8 @@ spec:
           equals: "gemini"
       env:
         DIRECTORIES: ".gemini:.gemini/skills:.gemini/commands"
+      artifacts:
+        - .gemini/
     - name: agents.materialize-scaffold-pi
       step: kfg.materialize-scaffold
       weight: -65
@@ -63,7 +70,8 @@ spec:
           equals: "pi"
       env:
         DIRECTORIES: ".pi:.pi/skills:.pi/prompts"
-
+      artifacts:
+        - .pi/
     # Phase 4 (-63): Settings (per-agent)
     - name: agents.settings-claude
       step: kfg.agents.steps.settings
@@ -105,6 +113,8 @@ spec:
           equals: "opencode"
       env:
         OUTPUT: "opencode.json"
+      artifacts:
+        - opencode.json
 
     # Phase 5 (-60): Context
     - name: agents.copy-context-claude
@@ -119,6 +129,8 @@ spec:
           step: kfg.detect-agent
           name: AGENT
           equals: "claude"
+      artifacts:
+        - CLAUDE.md
     - name: agents.copy-context-others
       step: kfg.copy-context
       weight: -60
@@ -310,7 +322,7 @@ spec:
       step: kfg.aggregate-mcp
       weight: -40
       env:
-        ASSETS: "kfg.extension.self.mcp.context7:kfg.extension.self.mcp.chrome-devtools:kfg.extension.self.mcp.playwright"
+        ASSETS: "kfg.extension.ctx7.mcp:kfg.extension.chrome-devtools.mcp:kfg.extension.playwright.mcp"
         CONVERTER: "kfg.convert.self.mcp.claude"
         TARGET: ".mcp.json"
       when:
@@ -318,11 +330,13 @@ spec:
           step: kfg.detect-agent
           name: AGENT
           equals: "claude"
+      artifacts:
+        - .mcp.json
     - name: agents.mcp.gemini
       step: kfg.aggregate-mcp
       weight: -40
       env:
-        ASSETS: "kfg.extension.self.mcp.context7:kfg.extension.self.mcp.chrome-devtools:kfg.extension.self.mcp.playwright"
+        ASSETS: "kfg.extension.ctx7.mcp:kfg.extension.chrome-devtools.mcp:kfg.extension.playwright.mcp"
         CONVERTER: "kfg.convert.self.mcp.gemini"
         TARGET: ".gemini/settings.json"
       when:
@@ -334,7 +348,7 @@ spec:
       step: kfg.aggregate-mcp
       weight: -40
       env:
-        ASSETS: "kfg.extension.self.mcp.context7:kfg.extension.self.mcp.chrome-devtools:kfg.extension.self.mcp.playwright"
+        ASSETS: "kfg.extension.ctx7.mcp:kfg.extension.chrome-devtools.mcp:kfg.extension.playwright.mcp"
         CONVERTER: "kfg.convert.self.mcp.opencode"
         TARGET: "opencode.json"
         WRAPPER_KEY: "mcp"
@@ -373,5 +387,3 @@ spec:
   after:
     - name: agents.cleanup.final
       step: kfg.cleanup
-      env:
-        PATHS: ".agents .claude .gemini .opencode .pi opencode.json .opencode-base.json AGENTS.md CLAUDE.md .mcp.json"

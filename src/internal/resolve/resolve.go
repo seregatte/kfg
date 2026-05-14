@@ -120,6 +120,7 @@ type ResolvedStep struct {
 	When          *manifest.WhenClause
 	FailurePolicy string            // "Fail" (default) or "Ignore"
 	Env           map[string]string // Merged env: StepSpec.Env + StepReference.Env
+	Artifacts     []string          // Additional artifacts from StepReference
 }
 
 // ResolvedCmd represents a resolved Cmd (pure function, no before/after).
@@ -324,6 +325,7 @@ func (r *Resolver) ResolveStepReferences(refs []manifest.StepReference) ([]Resol
 			When:          ref.When,
 			FailurePolicy: failurePolicy,
 			Env:           mergedEnv,
+			Artifacts:     ref.Artifacts,
 		})
 	}
 

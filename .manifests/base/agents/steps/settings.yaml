@@ -9,10 +9,12 @@ spec:
     local output="${OUTPUT:-}"
     
     [ -z "$agent" ] && { _kfg.log.warn "no agent specified"; return 0; }
+    [ -z "$output" ] && { _kfg.log.warn "no output specified"; return 0; }
     
     kfg apply -f "$KFG_BUILD_RESULT_FILE" --convert kfg.agent.${agent} --use kfg.agents.convert.to-json -o "$output"
+    __kfg_add_artifact "$output"
+    _kfg.log.info " settings written to $output"
 
-  artifacts:
   env:
     AGENT: ""
     OUTPUT: ""
