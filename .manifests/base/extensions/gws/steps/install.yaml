@@ -17,40 +17,19 @@ spec:
       exit 1
     fi
 
-    if [ -z "$AGENT_HOME" ]; then
-      _kfg.log.error "missing required env var: AGENT_HOME"
-      exit 1
-    fi
-
-    if [ -z "$OUTPUT_DIR" ]; then
-      _kfg.log.error "missing required env var: OUTPUT_DIR"
-      exit 1
-    fi
-
     _kfg.log.debug "step:gws.install" "SKILL_NAME=$SKILL_NAME"
     _kfg.log.debug "step:gws.install" "AGENT_FLAG=$AGENT_FLAG"
-    _kfg.log.debug "step:gws.install" "AGENT_HOME=$AGENT_HOME"
-    _kfg.log.debug "step:gws.install" "OUTPUT_DIR=$OUTPUT_DIR"
-
-    # Ensure output directory exists
-    mkdir -p "$OUTPUT_DIR"
 
     # Install skill via npx skills add
-    npx skills add "$SKILL_NAME" --agent "$AGENT_FLAG" --copy --yes
-
-    # Copy skills from agent home to output directory
-    if [ -d "$AGENT_HOME/skills/" ]; then
-      cp -r "$AGENT_HOME/skills/"* "$OUTPUT_DIR/" 2>/dev/null || true
-      _kfg.log.info "step:gws.install" "Copied skills from $AGENT_HOME/skills/ to $OUTPUT_DIR"
-    fi
+    npx -y skills add "$SKILL_NAME" --agent "$AGENT_FLAG" --copy --yes
 
     _kfg.log.info "step:gws.install" "installed"
 
   env:
     SKILL_NAME: "googleworkspace/cli"
     AGENT_FLAG: "claude-code"
-    AGENT_HOME: ".claude"
-    OUTPUT_DIR: ".claude/skills/"
+  artifacts:
+    - .agents
   output:
     name: installed
     type: string

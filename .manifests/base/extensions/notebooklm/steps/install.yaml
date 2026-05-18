@@ -22,7 +22,8 @@ spec:
 
     # Copy generated NotebookLM skill files into overlay-owned output paths
     if [ -d "$HOME/.claude/skills/notebooklm" ]; then
-      cp -r "$HOME/.claude/skills/notebooklm"/* "$OUTPUT_DIR/" 2>/dev/null || true
+      cp -r "$HOME/.claude/skills/notebooklm"/* "$OUTPUT_DIR/" 2>/dev/null || rm -Rf "$HOME/.claude/skills/notebooklm" || true
+      rm -Rf "$HOME/.agents/skills/notebooklm" || true
       _kfg.log.info "step:notebooklm.install" "Copied skills from ~/.claude/skills/notebooklm to $OUTPUT_DIR"
     fi
 

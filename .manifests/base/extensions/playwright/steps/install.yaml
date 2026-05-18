@@ -28,7 +28,7 @@ spec:
 
     # Cleanup temporary .claude directory if it was created by this install
     # (only cleanup the playwright-cli subdirectory to avoid affecting other skills)
-    rm -rf ".claude/skills/playwright-cli" 2>/dev/null || true
+    rm -rf ".claude" 2>/dev/null || true
 
     _kfg.log.info "step:playwright.install" "installed"
 
