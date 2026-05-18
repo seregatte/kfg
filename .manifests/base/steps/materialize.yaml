@@ -1,0 +1,157 @@
+apiVersion: kfg.dev/v1alpha1
+kind: Step
+metadata:
+  name: kfg.materialize
+spec:
+  run: |
+    # kfg.materialize - Unified manifest-level primitive for converter-driven artifact generation
+    #
+    # Required inputs:
+    #   MODE      - "per-item" or "aggregate"
+    #   ASSETS    - colon-separated list of asset names
+    #   CONVERTER - converter metadata.name
+    #   OUTPUTS   - colon-separated list of output paths
+    #
+    # Optional inputs:
+    #   WRAP_KEY  - only valid in aggregate mode, wraps merged result under this key
+    #
+    # Behavior:
+    #   per-item mode:   ASSETS[i] -> CONVERTER -> OUTPUTS[i] (counts must match)
+    #   aggregate mode:  ASSETS[*] -> CONVERTER -> deep merge -> optional wrap -> OUTPUTS[0]
+    #
+    # Aggregate mode also merges with existing output file content before writing.
+
+    set -euo pipefail
+
+    local mode="${MODE:-}"
+    local assets_str="${ASSETS:-}"
+    local converter="${CONVERTER:-}"
+    local outputs_str="${OUTPUTS:-}"
+    local wrap_key="${WRAP_KEY:-}"
+
+    # ---- Validation: Required inputs ----
+    
+    local missing=""
+    [ -z "$mode" ] && missing="${missing}MODE "
+    [ -z "$assets_str" ] && missing="${missing}ASSETS "
+    [ -z "$converter" ] && missing="${missing}CONVERTER "
+    [ -z "$outputs_str" ] && missing="${missing}OUTPUTS "
+    
+    if [ -n "$missing" ]; then
+      _kfg.log.error "kfg.materialize: missing required inputs:${missing}"
+      return 1
+    fi
+
+    # ---- Validation: Mode value ----
+    
+    if [ "$mode" != "per-item" ] && [ "$mode" != "aggregate" ]; then
+      _kfg.log.error "kfg.materialize: invalid MODE='$mode'. Supported values: per-item, aggregate"
+      return 1
+    fi
+
+    # ---- Validation: WRAP_KEY only in aggregate mode ----
+    
+    if [ -n "$wrap_key" ] && [ "$mode" != "aggregate" ]; then
+      _kfg.log.error "kfg.materialize: WRAP_KEY is only valid in aggregate mode"
+      return 1
+    fi
+
+    # ---- Parse assets and outputs ----
+    
+    IFS=':' read -ra assets <<< "$assets_str"
+    IFS=':' read -ra outputs <<< "$outputs_str"
+    
+    local asset_count=${#assets[@]}
+    local output_count=${#outputs[@]}
+
+    # ---- Validation: Count constraints ----
+    
+    if [ "$mode" = "per-item" ]; then
+      if [ "$asset_count" -ne "$output_count" ]; then
+        _kfg.log.error "kfg.materialize: per-item mode requires ASSETS and OUTPUTS counts to match (got $asset_count assets, $output_count outputs)"
+        return 1
+      fi
+    elif [ "$mode" = "aggregate" ]; then
+      if [ "$output_count" -ne 1 ]; then
+        _kfg.log.error "kfg.materialize: aggregate mode requires exactly one output path (got $output_count)"
+        return 1
+      fi
+    fi
+
+    # ---- Execute based on mode ----
+    
+    if [ "$mode" = "per-item" ]; then
+      _kfg.log.info "kfg.materialize: per-item mode, converting $asset_count asset(s)"
+      
+      for i in "${!assets[@]}"; do
+        local asset="${assets[$i]}"
+        local output="${outputs[$i]}"
+        
+        # Ensure output directory exists
+        mkdir -p "$(dirname "$output")"
+        
+        # Convert asset -> output
+        kfg apply --convert "$asset" --use "$converter" -o "$output" -f "$KFG_BUILD_RESULT_FILE"
+        
+        # Register artifact
+        __kfg_add_artifact "$output"
+        _kfg.log.info "kfg.materialize: converted '$asset' -> $output"
+      done
+      
+    elif [ "$mode" = "aggregate" ]; then
+      _kfg.log.info "kfg.materialize: aggregate mode, merging $asset_count asset(s)"
+      
+      local target="${outputs[0]}"
+      
+      # Ensure output directory exists
+      mkdir -p "$(dirname "$target")"
+      
+      # Phase 1: Convert each asset (collect in memory)
+      local multi_doc=""
+      for asset in "${assets[@]}"; do
+        local converted
+        converted=$(kfg apply -f "$KFG_BUILD_RESULT_FILE" --convert "$asset" --use "$converter")
+        if [ -n "$multi_doc" ]; then
+          multi_doc="${multi_doc}"$'\n---\n'"${converted}"
+        else
+          multi_doc="$converted"
+        fi
+      done
+      
+      # Phase 2: Merge all documents into single object
+      local merged
+      merged=$(printf '%s\n' "$multi_doc" | kfg apply -f - --with '. as $item ireduce ({}; . * $item)')
+      
+      # Phase 3: Wrap in key if specified
+      local result
+      if [ -n "$wrap_key" ]; then
+        result=$(printf '%s\n' "$merged" | kfg apply -f - --with "{\"${wrap_key}\": .}")
+      else
+        result="$merged"
+      fi
+      
+      # Phase 4: Write to target (merge with existing if present)
+      if [ -f "$target" ]; then
+        # Read-modify-write: deep merge existing with new content
+        local tmp="${target}.tmp"
+        printf '%s\n---\n%s\n' "$(cat "$target")" "$result" \
+          | kfg apply -f - --with '. as $item ireduce ({}; . * $item)' > "$tmp" \
+          && mv "$tmp" "$target"
+        _kfg.log.info "kfg.materialize: merged $asset_count asset(s) into $target (with existing content)"
+      else
+        printf '%s\n' "$result" > "$target"
+        _kfg.log.info "kfg.materialize: created $target with $asset_count merged asset(s)"
+      fi
+      
+      # Register artifact
+      __kfg_add_artifact "$target"
+    fi
+
+  artifacts:
+    - materialized
+  env:
+    MODE: ""        # per-item | aggregate
+    ASSETS: ""      # colon-separated asset names
+    CONVERTER: ""   # converter metadata.name
+    OUTPUTS: ""     # colon-separated output paths; exactly one in aggregate mode
+    WRAP_KEY: ""    # optional, aggregate mode only

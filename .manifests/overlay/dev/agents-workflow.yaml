@@ -74,7 +74,7 @@ spec:
         - .pi/
     # Phase 4 (-63): Settings (per-agent)
     - name: agents.settings-claude
-      step: kfg.agents.steps.settings
+      step: kfg.materialize
       weight: -63
       when:
         output:
@@ -82,9 +82,12 @@ spec:
           name: AGENT
           equals: "claude"
       env:
-        OUTPUT: ".claude/settings.json"
+        MODE: "per-item"
+        ASSETS: "kfg.agent.claude"
+        CONVERTER: "kfg.agents.convert.to-json"
+        OUTPUTS: ".claude/settings.json"
     - name: agents.settings-gemini
-      step: kfg.agents.steps.settings
+      step: kfg.materialize
       weight: -63
       when:
         output:
@@ -92,9 +95,12 @@ spec:
           name: AGENT
           equals: "gemini"
       env:
-        OUTPUT: ".gemini/settings.json"
+        MODE: "per-item"
+        ASSETS: "kfg.agent.gemini"
+        CONVERTER: "kfg.agents.convert.to-json"
+        OUTPUTS: ".gemini/settings.json"
     - name: agents.settings-pi
-      step: kfg.agents.steps.settings
+      step: kfg.materialize
       weight: -63
       when:
         output:
@@ -102,9 +108,12 @@ spec:
           name: AGENT
           equals: "pi"
       env:
-        OUTPUT: ".pi/settings.json"
+        MODE: "per-item"
+        ASSETS: "kfg.agent.pi"
+        CONVERTER: "kfg.agents.convert.to-json"
+        OUTPUTS: ".pi/settings.json"
     - name: agents.settings-opencode
-      step: kfg.agents.steps.settings
+      step: kfg.materialize
       weight: -63
       when:
         output:
@@ -112,7 +121,10 @@ spec:
           name: AGENT
           equals: "opencode"
       env:
-        OUTPUT: "opencode.json"
+        MODE: "per-item"
+        ASSETS: "kfg.agent.opencode"
+        CONVERTER: "kfg.agents.convert.to-json"
+        OUTPUTS: "opencode.json"
       artifacts:
         - opencode.json
 
@@ -268,49 +280,53 @@ spec:
         TARGET_FILE: "AGENTS.md"
 
     # Phase 9 (-45): Commands (per-agent)
-    - name: agents.convert-claude-commands
-      step: kfg.convert
+    - name: agents.commands.claude
+      step: kfg.materialize
       weight: -45
       env:
-        ASSET: "kfg.extension.self.commands.git-commit"
+        MODE: "per-item"
+        ASSETS: "kfg.extension.self.commands.git-commit"
         CONVERTER: "kfg.convert.self.command.claude"
-        OUTPUT: ".claude/commands/git-commit.md"
+        OUTPUTS: ".claude/commands/git-commit.md"
       when:
         output:
           step: kfg.detect-agent
           name: AGENT
           equals: "claude"
-    - name: agents.convert-gemini-commands
-      step: kfg.convert
+    - name: agents.commands.gemini
+      step: kfg.materialize
       weight: -45
       env:
-        ASSET: "kfg.extension.self.commands.git-commit"
+        MODE: "per-item"
+        ASSETS: "kfg.extension.self.commands.git-commit"
         CONVERTER: "kfg.convert.self.command.gemini"
-        OUTPUT: ".gemini/commands/git-commit.toml"
+        OUTPUTS: ".gemini/commands/git-commit.toml"
       when:
         output:
           step: kfg.detect-agent
           name: AGENT
           equals: "gemini"
-    - name: agents.convert-opencode-commands
-      step: kfg.convert
+    - name: agents.commands.opencode
+      step: kfg.materialize
       weight: -45
       env:
-        ASSET: "kfg.extension.self.commands.git-commit"
+        MODE: "per-item"
+        ASSETS: "kfg.extension.self.commands.git-commit"
         CONVERTER: "kfg.convert.self.command.opencode"
-        OUTPUT: ".opencode/commands/git-commit.md"
+        OUTPUTS: ".opencode/commands/git-commit.md"
       when:
         output:
           step: kfg.detect-agent
           name: AGENT
           equals: "opencode"
-    - name: agents.convert-pi-commands
-      step: kfg.convert
+    - name: agents.commands.pi
+      step: kfg.materialize
       weight: -45
       env:
-        ASSET: "kfg.extension.self.commands.git-commit"
+        MODE: "per-item"
+        ASSETS: "kfg.extension.self.commands.git-commit"
         CONVERTER: "kfg.convert.self.command.pi"
-        OUTPUT: ".pi/prompts/git-commit.md"
+        OUTPUTS: ".pi/prompts/git-commit.md"
       when:
         output:
           step: kfg.detect-agent
@@ -319,12 +335,14 @@ spec:
 
     # Phase 10 (-40): MCP (per-agent)
     - name: agents.mcp.claude
-      step: kfg.aggregate-mcp
+      step: kfg.materialize
       weight: -40
       env:
+        MODE: "aggregate"
         ASSETS: "kfg.extension.ctx7.mcp:kfg.extension.chrome-devtools.mcp:kfg.extension.playwright.mcp"
         CONVERTER: "kfg.convert.self.mcp.claude"
-        TARGET: ".mcp.json"
+        OUTPUTS: ".mcp.json"
+        WRAP_KEY: "mcpServers"
       when:
         output:
           step: kfg.detect-agent
@@ -333,25 +351,28 @@ spec:
       artifacts:
         - .mcp.json
     - name: agents.mcp.gemini
-      step: kfg.aggregate-mcp
+      step: kfg.materialize
       weight: -40
       env:
+        MODE: "aggregate"
         ASSETS: "kfg.extension.ctx7.mcp:kfg.extension.chrome-devtools.mcp:kfg.extension.playwright.mcp"
         CONVERTER: "kfg.convert.self.mcp.gemini"
-        TARGET: ".gemini/settings.json"
+        OUTPUTS: ".gemini/settings.json"
+        WRAP_KEY: "mcpServers"
       when:
         output:
           step: kfg.detect-agent
           name: AGENT
           equals: "gemini"
     - name: agents.mcp.opencode
-      step: kfg.aggregate-mcp
+      step: kfg.materialize
       weight: -40
       env:
+        MODE: "aggregate"
         ASSETS: "kfg.extension.ctx7.mcp:kfg.extension.chrome-devtools.mcp:kfg.extension.playwright.mcp"
         CONVERTER: "kfg.convert.self.mcp.opencode"
-        TARGET: "opencode.json"
-        WRAPPER_KEY: "mcp"
+        OUTPUTS: "opencode.json"
+        WRAP_KEY: "mcp"
       when:
         output:
           step: kfg.detect-agent
@@ -360,24 +381,26 @@ spec:
 
     # Phase 11 (-35): Subagent (per-agent)
     - name: agents.subagent.claude
-      step: kfg.convert
+      step: kfg.materialize
       weight: -35
       env:
-        ASSET: "kfg.extension.self.subagents.review-minimal"
+        MODE: "per-item"
+        ASSETS: "kfg.extension.self.subagents.review-minimal"
         CONVERTER: "kfg.convert.self.subagent.claude"
-        OUTPUT: ".claude/agents/review-minimal.md"
+        OUTPUTS: ".claude/agents/review-minimal.md"
       when:
         output:
           step: kfg.detect-agent
           name: AGENT
           equals: "claude"
     - name: agents.subagent.opencode
-      step: kfg.convert
+      step: kfg.materialize
       weight: -35
       env:
-        ASSET: "kfg.extension.self.subagents.review-minimal"
+        MODE: "per-item"
+        ASSETS: "kfg.extension.self.subagents.review-minimal"
         CONVERTER: "kfg.convert.self.subagent.opencode"
-        OUTPUT: ".opencode/agents/review-minimal.md"
+        OUTPUTS: ".opencode/agents/review-minimal.md"
       when:
         output:
           step: kfg.detect-agent

@@ -240,17 +240,37 @@ spec:
     type: string
 ```
 
-### MCP Aggregation
+### Materialization
 
-Workflows aggregate extension MCP assets using `kfg.aggregate-mcp`:
+Workflows use `kfg.materialize` as the unified primitive for asset materialization:
+
+#### Per-item Mode
+
+Convert one or more assets to individual outputs:
 
 ```yaml
-- step: kfg.aggregate-mcp
+- step: kfg.materialize
+  weight: -45
+  env:
+    MODE: "per-item"
+    ASSETS: "kfg.extension.self.commands.git-commit"
+    CONVERTER: "kfg.convert.self.command.claude"
+    OUTPUTS: ".claude/commands/git-commit.md"
+```
+
+#### Aggregate Mode
+
+Merge multiple assets into a single output:
+
+```yaml
+- step: kfg.materialize
   weight: -40
   env:
+    MODE: "aggregate"
     ASSETS: "kfg.extension.ctx7.mcp:kfg.extension.playwright.mcp:kfg.extension.chrome-devtools.mcp"
     CONVERTER: "kfg.convert.self.mcp.claude"
-    TARGET: ".mcp.json"
+    OUTPUTS: ".mcp.json"
+    WRAP_KEY: "mcpServers"
 ```
 
 ## Overlays
@@ -305,11 +325,14 @@ spec:
       weight: -70
     # Phase 3-7: Scaffold, Settings, Context, Extension installs, etc.
     # Phase 10 (-40): MCP aggregation with extension assets
-    - step: kfg.aggregate-mcp
+    - step: kfg.materialize
       weight: -40
       env:
+        MODE: "aggregate"
         ASSETS: "myproject.mcp.local:kfg.extension.ctx7.mcp"
         CONVERTER: "kfg.convert.self.mcp.claude"
+        OUTPUTS: ".mcp.json"
+        WRAP_KEY: "mcpServers"
 ```
 
 ## Build Result

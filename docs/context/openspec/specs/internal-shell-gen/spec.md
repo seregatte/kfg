@@ -1,33 +1,8 @@
-# Shell Code Generation Specification
-
-## Purpose
-
-Specifies how kfg generates valid bash code from manifests, with emphasis on global-scope build result setup and shared helper functions accessible to all command wrappers and steps.
-
-## Requirements
-
-### Requirement: Shell Code Generation
-
-The CLI MUST generate valid bash code from manifests. The generated shell structure MUST place build result setup at global scope (outside all Cmd wrapper functions) when build result YAML is provided, ensuring all Cmd wrappers and steps can access `KFG_BUILD_RESULT_FILE` without duplication.
-
-#### Scenario: Function structure with global build result
-- GIVEN a generated shell with multiple Cmd wrappers and build result YAML
-- WHEN the shell code is examined
-- THEN exactly one global build result setup appears (mktemp, base64 decode, helper function)
-- AND each Cmd wrapper executes `before` steps first (now without internal build result setup)
-- AND each Cmd wrapper executes the Cmd's `run` body
-- AND each Cmd wrapper executes `after` steps last
-- AND the function preserves `"$@"` passed to the function
-
-#### Scenario: Global scope build result access
-- GIVEN a Step that uses `__kfg_build_result()`
-- WHEN the step executes
-- THEN the step accesses the shared global `__kfg_build_result()` helper function
-- AND the function outputs the same build result YAML content to all steps and commands
+## MODIFIED Requirements
 
 ### Requirement: Internal Helpers
 
-Generated shell code MUST use namespaced internal helpers. The build result helper MUST be defined once at global scope.
+Generated shell code MUST use namespaced internal helpers. The build result helper MUST be defined once at global scope. Generated shell code MUST also define a shared artifact tracking array for explicit cleanup within the same shell session.
 
 #### Scenario: Global helper function definition
 - GIVEN the generated shell includes build result YAML
@@ -42,15 +17,33 @@ Generated shell code MUST use namespaced internal helpers. The build result help
 - THEN it declares a global bash array named `KFG_ARTIFACTS`
 - AND it defines `__kfg_add_artifact()` in global scope
 - AND each call to `__kfg_add_artifact()` appends the artifact path to `KFG_ARTIFACTS`
-- AND steps and command wrappers can read `KFG_ARTIFACTS` later in the same shell session for explicit cleanup
+- AND cleanup steps and command wrappers can read `KFG_ARTIFACTS` later in the same shell session for explicit cleanup
 
-### Requirement: Command Execution Flow
+### Requirement: Artifact Declaration in Workflow
 
-Generated functions MUST execute steps and the command in the correct order. Build result initialization MUST occur before any Cmd wrappers are defined, ensuring all steps can access it.
+Generated shell code MUST support artifact declaration at multiple levels:
+- Step resources define `artifacts` with static paths
+- Cmd resources define `artifacts` with static paths
+- Workflow steps (before/after) can specify additional `artifacts` via `StepReference`
 
-#### Scenario: Build result initialization ordering
-- GIVEN the generated shell code structure
-- WHEN examined in order
-- THEN: header → metadata env → **global build result setup** → helpers → step functions → cmd wrappers
-- AND build result setup (mktemp, base64 decode, export, helper function) appears exactly once before any Cmd functions
-- AND no per-Cmd build result setup code appears inside function bodies
+#### Scenario: Artifact tracking from step resources
+- GIVEN a Step resource with `spec.artifacts` array
+- WHEN the shell code is generated for that step
+- THEN `__kfg_add_artifact()` is called for each artifact in the Step's artifacts array
+
+#### Scenario: Artifact tracking from StepReference
+- GIVEN a workflow step (before or after) with `artifacts` specified in the StepReference
+- WHEN the shell code is generated
+- THEN `__kfg_add_artifact()` is called for each artifact in the StepReference's artifacts array
+- AND these artifacts are included in the command wrapper
+
+#### Scenario: Artifact deduplication
+- GIVEN multiple steps or workflow entries specify the same artifact path
+- WHEN the shell code is generated
+- THEN each artifact path appears exactly once in the `__kfg_add_artifact()` calls
+
+#### Scenario: Cleanup with tracked artifacts
+- GIVEN `KFG_ARTIFACTS` is populated with artifact paths
+- WHEN `kfg.cleanup` step is executed
+- THEN it iterates over `KFG_ARTIFACTS` and removes each path that exists
+- AND cleanup succeeds without error when `KFG_ARTIFACTS` is empty
