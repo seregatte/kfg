@@ -359,7 +359,7 @@ func (e ValidationError) Error() string {
 // Constants
 // ============================================================================
 
-// APIVersion is the expected API version for NixAI manifests.
+// APIVersion is the expected API version for kfg manifests.
 const APIVersion = "kfg.dev/v1alpha1"
 
 // SupportedKinds are the supported resource kinds.

@@ -57,7 +57,7 @@ func NewImageStore(storeDir string) *ImageStore {
 		homeDir, err := os.UserHomeDir()
 		if err != nil {
 			// Fall back to current directory if home dir unavailable
-			storeDir = ".nixai/store"
+			storeDir = ".kfg/store"
 		} else {
 			storeDir = filepath.Join(homeDir, strings.TrimPrefix(storeDir, "~"))
 		}

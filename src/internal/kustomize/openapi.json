@@ -1,17 +1,17 @@
 {
   "openapi": "3.0.0",
   "info": {
-    "title": "NixAI Custom Resource Definitions",
+    "title": "kfg Custom Resource Definitions",
     "version": "v1alpha1"
   },
   "definitions": {
-    "nixai.dev.v1alpha1.Step": {
+    "kfg.dev.v1alpha1.Step": {
       "description": "Reusable shell snippet that can be referenced in workflows",
       "type": "object",
       "properties": {
         "apiVersion": {
           "type": "string",
-          "enum": ["nixai.dev/v1alpha1"]
+          "enum": ["kfg.dev/v1alpha1"]
         },
         "kind": {
           "type": "string",
@@ -64,19 +64,19 @@
       "required": ["apiVersion", "kind", "metadata", "spec"],
       "x-kubernetes-group-version-kind": [
         {
-          "group": "nixai.dev",
+          "group": "kfg.dev",
           "kind": "Step",
           "version": "v1alpha1"
         }
       ]
     },
-    "nixai.dev.v1alpha1.Cmd": {
+    "kfg.dev.v1alpha1.Cmd": {
       "description": "Pure shell function without orchestration logic",
       "type": "object",
       "properties": {
         "apiVersion": {
           "type": "string",
-          "enum": ["nixai.dev/v1alpha1"]
+          "enum": ["kfg.dev/v1alpha1"]
         },
         "kind": {
           "type": "string",
@@ -122,19 +122,19 @@
       "required": ["apiVersion", "kind", "metadata", "spec"],
       "x-kubernetes-group-version-kind": [
         {
-          "group": "nixai.dev",
+          "group": "kfg.dev",
           "kind": "Cmd",
           "version": "v1alpha1"
         }
       ]
     },
-    "nixai.dev.v1alpha1.CmdWorkflow": {
+    "kfg.dev.v1alpha1.CmdWorkflow": {
       "description": "Orchestration definition for multiple Cmds with before/after steps",
       "type": "object",
       "properties": {
         "apiVersion": {
           "type": "string",
-          "enum": ["nixai.dev/v1alpha1"]
+          "enum": ["kfg.dev/v1alpha1"]
         },
         "kind": {
           "type": "string",
@@ -165,7 +165,7 @@
               "type": "array",
               "description": "Steps to run before all cmds",
               "items": {
-                "$ref": "#/definitions/nixai.dev.v1alpha1.StepReference"
+                "$ref": "#/definitions/kfg.dev.v1alpha1.StepReference"
               },
               "x-kubernetes-patch-merge-key": "step",
               "x-kubernetes-patch-strategy": "merge"
@@ -174,7 +174,7 @@
               "type": "array",
               "description": "Steps to run after all cmds",
               "items": {
-                "$ref": "#/definitions/nixai.dev.v1alpha1.StepReference"
+                "$ref": "#/definitions/kfg.dev.v1alpha1.StepReference"
               },
               "x-kubernetes-patch-merge-key": "step",
               "x-kubernetes-patch-strategy": "merge"
@@ -185,13 +185,13 @@
       "required": ["apiVersion", "kind", "metadata", "spec"],
       "x-kubernetes-group-version-kind": [
         {
-          "group": "nixai.dev",
+          "group": "kfg.dev",
           "kind": "CmdWorkflow",
           "version": "v1alpha1"
         }
       ]
     },
-    "nixai.dev.v1alpha1.StepReference": {
+    "kfg.dev.v1alpha1.StepReference": {
       "description": "Reference to a Step with optional conditions",
       "type": "object",
       "properties": {
@@ -230,13 +230,13 @@
       },
       "required": ["step"]
     },
-    "nixai.dev.v1alpha1.CmdKustomization": {
-      "description": "Kustomization configuration for NixAI",
+    "kfg.dev.v1alpha1.CmdKustomization": {
+      "description": "Kustomization configuration for kfg",
       "type": "object",
       "properties": {
         "apiVersion": {
           "type": "string",
-          "enum": ["nixai.dev/v1alpha1"]
+          "enum": ["kfg.dev/v1alpha1"]
         },
         "kind": {
           "type": "string",
@@ -289,19 +289,19 @@
       "required": ["apiVersion", "kind", "metadata"],
       "x-kubernetes-group-version-kind": [
         {
-          "group": "nixai.dev",
+          "group": "kfg.dev",
           "kind": "CmdKustomization",
           "version": "v1alpha1"
         }
       ]
     },
-    "nixai.dev.v1alpha1.Schema": {
+    "kfg.dev.v1alpha1.Schema": {
       "description": "JSON Schema specification for validating Assets resources",
       "type": "object",
       "properties": {
         "apiVersion": {
           "type": "string",
-          "enum": ["nixai.dev/v1alpha1"]
+          "enum": ["kfg.dev/v1alpha1"]
         },
         "kind": {
           "type": "string",
@@ -327,19 +327,19 @@
       "required": ["apiVersion", "kind", "metadata", "spec"],
       "x-kubernetes-group-version-kind": [
         {
-          "group": "nixai.dev",
+          "group": "kfg.dev",
           "kind": "Schema",
           "version": "v1alpha1"
         }
       ]
     },
-    "nixai.dev.v1alpha1.Converter": {
+    "kfg.dev.v1alpha1.Converter": {
       "description": "Declarative transformation using template or yq-go",
       "type": "object",
       "properties": {
         "apiVersion": {
           "type": "string",
-          "enum": ["nixai.dev/v1alpha1"]
+          "enum": ["kfg.dev/v1alpha1"]
         },
         "kind": {
           "type": "string",
@@ -416,7 +416,7 @@
       "required": ["apiVersion", "kind", "metadata", "spec"],
       "x-kubernetes-group-version-kind": [
         {
-          "group": "nixai.dev",
+          "group": "kfg.dev",
           "kind": "Converter",
           "version": "v1alpha1"
         }

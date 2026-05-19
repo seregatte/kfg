@@ -95,8 +95,8 @@ func TestGetLogFile(t *testing.T) {
 	assert.Equal(t, "/tmp/test.jsonl", GetLogFile())
 
 	// Test with viper set
-	viper.Set("log_file", "/var/log/nixai.jsonl")
-	assert.Equal(t, "/var/log/nixai.jsonl", GetLogFile())
+	viper.Set("log_file", "/var/log/kfg.jsonl")
+	assert.Equal(t, "/var/log/kfg.jsonl", GetLogFile())
 }
 
 func TestGetLogDir(t *testing.T) {

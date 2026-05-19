@@ -70,7 +70,7 @@ func TestIsGitHubURL(t *testing.T) {
 		},
 		{
 			name:     "Local path with subdirectory",
-			arg:      ".nixai/overlay/dev",
+			arg:      ".manifests/overlay/dev",
 			expected: false,
 		},
 		{

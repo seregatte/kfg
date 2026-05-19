@@ -14,67 +14,67 @@ import (
 
 func TestSplitArgsAtDash(t *testing.T) {
 	tests := []struct {
-		name          string
-		dashIndex     int
-		args          []string
-		expectedAgent string
+		name         string
+		dashIndex    int
+		args         []string
+		expectedCmd  string
 		expectedExtra []string
 	}{
 		{
-			name:          "no args",
-			dashIndex:     -1,
-			args:          []string{},
-			expectedAgent: "",
+			name:         "no args",
+			dashIndex:    -1,
+			args:         []string{},
+			expectedCmd:  "",
 			expectedExtra: []string{},
 		},
 		{
-			name:          "agent only",
-			dashIndex:     -1,
-			args:          []string{"claude"},
-			expectedAgent: "claude",
+			name:         "command only",
+			dashIndex:    -1,
+			args:         []string{"claude"},
+			expectedCmd:  "claude",
 			expectedExtra: []string{},
 		},
 		{
-			name:          "agent with forwarded args after --",
-			dashIndex:     1,
-			args:          []string{"claude", "--model", "gpt-4"},
-			expectedAgent: "claude",
+			name:         "command with forwarded args after --",
+			dashIndex:    1,
+			args:         []string{"claude", "--model", "gpt-4"},
+			expectedCmd:  "claude",
 			expectedExtra: []string{"--model", "gpt-4"},
 		},
 		{
-			name:          "separator only (no agent before --)",
-			dashIndex:     0,
-			args:          []string{"--model", "gpt-4"},
-			expectedAgent: "",
+			name:         "separator only (no command before --)",
+			dashIndex:    0,
+			args:         []string{"--model", "gpt-4"},
+			expectedCmd:  "",
 			expectedExtra: []string{"--model", "gpt-4"},
 		},
 		{
-			name:          "multiple forwarded args",
-			dashIndex:     1,
-			args:          []string{"opencode", "--help", "--verbose"},
-			expectedAgent: "opencode",
+			name:         "multiple forwarded args",
+			dashIndex:    1,
+			args:         []string{"opencode", "--help", "--verbose"},
+			expectedCmd:  "opencode",
 			expectedExtra: []string{"--help", "--verbose"},
 		},
 		{
-			name:          "single forwarded arg",
-			dashIndex:     1,
-			args:          []string{"claude", "--model"},
-			expectedAgent: "claude",
+			name:         "single forwarded arg",
+			dashIndex:    1,
+			args:         []string{"claude", "--model"},
+			expectedCmd:  "claude",
 			expectedExtra: []string{"--model"},
 		},
 		{
-			name:          "no separator with multiple args (all before --)",
-			dashIndex:     -1,
-			args:          []string{"claude", "extra"},
-			expectedAgent: "claude",
+			name:         "no separator with multiple args (all before --)",
+			dashIndex:    -1,
+			args:         []string{"claude", "extra"},
+			expectedCmd:  "claude",
 			expectedExtra: []string{},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			agentName, extraArgs := splitArgsAtDash(tt.dashIndex, tt.args)
-			assert.Equal(t, tt.expectedAgent, agentName)
+			cmdName, extraArgs := splitArgsAtDash(tt.dashIndex, tt.args)
+			assert.Equal(t, tt.expectedCmd, cmdName)
 			assert.Equal(t, tt.expectedExtra, extraArgs)
 		})
 	}
@@ -83,20 +83,20 @@ func TestSplitArgsAtDash(t *testing.T) {
 func TestParseLaunchArgs(t *testing.T) {
 	// parseLaunchArgs delegates to splitArgsAtDash using cmd.ArgsLenAtDash().
 	// When cmd is nil (unit test convenience), dashIndex defaults to -1.
-	t.Run("nil cmd returns first arg as agent", func(t *testing.T) {
-		agentName, extraArgs := parseLaunchArgs(nil, []string{"claude"})
-		assert.Equal(t, "claude", agentName)
+	t.Run("nil cmd returns first arg as command", func(t *testing.T) {
+		cmdName, extraArgs := parseLaunchArgs(nil, []string{"claude"})
+		assert.Equal(t, "claude", cmdName)
 		assert.Empty(t, extraArgs)
 	})
 
 	t.Run("nil cmd with empty args", func(t *testing.T) {
-		agentName, extraArgs := parseLaunchArgs(nil, []string{})
-		assert.Empty(t, agentName)
+		cmdName, extraArgs := parseLaunchArgs(nil, []string{})
+		assert.Empty(t, cmdName)
 		assert.Empty(t, extraArgs)
 	})
 }
 
-func TestFindAgent(t *testing.T) {
+func TestFindCmd(t *testing.T) {
 	// Create test index with Cmds and CmdWorkflows
 	cmdClaude := &manifest.Cmd{
 		Metadata: manifest.Metadata{
@@ -151,43 +151,43 @@ func TestFindAgent(t *testing.T) {
 
 	tests := []struct {
 		name             string
-		agentName        string
+		cmdName          string
 		workflowFilter   string
 		expectError      bool
 		expectedCmdName  string
 		expectedWorkflow string
 	}{
 		{
-			name:             "agent found",
-			agentName:        "claude",
+			name:             "command found",
+			cmdName:          "claude",
 			workflowFilter:   "",
 			expectError:      false,
 			expectedCmdName:  "dev.agents.claude",
 			expectedWorkflow: "dev.workflows.dev",
 		},
 		{
-			name:           "agent not found",
-			agentName:      "nonexistent",
+			name:          "command not found",
+			cmdName:       "nonexistent",
 			workflowFilter: "",
-			expectError:    true,
+			expectError:   true,
 		},
 		{
-			name:           "agent not in specified workflow",
-			agentName:      "claude",
+			name:           "command not in specified workflow",
+			cmdName:        "claude",
 			workflowFilter: "dev.workflows.openspec",
 			expectError:    true,
 		},
 		{
 			name:             "workflow filter match",
-			agentName:        "claude",
+			cmdName:          "claude",
 			workflowFilter:   "dev.workflows.dev",
 			expectError:      false,
 			expectedCmdName:  "dev.agents.claude",
 			expectedWorkflow: "dev.workflows.dev",
 		},
 		{
-			name:             "openspec agent found",
-			agentName:        "openspec",
+			name:             "openspec command found",
+			cmdName:          "openspec",
 			workflowFilter:   "",
 			expectError:      false,
 			expectedCmdName:  "dev.openspec",
@@ -197,7 +197,7 @@ func TestFindAgent(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cmdName, workflowName, cmd, err := findAgent(index, tt.agentName, tt.workflowFilter)
+			cmdName, workflowName, cmd, err := findCmd(index, tt.cmdName, tt.workflowFilter)
 			if tt.expectError {
 				assert.Error(t, err)
 				assert.Empty(t, cmdName)
@@ -213,7 +213,7 @@ func TestFindAgent(t *testing.T) {
 	}
 }
 
-func TestListAvailableAgents(t *testing.T) {
+func TestListAvailableCmds(t *testing.T) {
 	// Test with empty index
 	emptyResources := []manifest.ParsedResource{}
 	emptyIndex := resolve.NewIndex(emptyResources)
@@ -223,7 +223,7 @@ func TestListAvailableAgents(t *testing.T) {
 	r, w, _ := os.Pipe()
 	os.Stdout = w
 
-	listAvailableAgents(emptyIndex)
+	listAvailableCmds(emptyIndex)
 
 	w.Close()
 	var buf bytes.Buffer
@@ -231,7 +231,7 @@ func TestListAvailableAgents(t *testing.T) {
 	os.Stdout = oldStdout
 
 	output := buf.String()
-	assert.Contains(t, output, "No agents found")
+	assert.Contains(t, output, "No commands found")
 
 	// Test with populated index
 	cmdClaude := &manifest.Cmd{
@@ -262,7 +262,7 @@ func TestListAvailableAgents(t *testing.T) {
 	r2, w2, _ := os.Pipe()
 	os.Stdout = w2
 
-	listAvailableAgents(populatedIndex)
+	listAvailableCmds(populatedIndex)
 
 	w2.Close()
 	var buf2 bytes.Buffer
@@ -270,13 +270,13 @@ func TestListAvailableAgents(t *testing.T) {
 	os.Stdout = oldStdout
 
 	output2 := buf2.String()
-	assert.Contains(t, output2, "Available agents:")
+	assert.Contains(t, output2, "Available commands:")
 	assert.Contains(t, output2, "claude")
 	assert.Contains(t, output2, "gemini")
 	assert.Contains(t, output2, "workflow:")
 }
 
-func TestListAvailableAgentsOutputFormat(t *testing.T) {
+func TestListAvailableCmdsOutputFormat(t *testing.T) {
 	cmd := &manifest.Cmd{
 		Metadata: manifest.Metadata{
 			Name:        "test.agent",
@@ -300,7 +300,7 @@ func TestListAvailableAgentsOutputFormat(t *testing.T) {
 	r, w, _ := os.Pipe()
 	os.Stdout = w
 
-	listAvailableAgents(index)
+	listAvailableCmds(index)
 
 	w.Close()
 	var buf bytes.Buffer
@@ -311,8 +311,8 @@ func TestListAvailableAgentsOutputFormat(t *testing.T) {
 	// Check output format
 	lines := strings.Split(output, "\n")
 	assert.GreaterOrEqual(t, len(lines), 2)
-	assert.Equal(t, "Available agents:", lines[0])
-	// Find the agent line
+	assert.Equal(t, "Available commands:", lines[0])
+	// Find the command line
 	for _, line := range lines {
 		if strings.Contains(line, "testagent") {
 			assert.Contains(t, line, "(workflow: test.workflow)")
@@ -347,8 +347,8 @@ func TestRunCommandFlags(t *testing.T) {
 
 func TestRunCommandStructure(t *testing.T) {
 	assert.NotNil(t, runCmd)
-	assert.Equal(t, "run [agent] [-- extra-args...]", runCmd.Use)
-	assert.Contains(t, runCmd.Short, "Run an agent")
+	assert.Equal(t, "run [cmd] [-- extra-args...]", runCmd.Use)
+	assert.Contains(t, runCmd.Short, "Run a command")
 	assert.NotNil(t, runCmd.RunE)
 }
 

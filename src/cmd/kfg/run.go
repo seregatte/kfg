@@ -26,12 +26,12 @@ var (
 
 // runCmd represents the run command
 var runCmd = &cobra.Command{
-	Use:   "run [agent] [-- extra-args...]",
-	Short: "Run an agent with one-shot execution",
-	Long: `Run an agent by generating shell code, sourcing it, and executing in one invocation.
+	Use:   "run [cmd] [-- extra-args...]",
+	Short: "Run a command with one-shot execution",
+	Long: `Run a command by generating shell code, sourcing it, and executing in one invocation.
 
 This command provides a one-shot "generate → source → execute" experience
-for running agents. It matches agents by their commandName (e.g., "claude")
+for running commands. It matches commands by their commandName (e.g., "my-cmd")
 and auto-detects the workflow if not specified.
 
 The source can be provided as:
@@ -43,17 +43,17 @@ GitHub URLs are supported and will be cloned automatically:
   - https://github.com/owner/repo//path
   - https://github.com/owner/repo//path?ref=v1.0.0
 
-Arguments after '--' are passed directly to the agent.
+Arguments after '--' are passed directly to the command.
 
 Examples:
-  kfg run -k .nixai/overlay/dev claude
-  kfg run -k .nixai/overlay/dev claude -- --model gpt-4
-  kfg run -k https://github.com/owner/repo//manifests claude
-  kfg run -k .nixai/overlay/dev -w dev claude
-  kfg run -f manifest.yaml claude
-  kfg run -k .nixai/overlay/dev (lists available agents)
-  KFG_KPATH=./manifests kfg run claude
-  KFG_KPATH=https://github.com/owner/repo//manifests kfg run claude`,
+  kfg run -k .manifests/overlay/dev my-cmd
+  kfg run -k .manifests/overlay/dev my-cmd -- --flag value
+  kfg run -k https://github.com/owner/repo//manifests my-cmd
+  kfg run -k .manifests/overlay/dev -w dev my-cmd
+  kfg run -f manifest.yaml my-cmd
+  kfg run -k .manifests/overlay/dev (lists available commands)
+  KFG_KPATH=./manifests kfg run my-cmd
+  KFG_KPATH=https://github.com/owner/repo//manifests kfg run my-cmd`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// KFG_KPATH fallback: if kustomize path is empty, use env var
 		if runKustomizePath == "" && runFile == "" {
@@ -72,18 +72,18 @@ Examples:
 			os.Exit(2)
 		}
 
-		// Parse run args: agent name and extra args
-		agentName, extraArgs := parseLaunchArgs(cmd, args)
+		// Parse run args: command name and extra args
+		cmdName, extraArgs := parseLaunchArgs(cmd, args)
 
-		// No agent name provided - list available agents
-		if agentName == "" {
+		// No command name provided - list available commands
+		if cmdName == "" {
 			// Run the apply pipeline to get the index (GitHub URLs are passed directly to kustomize loader)
 			result, err := runApplyPipeline(runKustomizePath, runFile)
 			if err != nil {
 				logger.Error("run", err.Error())
 				os.Exit(1)
 			}
-			listAvailableAgents(result.Index)
+			listAvailableCmds(result.Index)
 			os.Exit(1)
 		}
 
@@ -100,23 +100,23 @@ Examples:
 			workflowFilter = runWorkflow
 		}
 
-		// Find the agent in the index
-		cmdMetadataName, workflowName, foundCmd, err := findAgent(result.Index, agentName, workflowFilter)
+		// Find the command in the index
+		cmdMetadataName, workflowName, foundCmd, err := findCmd(result.Index, cmdName, workflowFilter)
 		if err != nil {
 			logger.Error("run", err.Error())
-			listAvailableAgents(result.Index)
+			listAvailableCmds(result.Index)
 			os.Exit(1)
 		}
 
-		// Generate shell code for the specific agent
-		shellCode, shellType, err := generateForAgent(result, workflowName, cmdMetadataName, foundCmd)
+		// Generate shell code for the specific command
+		shellCode, shellType, err := generateForCmd(result, workflowName, cmdMetadataName, foundCmd)
 		if err != nil {
 			logger.Error("run", fmt.Sprintf("Failed to generate shell code: %v", err))
 			os.Exit(1)
 		}
 
-		// Execute the agent
-		executeAgent(shellCode, shellType, agentName, extraArgs)
+		// Execute the command
+		executeCmd(shellCode, shellType, cmdName, extraArgs)
 		return nil
 	},
 }
@@ -128,13 +128,13 @@ func init() {
 	runCmd.Flags().StringVarP(&runKustomizePath, "kustomize", "k", "", "Kustomization directory path")
 	runCmd.Flags().StringVarP(&runFile, "file", "f", "", "Manifest file path (use '-' for stdin)")
 	runCmd.Flags().StringVarP(&runWorkflow, "workflow", "w", "", "CmdWorkflow name (auto-detected if not specified)")
-	runCmd.Flags().StringVarP(&runCmds, "cmds", "c", "", "Comma-separated list of cmds (overrides agent matching)")
+	runCmd.Flags().StringVarP(&runCmds, "cmds", "c", "", "Comma-separated list of cmds to run")
 }
 
-// parseLaunchArgs splits args using Cobra's dash boundary into agent name and extra args.
+// parseLaunchArgs splits args using Cobra's dash boundary into command name and extra args.
 // When the user passes `--`, Cobra strips the separator and records the split point
 // via cmd.ArgsLenAtDash(). This function uses that metadata as the source of truth.
-// Returns (agentName, extraArgs).
+// Returns (cmdName, extraArgs).
 func parseLaunchArgs(cmd *cobra.Command, args []string) (string, []string) {
 	dashIndex := -1
 	if cmd != nil {
@@ -143,13 +143,13 @@ func parseLaunchArgs(cmd *cobra.Command, args []string) (string, []string) {
 	return splitArgsAtDash(dashIndex, args)
 }
 
-// splitArgsAtDash splits args at the dash boundary into agent name and extra args.
+// splitArgsAtDash splits args at the dash boundary into command name and extra args.
 // dashIndex: -1 if no `--` was present, 0 if `--` was before any positional args,
 // or > 0 if there were positional args before `--`.
-// Returns (agentName, extraArgs).
+// Returns (cmdName, extraArgs).
 func splitArgsAtDash(dashIndex int, args []string) (string, []string) {
 	if dashIndex == -1 {
-		// No separator - first arg is agent name, no extra args
+		// No separator - first arg is command name, no extra args
 		if len(args) > 0 {
 			return args[0], []string{}
 		}
@@ -161,23 +161,23 @@ func splitArgsAtDash(dashIndex int, args []string) (string, []string) {
 		return "", args
 	}
 
-	// dashIndex > 0: agent is args[0], extra args start at the dash boundary
+	// dashIndex > 0: command is args[0], extra args start at the dash boundary
 	if len(args) > 0 {
 		return args[0], args[dashIndex:]
 	}
 	return "", []string{}
 }
 
-// findAgent matches an agent by commandName and finds its workflow.
+// findCmd matches a command by commandName and finds its workflow.
 // Returns (cmdMetadataName, workflowName, foundCmd, error).
-func findAgent(index *resolve.Index, agentName string, workflowFilter string) (string, string, *manifest.Cmd, error) {
+func findCmd(index *resolve.Index, cmdName string, workflowFilter string) (string, string, *manifest.Cmd, error) {
 	cmds := index.GetCmds()
 
 	// Find cmd by commandName
 	var foundCmd *manifest.Cmd
 	var cmdMetadataName string
 	for _, cmd := range cmds {
-		if cmd.Metadata.CommandName == agentName {
+		if cmd.Metadata.CommandName == cmdName {
 			foundCmd = cmd
 			cmdMetadataName = cmd.Metadata.Name
 			break
@@ -185,7 +185,7 @@ func findAgent(index *resolve.Index, agentName string, workflowFilter string) (s
 	}
 
 	if foundCmd == nil {
-		return "", "", nil, fmt.Errorf("agent '%s' not found", agentName)
+		return "", "", nil, fmt.Errorf("command '%s' not found", cmdName)
 	}
 
 	// Find workflow containing this cmd
@@ -213,17 +213,17 @@ func findAgent(index *resolve.Index, agentName string, workflowFilter string) (s
 
 	if workflowName == "" {
 		if workflowFilter != "" {
-			return "", "", nil, fmt.Errorf("agent '%s' not found in workflow '%s'", agentName, workflowFilter)
+			return "", "", nil, fmt.Errorf("command '%s' not found in workflow '%s'", cmdName, workflowFilter)
 		}
-		return "", "", nil, fmt.Errorf("no workflow found containing agent '%s'", agentName)
+		return "", "", nil, fmt.Errorf("no workflow found containing command '%s'", cmdName)
 	}
 
 	return cmdMetadataName, workflowName, foundCmd, nil
 }
 
-// generateForAgent generates shell code for a specific agent in a workflow.
+// generateForCmd generates shell code for a specific command in a workflow.
 // Returns (shellCode, shellType, error).
-func generateForAgent(result *ApplyResult, workflowName string, cmdMetadataName string, cmd *manifest.Cmd) (string, string, error) {
+func generateForCmd(result *ApplyResult, workflowName string, cmdMetadataName string, cmd *manifest.Cmd) (string, string, error) {
 	// Resolve the workflow with the specific cmd filter
 	resolver := result.Resolver
 	cmdFilter := []string{cmdMetadataName}
@@ -247,17 +247,17 @@ func generateForAgent(result *ApplyResult, workflowName string, cmdMetadataName 
 	return shellCode, resolved.Shell, nil
 }
 
-// executeAgent writes a temp script, runs bash, and propagates exit code.
-func executeAgent(shellCode string, shellType string, agentName string, extraArgs []string) {
+// executeCmd writes a temp script, runs bash, and propagates exit code.
+func executeCmd(shellCode string, shellType string, cmdName string, extraArgs []string) {
 	// Generate unique temp file name
 	hash := sha256.Sum256([]byte(shellCode))
 	tempFileName := fmt.Sprintf("kfg-run-%s.%s", hex.EncodeToString(hash[:8]), shellType)
 	tempFile := filepath.Join(os.TempDir(), tempFileName)
 
-	// Build the script: generated shell code + trap + agent call
+	// Build the script: generated shell code + trap + command call
 	script := shellCode + "\n\n"
 	script += fmt.Sprintf("trap 'rm -f %s' EXIT\n", tempFile)
-	script += fmt.Sprintf("%s \"$@\"\n", agentName)
+	script += fmt.Sprintf("%s \"$@\"\n", cmdName)
 
 	// Write temp file
 	err := os.WriteFile(tempFile, []byte(script), 0644)
@@ -289,13 +289,13 @@ func executeAgent(shellCode string, shellType string, agentName string, extraArg
 	os.Exit(0)
 }
 
-// listAvailableAgents prints all Cmds with their workflow names.
-func listAvailableAgents(index *resolve.Index) {
+// listAvailableCmds prints all Cmds with their workflow names.
+func listAvailableCmds(index *resolve.Index) {
 	cmds := index.GetCmds()
 	workflows := index.GetCmdWorkflows()
 
 	if len(cmds) == 0 {
-		fmt.Println("No agents found in manifests")
+		fmt.Println("No commands found in manifests")
 		return
 	}
 
@@ -307,7 +307,7 @@ func listAvailableAgents(index *resolve.Index) {
 		}
 	}
 
-	fmt.Println("Available agents:")
+	fmt.Println("Available commands:")
 	for _, cmd := range cmds {
 		commandName := cmd.Metadata.CommandName
 		if commandName == "" {

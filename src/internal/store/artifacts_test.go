@@ -8,7 +8,7 @@ import (
 
 func TestCopyFile(t *testing.T) {
 	// Create temp directories
-	tempDir, err := os.MkdirTemp("", "nixai-store-test")
+	tempDir, err := os.MkdirTemp("", "kfg-store-test")
 	if err != nil {
 		t.Fatalf("failed to create temp dir: %v", err)
 	}
@@ -54,7 +54,7 @@ func TestCopyFileNonExistentSource(t *testing.T) {
 
 func TestCopyDirectory(t *testing.T) {
 	// Create temp directories
-	tempDir, err := os.MkdirTemp("", "nixai-store-test")
+	tempDir, err := os.MkdirTemp("", "kfg-store-test")
 	if err != nil {
 		t.Fatalf("failed to create temp dir: %v", err)
 	}
@@ -105,7 +105,7 @@ func TestCopyDirectory(t *testing.T) {
 
 func TestCopyDirectoryPreservesPermissions(t *testing.T) {
 	// Create temp directories
-	tempDir, err := os.MkdirTemp("", "nixai-store-test")
+	tempDir, err := os.MkdirTemp("", "kfg-store-test")
 	if err != nil {
 		t.Fatalf("failed to create temp dir: %v", err)
 	}
@@ -144,7 +144,7 @@ func TestCopyDirectoryPreservesPermissions(t *testing.T) {
 
 func TestCopyArtifact(t *testing.T) {
 	// Create temp directories
-	tempDir, err := os.MkdirTemp("", "nixai-store-test")
+	tempDir, err := os.MkdirTemp("", "kfg-store-test")
 	if err != nil {
 		t.Fatalf("failed to create temp dir: %v", err)
 	}
@@ -180,7 +180,7 @@ func TestCopyArtifact(t *testing.T) {
 
 func TestCopyArtifactDirectory(t *testing.T) {
 	// Create temp directories
-	tempDir, err := os.MkdirTemp("", "nixai-store-test")
+	tempDir, err := os.MkdirTemp("", "kfg-store-test")
 	if err != nil {
 		t.Fatalf("failed to create temp dir: %v", err)
 	}
@@ -225,7 +225,7 @@ func TestCopyArtifactDirectory(t *testing.T) {
 
 func TestCopyArtifactsFromRoot(t *testing.T) {
 	// Create temp directories
-	tempDir, err := os.MkdirTemp("", "nixai-store-test")
+	tempDir, err := os.MkdirTemp("", "kfg-store-test")
 	if err != nil {
 		t.Fatalf("failed to create temp dir: %v", err)
 	}
@@ -274,7 +274,7 @@ func TestCopyArtifactsFromRoot(t *testing.T) {
 
 func TestCopyArtifactsFromRootWithMissing(t *testing.T) {
 	// Create temp directories
-	tempDir, err := os.MkdirTemp("", "nixai-store-test")
+	tempDir, err := os.MkdirTemp("", "kfg-store-test")
 	if err != nil {
 		t.Fatalf("failed to create temp dir: %v", err)
 	}

@@ -294,7 +294,7 @@ func (g *Generator) generateGlobalBuildResult(code *strings.Builder) {
 	encodedBuildResult := base64.StdEncoding.EncodeToString([]byte(g.buildResultYAML))
 
 	code.WriteString("# Build result file setup (global scope)\n")
-	code.WriteString("__kfg_build_result_file=$(mktemp -t nixai-build-XXXXXX.yaml)\n")
+	code.WriteString("__kfg_build_result_file=$(mktemp -t kfg-build-XXXXXX.yaml)\n")
 	code.WriteString("echo \"" + encodedBuildResult + "\" | base64 -d > \"$__kfg_build_result_file\"\n")
 	code.WriteString("export KFG_BUILD_RESULT_FILE=$__kfg_build_result_file\n")
 	code.WriteString("\n")
