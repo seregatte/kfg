@@ -2,7 +2,7 @@
 
 # Validate playwright extension resource names follow playwright.<kind>.<name> convention.
 
-PLAYWRIGHT_EXT=".manifests/base/extensions/playwright"
+PLAYWRIGHT_EXT=".manifests/base/extensions/ai/playwright"
 
 _extract_name() {
     grep '^\s*name:' "$1" | head -1 | sed 's/.*name:\s*//' | tr -d ' '

@@ -2,7 +2,7 @@
 
 # Validate all resource metadata.name fields follow the new naming convention.
 
-MANIFESTS_BASE=".manifests/base/extensions/ai-agents"
+MANIFESTS_BASE=".manifests/base/extensions/ai"
 
 _extract_name() {
     grep '^\s*name:' "$1" | head -1 | sed 's/.*name:\s*//' | tr -d ' '

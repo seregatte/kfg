@@ -1,7 +1,7 @@
 apiVersion: kfg.dev/v1alpha1
 kind: Step
 metadata:
-  name: kfg.extension.chrome-devtools.install
+  name: chrome-devtools.steps.install
 spec:
   run: |
     _kfg.log.info "Installing chrome-devtools skills..."

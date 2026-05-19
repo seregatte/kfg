@@ -8,3 +8,9 @@ resources:
   - prompts
   - subagents
   - converters
+  - chrome-devtools
+  - ctx7
+  - gws
+  - notebooklm
+  - openspec
+  - playwright

@@ -2,7 +2,7 @@
 
 # Validate openspec extension resource names follow openspec.<kind>.<name> convention.
 
-OPENSPEC_EXT=".manifests/base/extensions/openspec"
+OPENSPEC_EXT=".manifests/base/extensions/ai/openspec"
 
 _extract_name() {
     grep '^\s*name:' "$1" | head -1 | sed 's/.*name:\s*//' | tr -d ' '

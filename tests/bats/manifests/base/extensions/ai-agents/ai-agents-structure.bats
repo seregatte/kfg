@@ -2,7 +2,7 @@
 
 # Validate the ai-agents extension structure: all expected files exist.
 
-MANIFESTS_BASE=".manifests/base/extensions/ai-agents"
+MANIFESTS_BASE=".manifests/base/extensions/ai"
 
 @test "ai-agents root kustomization exists" {
     [ -f "$MANIFESTS_BASE/kustomization.yaml" ]

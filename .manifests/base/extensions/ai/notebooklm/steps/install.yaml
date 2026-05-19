@@ -1,7 +1,7 @@
 apiVersion: kfg.dev/v1alpha1
 kind: Step
 metadata:
-  name: kfg.extension.notebooklm.install
+  name: notebooklm.steps.install
 spec:
   run: |
     _kfg.log.info "Installing notebooklm skills..."

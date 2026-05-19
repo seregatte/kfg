@@ -2,7 +2,7 @@
 
 # Validate ctx7 extension resource names follow ctx7.<kind>.<name> convention.
 
-CTX7_EXT=".manifests/base/extensions/ctx7"
+CTX7_EXT=".manifests/base/extensions/ai/ctx7"
 
 _extract_name() {
     grep '^\s*name:' "$1" | head -1 | sed 's/.*name:\s*//' | tr -d ' '

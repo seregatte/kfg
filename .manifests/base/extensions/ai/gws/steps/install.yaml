@@ -1,7 +1,7 @@
 apiVersion: kfg.dev/v1alpha1
 kind: Step
 metadata:
-  name: kfg.extension.gws.install
+  name: gws.steps.install
 spec:
   run: |
     _kfg.log.info "Installing gws skills..."
