@@ -75,7 +75,7 @@
               export KFG_VERBOSE=3
               export PATH="./bin:$PATH"
               # source <(kfg apply -k $HOME/.nixai/manifests/overlay/dev)
-              source <(go run ./src/cmd/kfg apply -k .manifests/overlay/dev)
+              source <(go run ./src/cmd/kfg apply -k packages/domains/ai-agents/overlays/dev)
             '';
           };
         in

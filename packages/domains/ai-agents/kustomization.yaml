@@ -7,10 +7,9 @@ kind: Kustomization
 
 namespace: default
 
-bases:
-  - ../../framework/
-
 resources:
+  - ../../framework/
   - manifests/
+  
 
 # Overlays can be specified via variants or through composition

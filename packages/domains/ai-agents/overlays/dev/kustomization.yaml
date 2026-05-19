@@ -4,9 +4,7 @@ kind: Kustomization
 # Development overlay for AI agents domain
 # References framework and domain manifests, adds dev-specific resources
 
-bases:
-  - ../../../../framework/
-
 resources:
+  - ../../../../framework/
   - ../../manifests/
   - agents-workflow.yaml
