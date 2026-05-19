@@ -6,12 +6,18 @@ context: |
   Source of truth:
   - flake.nix defines Nix packaging and development shells
   - docs/AGENTS.md provides agent operating context
-  - docs/context/openspec is the OpenSpec root
+  - docs/context/openspec/ is the engine-level OpenSpec root
+  - packages/framework/openspec/ is the framework package OpenSpec root
+  - packages/domains/*/openspec/ are domain-specific OpenSpec roots
   
   Project structure:
-  - Manifests are loaded from KFG_MANIFEST_PATH
-  - Default: ${XDG_CONFIG_HOME:-$HOME/.config}/kfg/manifests:./.nixai/manifests
-  - Manifests use YAML format (*.yaml, *.yml)
+  - Manifests are loaded from KFG_MANIFEST_PATH (configured manifest sources)
+  - Engine implementation lives in src/
+  - Framework package (shared primitives) lives in packages/framework/
+  - Domain packages (content layers) live in packages/domains/*/
+  - Public kustomization entrypoints: packages/framework/kustomization.yaml and packages/domains/*/kustomization.yaml
+  - Engine and integration tests live in tests/bats/
+  - Package-specific tests live in packages/*/tests/
   - See docs/context/openspec/specs/project-structure/spec.md for full specification
   
   Architecture:
@@ -44,14 +50,19 @@ context: |
   - Generates bash functions from manifests
   - Internal helpers prefixed with __kfg_
   - Outputs are ephemeral (scoped to single invocation)
-  - Sessions auto-generated per command wrapper
+  - Sessions auto-generated per command wrapper (KFG_SESSION_ID)
   - Steps can have when conditions based on outputs
   - Support for before/after steps with dependency resolution
+  - Exports stable runtime API (shell-runtime-api spec) for framework and domain packages
+  - Framework packages consume the runtime API to implement shared steps
   
   Testing requirements:
   - Unit tests for parsing, validation, and resolution logic
   - Integration tests for end-to-end manifest to shell
-  - Shell tests (Bats) for generated code validation
+  - Shell tests (Bats) for generated code validation in tests/bats/
+  - Framework-specific Bats tests in packages/framework/tests/
+  - Domain-specific Bats tests in packages/domains/*/tests/
+  - Canonical test target `make test-bats` discovers and runs all Bats roots
   - All tests must be deterministic and reproducible
 rules:
   proposal:

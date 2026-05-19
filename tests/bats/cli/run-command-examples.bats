@@ -1,49 +1,52 @@
 #!/usr/bin/env bats
 
 # kfg run command examples tests
-# Validates that examples in --help use generic paths like .manifests/overlay/dev
-# instead of legacy .nixai/overlay/dev paths
+# Validates that examples in --help use package-oriented paths like packages/domains/ai-agents/overlays/dev
+# instead of legacy .manifests/ or .nixai/ paths
 
 load '../test_helper'
 
-@test "kfg run --help examples use '.manifests/overlay/dev' (not '.nixai/overlay/dev')" {
+@test "kfg run --help examples use package paths (not '.manifests' or '.nixai')" {
     run "${KFG_BIN}" run --help
     [ "$status" -eq 0 ]
-    # Check that examples use .manifests path
-    [[ "$output" =~ ".manifests/overlay/dev" ]]
-    # Verify it does NOT use legacy .nixai path
+    # Check that examples use packages/ path format
+    [[ "$output" =~ "packages/domains/ai-agents/overlays/dev" ]]
+    # Verify it does NOT use legacy .manifests or .nixai paths
+    [[ ! "$output" =~ ".manifests/overlay/dev" ]]
     [[ ! "$output" =~ ".nixai/overlay/dev" ]]
 }
 
-@test "kfg run --help examples do not contain '.nixai' anywhere" {
+@test "kfg run --help examples do not contain '.manifests' or '.nixai'" {
     run "${KFG_BIN}" run --help
     [ "$status" -eq 0 ]
-    # The help output should not contain any .nixai references
+    # The help output should not contain legacy paths
+    [[ ! "$output" =~ ".manifests" ]]
     [[ ! "$output" =~ ".nixai" ]]
 }
 
-@test "kfg run --help examples use '.manifests' paths consistently" {
+@test "kfg run --help examples reference package paths" {
     run "${KFG_BIN}" run --help
     [ "$status" -eq 0 ]
-    # Count occurrences of .manifests
-    manifests_count=$(echo "$output" | grep -c ".manifests" || true)
-    # Should have at least one .manifests reference in examples
-    [ "$manifests_count" -ge 1 ]
+    # Count occurrences of packages/ path
+    packages_count=$(echo "$output" | grep -c "packages/" || true)
+    # Should have at least one packages/ reference in examples
+    [ "$packages_count" -ge 1 ]
 }
 
-@test "kfg run --help GitHub example uses valid path format" {
+@test "kfg run --help GitHub example uses valid package path format" {
     run "${KFG_BIN}" run --help
     [ "$status" -eq 0 ]
-    # Check GitHub URL example format
-    [[ "$output" =~ "https://github.com/owner/repo//manifests" ]]
+    # Check GitHub URL example format with new package path
+    [[ "$output" =~ "https://github.com/owner/repo//packages/domains/ai-agents/overlays/dev" ]]
 }
 
-@test "kfg run --help KFG_KPATH example uses .manifests path" {
+@test "kfg run --help KFG_KPATH example uses package path" {
     run "${KFG_BIN}" run --help
     [ "$status" -eq 0 ]
-    # Check KFG_KPATH example uses .manifests
-    [[ "$output" =~ "KFG_KPATH=./manifests" ]]
-    # Verify it does NOT use legacy .nixai
+    # Check KFG_KPATH example uses packages/framework path
+    [[ "$output" =~ "KFG_KPATH=./packages/framework" ]]
+    # Verify it does NOT use legacy .manifests or .nixai
+    [[ ! "$output" =~ "KFG_KPATH=.manifests" ]]
     [[ ! "$output" =~ "KFG_KPATH=.nixai" ]]
 }
 

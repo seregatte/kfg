@@ -1,4 +1,4 @@
-// Package imagefile implements a parser for NixAI Imagefile manifests.
+// Package imagefile implements a parser for kfg Imagefile manifests.
 // Imagefile is a declarative format for composing configuration images
 // inspired by Dockerfile but tailored to NixAI's needs.
 package imagefile

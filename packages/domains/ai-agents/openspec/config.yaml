@@ -1,0 +1,57 @@
+schema: spec-driven
+context: |
+  Package: kfg ai-agents domain - AI-specific manifests, steps, and capabilities.
+  
+  Domain responsibilities:
+  - Provide AI agent manifest resources (Claude, Gemini, Pi, etc.)
+  - Support development and production overlays
+  - Maintain domain-specific capabilities and extensions
+  - Document domain-specific behavior
+  
+  Domain structure:
+  - packages/domains/ai-agents/kustomization.yaml - public domain entrypoint
+  - packages/domains/ai-agents/manifests/ - domain-specific manifests
+  - packages/domains/ai-agents/overlays/dev/ - development overlay
+  - packages/domains/ai-agents/openspec/ - domain-specific specs and changes
+  - packages/domains/ai-agents/tests/ - domain validation tests
+  
+  Domain composition:
+  - Domain kustomization bases on packages/framework/ (framework package)
+  - Domain manifests layer on top of framework exports
+  - Development overlay (overlays/dev/) adds dev-specific configuration
+  
+  Domain tests:
+  - Unit tests for domain-specific resources
+  - Integration tests for overlay composition
+  - Bats tests for shell generation with domain resources
+  - All domain tests live in packages/domains/ai-agents/tests/
+  
+  Domain development:
+  - Domain changes are tracked in packages/domains/ai-agents/openspec/changes/
+  - Domain specs document domain-specific capabilities in packages/domains/ai-agents/openspec/specs/
+  - Cross-layer changes use sibling changes with the same slug across engine, framework, and domain roots
+  
+  Backward compatibility:
+  - Domain API (public kustomization, overlay entrypoints) is stable
+  - Framework API (imported via base) must remain backward compatible
+  - Breaking changes require advance notice and migration path
+rules:
+  proposal:
+    - Describe which domain resources or overlays are affected
+    - Call out any framework dependencies or requirements
+    - Include backward compatibility assessment
+  specs:
+    - Document domain-specific capabilities and their contract
+    - Use normative language (MUST, SHALL)
+    - Include examples of domain resource usage
+    - Document any overlay-specific behavior
+  design:
+    - Document domain manifest structure and organization
+    - Document overlay composition and override semantics
+    - Include domain entrypoint and public API details
+  tasks:
+    - Break work into concrete implementation steps
+    - Include validation for domain functionality
+    - Include Bats test tasks for domain-specific tests
+    - Include overlay testing
+    - Include documentation updates

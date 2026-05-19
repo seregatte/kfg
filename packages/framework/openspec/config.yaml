@@ -1,0 +1,50 @@
+schema: spec-driven
+context: |
+  Package: kfg framework - shared manifest primitives and reusable steps.
+  
+  Framework responsibilities:
+  - Export reusable manifest steps (materialize, cleanup, ensure-gitignore, etc.)
+  - Provide stable public kustomization entrypoint at packages/framework/kustomization.yaml
+  - Maintain shell-runtime-api contract with the kfg engine
+  - Document exported primitives and capabilities
+  
+  Framework structure:
+  - packages/framework/kustomization.yaml - public entrypoint
+  - packages/framework/manifests/steps/ - reusable steps
+  - packages/framework/openspec/ - framework-specific specs and changes
+  - packages/framework/tests/ - framework validation tests
+  
+  Framework tests:
+  - Unit tests for step functionality
+  - Integration tests for step composition
+  - Bats tests for shell generation and execution
+  - All framework tests live in packages/framework/tests/
+  
+  Framework development:
+  - Framework changes are tracked in packages/framework/openspec/changes/
+  - Framework specs document exported capabilities in packages/framework/openspec/specs/
+  - Cross-layer changes (affecting engine and framework) use sibling changes with the same slug
+  
+  Backward compatibility:
+  - Framework API (exported steps, kustomization entrypoint) is stable
+  - Shell-runtime-api contract must remain backward compatible
+  - Breaking changes require advance notice and migration path
+rules:
+  proposal:
+    - Describe which framework steps or primitives are affected
+    - Call out impact on domain packages or dependent systems
+    - Include stability/backward compatibility assessment
+  specs:
+    - Document exported step behavior and contract
+    - Use normative language (MUST, SHALL)
+    - Include examples of step usage
+    - Document any dependencies on shell-runtime-api
+  design:
+    - Document step implementation approach
+    - Document manifest composition and merge semantics
+    - Include kustomization structure details
+  tasks:
+    - Break work into concrete implementation steps
+    - Include validation for step functionality
+    - Include Bats test tasks for framework-specific tests
+    - Include documentation updates

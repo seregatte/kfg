@@ -46,14 +46,14 @@ GitHub URLs are supported and will be cloned automatically:
 Arguments after '--' are passed directly to the command.
 
 Examples:
-  kfg run -k .manifests/overlay/dev my-cmd
-  kfg run -k .manifests/overlay/dev my-cmd -- --flag value
-  kfg run -k https://github.com/owner/repo//manifests my-cmd
-  kfg run -k .manifests/overlay/dev -w dev my-cmd
+  kfg run -k packages/domains/ai-agents/overlays/dev my-cmd
+  kfg run -k packages/domains/ai-agents/overlays/dev my-cmd -- --flag value
+  kfg run -k https://github.com/owner/repo//packages/domains/ai-agents/overlays/dev my-cmd
+  kfg run -k packages/domains/ai-agents/overlays/dev -w openspec my-cmd
   kfg run -f manifest.yaml my-cmd
-  kfg run -k .manifests/overlay/dev (lists available commands)
-  KFG_KPATH=./manifests kfg run my-cmd
-  KFG_KPATH=https://github.com/owner/repo//manifests kfg run my-cmd`,
+  kfg run -k packages/domains/ai-agents/overlays/dev (lists available commands)
+  KFG_KPATH=./packages/framework kfg run my-cmd
+  KFG_KPATH=https://github.com/owner/repo//packages/framework kfg run my-cmd`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// KFG_KPATH fallback: if kustomize path is empty, use env var
 		if runKustomizePath == "" && runFile == "" {

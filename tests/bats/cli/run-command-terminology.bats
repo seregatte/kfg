@@ -33,11 +33,15 @@ load '../test_helper'
     [[ ! "$output" =~ "lists available agents" ]]
 }
 
-@test "kfg run --help does not contain 'agent' anywhere" {
+@test "kfg run --help does not contain 'agent' in descriptions (only in package paths)" {
     run "${KFG_BIN}" run --help
     [ "$status" -eq 0 ]
-    # The help output should not contain any agent references
-    [[ ! "$output" =~ "agent" ]]
+    # The help output should not use agent terminology in descriptions
+    # (it's OK to appear in package path names like ai-agents)
+    # Check that descriptions don't use 'agent' terminology
+    [[ ! "$output" =~ "Run an agent" ]]
+    [[ ! "$output" =~ "Available agents" ]]
+    [[ ! "$output" =~ "No agents found" ]]
 }
 
 @test "kfg run with no args shows 'Available commands:' (not 'Available agents:')" {

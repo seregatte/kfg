@@ -1,9 +1,0 @@
-apiVersion: kustomize.config.k8s.io/v1beta1
-kind: Kustomization
-
-resources:
-  - cleanup.yaml
-  - copy-context.yaml
-  - ensure-gitignore.yaml
-  - materialize.yaml
-  - materialize-scaffold.yaml

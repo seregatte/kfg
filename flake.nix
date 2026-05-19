@@ -8,7 +8,7 @@
 
   outputs = { self, nixpkgs, nixai }:
     let
-      version = "2.1.0";
+      version = "0.0.2";
       
       # Platform-specific SHA-256 hashes (updated by release workflow)
       platformHashes = {
@@ -74,7 +74,6 @@
               echo "Welcome to the kfg development environment!"
               export KFG_VERBOSE=3
               export PATH="./bin:$PATH"
-              ln -s docs/context/openspec ./ 2>/dev/null || true
               # source <(kfg apply -k $HOME/.nixai/manifests/overlay/dev)
               source <(go run ./src/cmd/kfg apply -k .manifests/overlay/dev)
             '';

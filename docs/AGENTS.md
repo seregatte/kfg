@@ -122,25 +122,31 @@ Key test areas:
 
 ### Bats Integration Tests
 
-Integration tests are in `tests/bats/`. Run with `make test-bats` (canonical entrypoint).
+Integration tests are organized by content ownership. Run with `make test-bats` (canonical entrypoint), which discovers tests from all roots:
 
-Directory structure:
+**Engine tests** (tests/bats/):
 - `cli/`: CLI command tests
 - `workflows/`: Runtime/workflow tests (image, imagefile, store/workspace)
-- `manifests/base/extensions/ai-agents/`: AI agents extension structure tests
-- `manifests/base/extensions/ctx7/`: ctx7 extension naming tests
-- `manifests/base/steps/`: Manifest resource tests (mirrored from `.manifests/base/steps/`)
-- `helpers/`: Shared test helpers (common.bash, manifests.bash, vendor/)
+- `helpers/`: Shared Bats helpers (common.bash, manifests.bash, vendor/)
+
+**Framework package tests** (packages/framework/tests/):
+- Step functionality and contract validation
+- Framework-specific shell generation tests
+
+**Domain package tests** (packages/domains/ai-agents/tests/):
+- AI agents resource validation
+- Extension functionality tests (claude, gemini, pi, ctx7, etc.)
+- Overlay composition tests
 
 Key test files:
-- `cli/cli.bats`: CLI command tests
-- `workflows/image_layer_system.bats`: Image build/push/start/stop
-- `workflows/imagefile_features.bats`: Imagefile parsing
-- `workflows/store_workspace.bats`: Workspace operations
-- `manifests/base/extensions/ai-agents/*.bats`: AI agents extension validation
-- `manifests/base/steps/*.bats`: Step validation tests
+- `tests/bats/cli/cli.bats`: CLI command tests
+- `tests/bats/workflows/image_layer_system.bats`: Image build/push/start/stop
+- `tests/bats/workflows/imagefile_features.bats`: Imagefile parsing
+- `tests/bats/workflows/store_workspace.bats`: Workspace operations
+- `packages/framework/tests/*.bats`: Framework step validation
+- `packages/domains/ai-agents/tests/base/extensions/ai-agents/*.bats`: Domain validation
 
-Compatibility alias: `make test-manifests` runs only manifest tests.
+The `make test-bats` target automatically discovers and runs tests from all configured Bats roots.
 
 ## Environment Variables
 

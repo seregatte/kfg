@@ -1,49 +1,54 @@
 ## ADDED Requirements
 
-### Requirement: Unified Bats test root
-The repository MUST store all Bats tests under a single canonical root at `tests/bats/`.
+### Requirement: Multi-root Bats test discovery
+The repository MUST discover Bats tests from engine and package-local roots.
 
-#### Scenario: Discovering Bats tests
-- **WHEN** a contributor searches for repository Bats coverage
-- **THEN** all supported Bats test files SHALL reside under `tests/bats/`
-- **AND** no supported Bats test root SHALL remain under `.manifests/tests/`
+#### Scenario: Discovering engine Bats tests
+- **WHEN** a contributor searches for engine tests
+- **THEN** engine and integration tests SHALL reside under `tests/bats/`
+- **AND** the canonical `make test-bats` target SHALL execute engine tests
 
-### Requirement: Mirrored manifest test layout
-Manifest-resource Bats tests MUST mirror the resource paths they validate under `.manifests/base/` and `.manifests/overlay/`.
+#### Scenario: Discovering package Bats tests
+- **WHEN** a package defines package-specific Bats suites
+- **THEN** package tests SHALL reside under `packages/<package>/tests/`
+- **AND** the canonical `make test-bats` target SHALL discover and execute package tests
 
-#### Scenario: Base resource test mapping
-- **WHEN** a manifest resource exists at `.manifests/base/<path>/<name>.yaml`
-- **THEN** its Bats coverage SHALL reside at `tests/bats/manifests/base/<path>/<name>.bats`
+#### Scenario: Repository root detection
+- **WHEN** a Bats suite from any root needs to discover the repository root
+- **THEN** it SHALL NOT assume it lies under `tests/bats/`
+- **AND** it SHALL use an explicit root detection mechanism independent of path position
 
-#### Scenario: Overlay resource test mapping
-- **WHEN** a manifest resource exists at `.manifests/overlay/<overlay>/<name>.yaml`
-- **THEN** its Bats coverage SHALL reside at `tests/bats/manifests/overlay/<overlay>/<name>.bats`
+### Requirement: Engine and package test organization
+Bats tests MUST be organized around content ownership and responsibility.
+
+#### Scenario: Engine test location
+- **WHEN** a Bats test validates engine CLI commands or workflow runtime behavior
+- **THEN** the test SHALL reside under `tests/bats/`
+- **AND** tests MAY be organized into subdirectories such as `cli/` or `workflows/`
+
+#### Scenario: Package test location
+- **WHEN** a Bats test validates package-specific resources, steps, or overlays
+- **THEN** the test SHALL reside under `packages/<package>/tests/`
+- **AND** tests MAY mirror the package structure they validate
 
 ### Requirement: Shared Bats helpers by concern
 The repository MUST provide shared Bats helpers under `tests/bats/helpers/` with concern-specific entrypoints.
 
 #### Scenario: Loading common Bats helpers
-- **WHEN** a Bats suite needs repository root or binary bootstrap logic
-- **THEN** it SHALL load shared helper code from `tests/bats/helpers/`
+- **WHEN** a Bats suite from engine or any package needs repository root or binary bootstrap logic
+- **THEN** it SHALL source shared helper code from `tests/bats/helpers/`
 - **AND** repository-wide helper behavior SHALL NOT be duplicated across multiple helper roots
 
-#### Scenario: Loading manifest execution helpers
+#### Scenario: Package-aware manifest helpers
 - **WHEN** a Bats suite executes a manifest resource such as a Step or overlay workflow
-- **THEN** it SHALL use helper functions from the shared manifest helper module
-- **AND** those helpers SHALL resolve manifest paths relative to the repository root rather than the suite directory
+- **THEN** it SHALL use helper functions that accept explicit package paths rather than hardcoding `.manifests/`
+- **AND** helpers SHALL resolve manifest paths dynamically based on package entrypoint location
 
-### Requirement: Separate workflow runtime coverage
-Generic workflow and shell-runtime Bats tests MUST remain distinct from manifest-resource tests even though they share the same root.
-
-#### Scenario: Organizing generic workflow tests
-- **WHEN** a Bats test validates generic `CmdWorkflow` or `Step` runtime behavior using ad hoc fixtures
-- **THEN** the test SHALL live under a non-manifest subtree within `tests/bats/`
-- **AND** it SHALL NOT be placed in the mirrored manifest-resource tree unless it targets a checked-in manifest resource
-
-### Requirement: Unified Bats execution target
-Repository Bats entrypoints MUST run against the unified `tests/bats/` tree.
+### Requirement: Canonical Bats execution target
+Repository Bats entrypoints MUST discover and run tests from all roots.
 
 #### Scenario: Running the canonical Bats target
-- **WHEN** repository Bats tests are invoked through the canonical test target
-- **THEN** the target SHALL execute suites from `tests/bats/`
-- **AND** contributors SHALL NOT need a separate manifest-specific Bats root to run supported shell tests
+- **WHEN** repository Bats tests are invoked through the canonical `make test-bats` target
+- **THEN** the target SHALL execute suites from `tests/bats/` and all package roots under `packages/*/tests/`
+- **AND** results SHALL aggregate across all roots
+- **AND** contributors SHALL NOT need to know individual package root locations

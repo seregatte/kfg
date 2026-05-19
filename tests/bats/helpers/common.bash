@@ -4,9 +4,27 @@
 # This file provides shared path/bootstrap logic for all Bats suites.
 
 # Get the project root directory (absolute path)
-# BATS_TEST_DIRNAME is the directory containing the test file
-# We strip /tests/bats* from the path to get the project root
-PROJECT_ROOT="$(cd "${BATS_TEST_DIRNAME%/tests/bats*}" && pwd)"
+# Strategy: Walk up the directory tree looking for repository markers (go.mod, Makefile)
+# This works regardless of whether tests are in tests/bats/ or packages/*/tests/
+find_project_root() {
+    local current="${1:-.}"
+    current="$(cd "$current" && pwd)"
+    
+    while [[ "$current" != "/" ]]; do
+        # Check for repository markers
+        if [[ -f "$current/go.mod" ]] && [[ -f "$current/Makefile" ]]; then
+            echo "$current"
+            return 0
+        fi
+        current="$(dirname "$current")"
+    done
+    
+    # Fallback: use old path-stripping method if markers not found
+    # (for backward compatibility with legacy test locations)
+    echo "$(cd "${BATS_TEST_DIRNAME%/tests/bats*}" && pwd)"
+}
+
+PROJECT_ROOT="$(find_project_root "$BATS_TEST_DIRNAME")"
 
 # KFG binary path
 KFG_BIN="${PROJECT_ROOT}/bin/kfg"
@@ -34,7 +52,7 @@ function_exists_in_output() {
     local output="$1"
     local function_name="$2"
     
-    if [[ "$output" =~ "${function_name}()" ]]; then
+    if [[ "$output" =~ ${function_name}\(\) ]]; then
         return 0
     else
         return 1

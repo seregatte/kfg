@@ -385,7 +385,7 @@ func TestRunCommandLongDescription(t *testing.T) {
 
 func TestRunCommandExamples(t *testing.T) {
 	// Verify the examples include GitHub URL and KFG_KPATH usage
-	assert.Contains(t, runCmd.Long, "kfg run -k https://github.com/owner/repo//manifests")
-	assert.Contains(t, runCmd.Long, "KFG_KPATH=./manifests kfg run")
+	assert.Contains(t, runCmd.Long, "kfg run -k https://github.com/owner/repo//packages/domains/ai-agents/overlays/dev my-cmd")
+	assert.Contains(t, runCmd.Long, "KFG_KPATH=./packages/framework kfg run")
 	assert.Contains(t, runCmd.Long, "KFG_KPATH=https://github.com")
 }

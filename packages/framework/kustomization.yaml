@@ -1,0 +1,13 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Framework package public entrypoint
+# This kustomization composes all exported framework resources
+# Consumers should reference this file, not internal framework paths
+
+namespace: default
+
+resources:
+  - manifests/
+
+# Overlays can be specified via variants or through composition

@@ -1,5 +1,5 @@
 // Package image implements the image build lifecycle, store persistence,
-// and workspace integration for NixAI's image layer system.
+// and workspace integration's image layer system.
 package image
 
 import (

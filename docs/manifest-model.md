@@ -278,12 +278,11 @@ Merge multiple assets into a single output:
 
 ## Overlays
 
-Overlays compose shared base manifests with project-specific resources. Each overlay lives under `.manifests/overlay/<name>/`:
+Overlays compose shared base manifests with project-specific resources. In the package-oriented architecture, overlays live under domain packages (e.g., `packages/domains/ai-agents/overlays/<name>/`):
 
 ```
-.manifests/overlay/<name>/
-├── kustomization.yaml     # References base + overlay resources
-├── cmds.yaml              # Overlay-specific commands
+packages/domains/<domain>/overlays/<name>/
+├── kustomization.yaml     # References domain + overlay resources
 ├── agents-workflow.yaml   # Overlay-specific workflow
 └── assets/
     ├── mcp.yaml           # Overlay-specific MCP assets
@@ -293,17 +292,17 @@ Overlays compose shared base manifests with project-specific resources. Each ove
 ### Overlay Structure
 
 ```yaml
-# overlay/<name>/kustomization.yaml
+# overlays/<name>/kustomization.yaml
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 metadata:
   name: my-overlay
 
+bases:
+  - ../../
+
 resources:
-  # Reference shared base (relative path)
-  - ../../../kfg/.manifests/base
   # Overlay-specific resources
-  - cmds.yaml
   - agents-workflow.yaml
 ```
 

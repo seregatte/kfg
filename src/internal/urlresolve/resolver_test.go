@@ -70,7 +70,7 @@ func TestIsGitHubURL(t *testing.T) {
 		},
 		{
 			name:     "Local path with subdirectory",
-			arg:      ".manifests/overlay/dev",
+			arg:      "packages/domains/ai-agents/overlays/dev",
 			expected: false,
 		},
 		{

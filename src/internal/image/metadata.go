@@ -1,4 +1,4 @@
-// Package image provides metadata structures and operations for NixAI images.
+// Package image provides metadata structures and operations for kfg images.
 // This file implements the metadata handling for image persistence and inspection.
 package image
 

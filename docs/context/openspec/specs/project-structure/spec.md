@@ -50,6 +50,27 @@ OpenSpec artifacts MUST follow a consistent directory structure.
 - **THEN** `docs/context/openspec/changes/<change-name>/` SHALL contain each change
 - **AND** each change SHALL include `proposal.md`, `design.md`, and `tasks.md`
 
+### Requirement: Package Structure
+
+The project SHALL use a package-oriented structure with explicit layers for engine, framework, and domain packages.
+
+#### Scenario: Framework package location
+- **WHEN** shared manifest primitives and reusable steps are defined
+- **THEN** `packages/framework/` SHALL contain the framework package
+- **AND** `packages/framework/manifests/steps/` SHALL contain shared steps
+- **AND** `packages/framework/kustomization.yaml` SHALL be the public entrypoint
+- **AND** `packages/framework/openspec/` SHALL contain package-local OpenSpec artifacts
+- **AND** `packages/framework/tests/` SHALL contain package-specific Bats suites
+
+#### Scenario: Domain package location
+- **WHEN** domain-specific manifests are defined
+- **THEN** `packages/domains/<domain>/` SHALL contain each domain package
+- **AND** `packages/domains/<domain>/manifests/` SHALL contain domain-specific manifests
+- **AND** `packages/domains/<domain>/overlays/` SHALL contain domain-specific overlays
+- **AND** `packages/domains/<domain>/kustomization.yaml` SHALL be the public domain entrypoint
+- **AND** `packages/domains/<domain>/openspec/` SHALL contain package-local OpenSpec artifacts
+- **AND** `packages/domains/<domain>/tests/` SHALL contain package-specific Bats suites
+
 ### Requirement: Manifest Storage
 
 Project-local manifests MUST be stored in a designated directory.
@@ -67,7 +88,7 @@ The directory tree MUST follow the canonical structure.
 - **THEN** the directory tree SHALL follow this structure:
 
 ```
-kfg_v2/
+kfg/
 ├── flake.nix                         # Nix flake definition
 ├── flake.lock                        # Nix flake lock
 ├── go.mod                            # Go module definition
@@ -88,23 +109,46 @@ kfg_v2/
 │       ├── resolve/                  # Dependency resolution
 │       └── validate/                 # Manifest validation
 ├── bin/                              # Compiled binaries (gitignored)
+├── packages/
+│   ├── framework/                    # Shared framework package
+│   │   ├── kustomization.yaml        # Framework public entrypoint
+│   │   ├── manifests/
+│   │   │   ├── kustomization.yaml
+│   │   │   └── steps/                # Shared reusable steps
+│   │   ├── overlays/                 # Framework-level overlays
+│   │   ├── openspec/                 # Package-local OpenSpec root
+│   │   │   ├── config.yaml
+│   │   │   ├── specs/
+│   │   │   └── changes/
+│   │   └── tests/                    # Framework-specific Bats suites
+│   └── domains/
+│       └── ai-agents/                # AI agents domain package
+│           ├── kustomization.yaml    # Domain public entrypoint
+│           ├── manifests/            # Domain-specific manifests
+│           │   ├── kustomization.yaml
+│           │   └── ...
+│           ├── overlays/              # Domain overlays
+│           │   └── dev/
+│           ├── openspec/              # Package-local OpenSpec root
+│           │   ├── config.yaml
+│           │   ├── specs/
+│           │   └── changes/
+│           └── tests/                 # Domain-specific Bats suites
 ├── docs/
 │   ├── AGENTS.md                     # Agent context file
 │   ├── CHANGELOG.md                  # Version history
 │   ├── DEVELOPMENT.md                # Development guidelines
 │   └── context/
 │       └── openspec/
-│           ├── config.yaml           # OpenSpec configuration
+│           ├── config.yaml           # Engine-level OpenSpec configuration
 │           ├── README.md             # OpenSpec navigation
-│           ├── specs/                # Durable specs
-│           └── changes/              # Active changes
+│           ├── specs/                # Engine and CLI capability specs
+│           └── changes/              # Engine-level active changes
 ├── tests/
 │   └── bats/
 │       ├── helpers/                  # Shared Bats helpers
-│       ├── manifests/                # Mirrored tests for .manifests resources
-│       │   ├── base/
-│       │   └── overlay/
-│       └── workflows/                # Generic workflow/runtime Bats tests
+│       ├── cli/                      # Engine CLI command tests
+│       └── workflows/                # Engine workflow and runtime tests
 └── .kfg/
     └── manifests/                    # Project-local manifests
 ```
@@ -150,7 +194,9 @@ Configuration, documentation, manifests, and test assets MUST NOT be mixed in in
 - **THEN** they MUST NOT be in `.kfg/manifests/` or configured manifest paths
 - **AND** documentation SHALL only exist under `docs/` or at root level
 
-#### Scenario: Bats tests not in manifest directories
+#### Scenario: Bats tests follow content ownership
 - **WHEN** repository Bats tests are placed
-- **THEN** they MUST NOT be stored under `.manifests/tests/`
-- **AND** supported Bats test files SHALL only exist under `tests/bats/`
+- **THEN** engine and integration tests SHALL reside under `tests/bats/`
+- **AND** package-specific tests SHALL reside under `packages/<package>/tests/`
+- **AND** the canonical `make test-bats` target SHALL discover tests from both locations
+- **AND** shared Bats helpers SHALL reside under `tests/bats/helpers/`

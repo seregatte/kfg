@@ -1,0 +1,14 @@
+apiVersion: kfg.dev/v1alpha1
+kind: Cmd
+metadata:
+  name: ai.cmds.openspec
+  commandName: openspec
+spec:
+  run: |
+    _kfg.log.debug "openspec:cmd" "$@"
+    cd "$OPENSPEC_ROOT_DIR"
+    command openspec "$@"
+    cd -
+  env:
+    AGENT: "openspec"
+    OPENSPEC_ROOT_DIR: "docs/context"

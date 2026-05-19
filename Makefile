@@ -40,15 +40,21 @@ test:
 	@echo "Running tests..."
 	cd src && KFG_VERBOSE= $(GOTEST) -v ./...
 
-## test-bats: Run Bats integration tests (canonical entrypoint)
-test-bats: build
-	@echo "Running Bats tests..."
-	bats tests/bats -r
+# Bats test directories (multi-root discovery)
+BATSROOTS:=tests/bats packages/framework/tests packages/domains/ai-agents/tests
 
-## test-manifests: Run manifest Bats tests (compatibility alias)
-test-manifests: build
-	@echo "Running manifest tests..."
-	bats tests/bats/manifests -r
+## test-bats: Run Bats integration tests from engine and packages (canonical entrypoint)
+test-bats: build
+	@echo "Running Bats tests from multiple roots..."
+	@for root in $(BATSROOTS); do \
+		if [ -d "$$root" ] && [ -n "$$(find $$root -name '*.bats')" ]; then \
+			echo "Testing: $$root"; \
+			bats $$root -r || exit 1; \
+		fi; \
+	done
+
+## test-manifests: Deprecated - use test-bats instead
+test-manifests: test-bats
 
 ## test-all: Run all tests (unit, bats)
 test-all: test test-bats

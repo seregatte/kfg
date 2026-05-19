@@ -2,26 +2,40 @@
 
 # Manifest Bats test helpers
 # This file provides helpers for executing and validating manifest resources.
+# Updated to support package-oriented repository structure.
 
-# Manifests directory (default overlay)
-MANIFESTS_DIR="${PROJECT_ROOT}/.manifests/overlay/dev"
+# Default manifests directory (can be overridden per test)
+# For backward compatibility, check if old .manifests path exists, otherwise use new package path
+if [[ -d "${PROJECT_ROOT}/.manifests/overlay/dev" ]]; then
+    DEFAULT_MANIFESTS_DIR="${PROJECT_ROOT}/.manifests/overlay/dev"
+elif [[ -d "${PROJECT_ROOT}/packages/domains/ai-agents/overlays/dev" ]]; then
+    DEFAULT_MANIFESTS_DIR="${PROJECT_ROOT}/packages/domains/ai-agents/overlays/dev"
+else
+    DEFAULT_MANIFESTS_DIR="${PROJECT_ROOT}/packages/domains/ai-agents/overlays/dev"
+fi
+
+# Allow tests to override manifest directory via MANIFESTS_DIR
+MANIFESTS_DIR="${MANIFESTS_DIR:-$DEFAULT_MANIFESTS_DIR}"
 
 # Helper: run kfg build and capture output
 kfg_build() {
-    "$KFG_BIN" build "$MANIFESTS_DIR" 2>/dev/null
+    local path="${1:-$MANIFESTS_DIR}"
+    "$KFG_BIN" build "$path" 2>/dev/null
 }
 
 # Helper: run kfg apply with converter
 kfg_convert() {
     local asset="$1"
     local converter="$2"
-    "$KFG_BIN" apply -k "$MANIFESTS_DIR" --convert "$asset" --use "$converter" 2>/dev/null
+    local path="${3:-$MANIFESTS_DIR}"
+    "$KFG_BIN" apply -k "$path" --convert "$asset" --use "$converter" 2>/dev/null
 }
 
 # Helper: run kfg apply for workflow
 kfg_workflow() {
     local workflow="$1"
-    "$KFG_BIN" apply -k "$MANIFESTS_DIR" --workflow "$workflow" 2>/dev/null
+    local path="${2:-$MANIFESTS_DIR}"
+    "$KFG_BIN" apply -k "$path" --workflow "$workflow" 2>/dev/null
 }
 
 # Helper: count resources of a kind in build output
@@ -31,13 +45,24 @@ count_kind() {
     echo "$output" | grep -c "^kind: ${kind}$"
 }
 
-# Helper: get step file path (accepts step name or full path)
+# Helper: find step file path - supports new package structure
+# First tries framework package steps, then falls back to old .manifests path
 step_file() {
     local step="$1"
+    local step_name="${step%.yaml}"  # Remove .yaml extension if present
+    
     if [[ "$step" == *".yaml" ]]; then
+        # Full path provided
         echo "${PROJECT_ROOT}/${step}"
+    elif [[ -f "${PROJECT_ROOT}/packages/framework/manifests/steps/${step_name}.yaml" ]]; then
+        # Framework step
+        echo "${PROJECT_ROOT}/packages/framework/manifests/steps/${step_name}.yaml"
+    elif [[ -f "${PROJECT_ROOT}/.manifests/base/steps/${step_name}.yaml" ]]; then
+        # Fallback to old location (for backward compatibility)
+        echo "${PROJECT_ROOT}/.manifests/base/steps/${step_name}.yaml"
     else
-        echo "${PROJECT_ROOT}/.manifests/base/steps/${step}.yaml"
+        # Return the expected new path anyway (test will fail if file doesn't exist)
+        echo "${PROJECT_ROOT}/packages/framework/manifests/steps/${step_name}.yaml"
     fi
 }
 
