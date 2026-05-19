@@ -71,10 +71,8 @@
           shell = pkgs.mkShell {
             inputsFrom = [ nixai.devShells.${system}.default ];
             shellHook = ''
-              echo "Welcome to the kfg development environment!"
-              export KFG_VERBOSE=3
               export PATH="./bin:$PATH"
-              # source <(kfg apply -k $HOME/.nixai/manifests/overlay/dev)
+              export OPENSPEC_ROOT_DIR=docs/context
               source <(go run ./src/cmd/kfg apply -k packages/domains/ai-agents/overlays/dev)
             '';
           };

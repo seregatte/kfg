@@ -6,9 +6,14 @@ metadata:
 spec:
   run: |
     _kfg.log.debug "openspec:cmd" "$@"
-    cd "$OPENSPEC_ROOT_DIR"
+    if [ -n "$OPENSPEC_ROOT_DIR" ]; then
+      _kfg.log.debug "openspec:cmd" "Going to $OPENSPEC_ROOT_DIR"
+      cd "$OPENSPEC_ROOT_DIR"
+    fi
     command openspec "$@"
-    cd -
+    if [ -n "$OPENSPEC_ROOT_DIR" ]; then
+      cd - 
+      _kfg.log.debug "openspec:cmd" "Going back to $OLDPWD"
+    fi
   env:
     AGENT: "openspec"
-    OPENSPEC_ROOT_DIR: "docs/context"

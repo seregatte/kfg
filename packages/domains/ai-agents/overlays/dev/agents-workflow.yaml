@@ -410,3 +410,8 @@ spec:
   after:
     - name: agents.cleanup.final
       step: kfg.cleanup
+      when:
+        output:
+          step: ai.steps.detect
+          name: AGENT
+          in: ["claude", "gemini", "opencode", "pi"]

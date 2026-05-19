@@ -31,6 +31,8 @@ spec:
 
     # Execute openspec init command
     command openspec init "$TOOLS_FLAG" --force
+
+    rm -Rf openspec
     
     # Track the created agent home directory
     __kfg_add_artifact "$AGENT_HOME"
