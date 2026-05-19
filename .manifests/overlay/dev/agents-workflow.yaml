@@ -5,11 +5,11 @@ metadata:
   shell: bash
 spec:
   cmds:
-    - kfg.agent.cmd.claude
-    - kfg.agent.cmd.gemini
-    - kfg.agent.cmd.opencode
-    - kfg.agent.cmd.pi
-    - kfg.agent.cmd.openspec
+    - ai.claude.cmd.main
+    - ai.gemini.cmd.main
+    - ai.opencode.cmd.main
+    - ai.pi.cmd.main
+    - ai.cmds.openspec
   before:
     # Phase 1 (-90): Ensure gitignore
     - name: agents.ensure-gitignore
@@ -20,7 +20,7 @@ spec:
 
     # Phase 2 (-70): Detection
     - name: agents.detect-agent
-      step: kfg.detect-agent
+      step: ai.steps.detect
       weight: -70
 
     # Phase 3 (-65): Scaffold (per-agent)
@@ -29,7 +29,7 @@ spec:
       weight: -65
       when:
         output:
-          step: kfg.detect-agent
+          step: ai.steps.detect
           name: AGENT
           equals: "claude"
       env:
@@ -41,7 +41,7 @@ spec:
       weight: -65
       when:
         output:
-          step: kfg.detect-agent
+          step: ai.steps.detect
           name: AGENT
           equals: "opencode"
       env:
@@ -53,7 +53,7 @@ spec:
       weight: -65
       when:
         output:
-          step: kfg.detect-agent
+          step: ai.steps.detect
           name: AGENT
           equals: "gemini"
       env:
@@ -65,7 +65,7 @@ spec:
       weight: -65
       when:
         output:
-          step: kfg.detect-agent
+          step: ai.steps.detect
           name: AGENT
           equals: "pi"
       env:
@@ -78,52 +78,52 @@ spec:
       weight: -63
       when:
         output:
-          step: kfg.detect-agent
+          step: ai.steps.detect
           name: AGENT
           equals: "claude"
       env:
         MODE: "per-item"
-        ASSETS: "kfg.agent.claude"
-        CONVERTER: "kfg.agents.convert.to-json"
+        ASSETS: "ai.claude.asset.settings"
+        CONVERTER: "ai.conv.to-json"
         OUTPUTS: ".claude/settings.json"
     - name: agents.settings-gemini
       step: kfg.materialize
       weight: -63
       when:
         output:
-          step: kfg.detect-agent
+          step: ai.steps.detect
           name: AGENT
           equals: "gemini"
       env:
         MODE: "per-item"
-        ASSETS: "kfg.agent.gemini"
-        CONVERTER: "kfg.agents.convert.to-json"
+        ASSETS: "ai.gemini.asset.settings"
+        CONVERTER: "ai.conv.to-json"
         OUTPUTS: ".gemini/settings.json"
     - name: agents.settings-pi
       step: kfg.materialize
       weight: -63
       when:
         output:
-          step: kfg.detect-agent
+          step: ai.steps.detect
           name: AGENT
           equals: "pi"
       env:
         MODE: "per-item"
-        ASSETS: "kfg.agent.pi"
-        CONVERTER: "kfg.agents.convert.to-json"
+        ASSETS: "ai.pi.asset.settings"
+        CONVERTER: "ai.conv.to-json"
         OUTPUTS: ".pi/settings.json"
     - name: agents.settings-opencode
       step: kfg.materialize
       weight: -63
       when:
         output:
-          step: kfg.detect-agent
+          step: ai.steps.detect
           name: AGENT
           equals: "opencode"
       env:
         MODE: "per-item"
-        ASSETS: "kfg.agent.opencode"
-        CONVERTER: "kfg.agents.convert.to-json"
+        ASSETS: "ai.opencode.asset.settings"
+        CONVERTER: "ai.conv.to-json"
         OUTPUTS: "opencode.json"
       artifacts:
         - opencode.json
@@ -138,7 +138,7 @@ spec:
         DEST: "CLAUDE.md"
       when:
         output:
-          step: kfg.detect-agent
+          step: ai.steps.detect
           name: AGENT
           equals: "claude"
       artifacts:
@@ -153,50 +153,50 @@ spec:
         - AGENTS.md
       when:
         output:
-          step: kfg.detect-agent
+          step: ai.steps.detect
           name: AGENT
           in: ["opencode", "gemini", "pi"]
 
     # Phase 6 (-55): ctx7 install (per-agent)
     - name: agents.ctx7.install.claude
-      step: kfg.extension.ctx7.install
+      step: ctx7.steps.install
       weight: -55
       when:
         output:
-          step: kfg.detect-agent
+          step: ai.steps.detect
           name: AGENT
           equals: "claude"
       env:
         FLAGS: "--claude --yes"
         OUTPUT_DIR: ".claude/skills/"
     - name: agents.ctx7.install.gemini
-      step: kfg.extension.ctx7.install
+      step: ctx7.steps.install
       weight: -55
       when:
         output:
-          step: kfg.detect-agent
+          step: ai.steps.detect
           name: AGENT
           equals: "gemini"
       env:
         FLAGS: "--opencode --yes"
         OUTPUT_DIR: ".gemini/skills/"
     - name: agents.ctx7.install.opencode
-      step: kfg.extension.ctx7.install
+      step: ctx7.steps.install
       weight: -55
       when:
         output:
-          step: kfg.detect-agent
+          step: ai.steps.detect
           name: AGENT
           equals: "opencode"
       env:
         FLAGS: "--opencode --yes"
         OUTPUT_DIR: ".opencode/skills/"
     - name: agents.ctx7.install.pi
-      step: kfg.extension.ctx7.install
+      step: ctx7.steps.install
       weight: -55
       when:
         output:
-          step: kfg.detect-agent
+          step: ai.steps.detect
           name: AGENT
           equals: "pi"
       env:
@@ -205,12 +205,12 @@ spec:
 
     # Phase 7 (-53): openspec install (per-agent)
     - name: agents.openspec.install.claude
-      step: kfg.extension.openspec.install
+      step: openspec.steps.install
       weight: -53
       failurePolicy: Ignore
       when:
         output:
-          step: kfg.detect-agent
+          step: ai.steps.detect
           name: AGENT
           equals: "claude"
       env:
@@ -218,12 +218,12 @@ spec:
         AGENT_HOME: ".claude"
         OUTPUT_DIR: ".claude/skills/"
     - name: agents.openspec.install.gemini
-      step: kfg.extension.openspec.install
+      step: openspec.steps.install
       weight: -53
       failurePolicy: Ignore
       when:
         output:
-          step: kfg.detect-agent
+          step: ai.steps.detect
           name: AGENT
           equals: "gemini"
       env:
@@ -231,12 +231,12 @@ spec:
         AGENT_HOME: ".gemini"
         OUTPUT_DIR: ".gemini/skills/"
     - name: agents.openspec.install.opencode
-      step: kfg.extension.openspec.install
+      step: openspec.steps.install
       weight: -53
       failurePolicy: Ignore
       when:
         output:
-          step: kfg.detect-agent
+          step: ai.steps.detect
           name: AGENT
           equals: "opencode"
       env:
@@ -244,12 +244,12 @@ spec:
         AGENT_HOME: ".opencode"
         OUTPUT_DIR: ".opencode/skills/"
     - name: agents.openspec.install.pi
-      step: kfg.extension.openspec.install
+      step: openspec.steps.install
       weight: -53
       failurePolicy: Ignore
       when:
         output:
-          step: kfg.detect-agent
+          step: ai.steps.detect
           name: AGENT
           equals: "pi"
       env:
@@ -259,21 +259,21 @@ spec:
 
     # Phase 8 (-50): inject ctx7 context (per-agent)
     - name: agents.inject-ctx7-context.claude
-      step: kfg.inject-ctx7-context
+      step: ctx7.steps.inject
       weight: -50
       when:
         output:
-          step: kfg.detect-agent
+          step: ai.steps.detect
           name: AGENT
           equals: "claude"
       env:
         TARGET_FILE: "CLAUDE.md"
     - name: agents.inject-ctx7-context.others
-      step: kfg.inject-ctx7-context
+      step: ctx7.steps.inject
       weight: -50
       when:
         output:
-          step: kfg.detect-agent
+          step: ai.steps.detect
           name: AGENT
           in: ["opencode", "gemini", "pi"]
       env:
@@ -285,12 +285,12 @@ spec:
       weight: -45
       env:
         MODE: "per-item"
-        ASSETS: "kfg.extension.self.commands.git-commit"
-        CONVERTER: "kfg.convert.self.command.claude"
+        ASSETS: "ai.prompts.git-commit"
+        CONVERTER: "ai.claude.conv.command"
         OUTPUTS: ".claude/commands/git-commit.md"
       when:
         output:
-          step: kfg.detect-agent
+          step: ai.steps.detect
           name: AGENT
           equals: "claude"
     - name: agents.commands.gemini
@@ -298,12 +298,12 @@ spec:
       weight: -45
       env:
         MODE: "per-item"
-        ASSETS: "kfg.extension.self.commands.git-commit"
-        CONVERTER: "kfg.convert.self.command.gemini"
+        ASSETS: "ai.prompts.git-commit"
+        CONVERTER: "ai.gemini.conv.command"
         OUTPUTS: ".gemini/commands/git-commit.toml"
       when:
         output:
-          step: kfg.detect-agent
+          step: ai.steps.detect
           name: AGENT
           equals: "gemini"
     - name: agents.commands.opencode
@@ -311,12 +311,12 @@ spec:
       weight: -45
       env:
         MODE: "per-item"
-        ASSETS: "kfg.extension.self.commands.git-commit"
-        CONVERTER: "kfg.convert.self.command.opencode"
+        ASSETS: "ai.prompts.git-commit"
+        CONVERTER: "ai.opencode.conv.command"
         OUTPUTS: ".opencode/commands/git-commit.md"
       when:
         output:
-          step: kfg.detect-agent
+          step: ai.steps.detect
           name: AGENT
           equals: "opencode"
     - name: agents.commands.pi
@@ -324,12 +324,12 @@ spec:
       weight: -45
       env:
         MODE: "per-item"
-        ASSETS: "kfg.extension.self.commands.git-commit"
-        CONVERTER: "kfg.convert.self.command.pi"
+        ASSETS: "ai.prompts.git-commit"
+        CONVERTER: "ai.pi.conv.command"
         OUTPUTS: ".pi/prompts/git-commit.md"
       when:
         output:
-          step: kfg.detect-agent
+          step: ai.steps.detect
           name: AGENT
           equals: "pi"
 
@@ -339,13 +339,13 @@ spec:
       weight: -40
       env:
         MODE: "aggregate"
-        ASSETS: "kfg.extension.ctx7.mcp:kfg.extension.chrome-devtools.mcp:kfg.extension.playwright.mcp"
-        CONVERTER: "kfg.convert.self.mcp.claude"
+        ASSETS: "ctx7.assets.mcp:chrome.assets.mcp:playwright.assets.mcp"
+        CONVERTER: "ai.claude.conv.mcp"
         OUTPUTS: ".mcp.json"
         WRAP_KEY: "mcpServers"
       when:
         output:
-          step: kfg.detect-agent
+          step: ai.steps.detect
           name: AGENT
           equals: "claude"
       artifacts:
@@ -355,13 +355,13 @@ spec:
       weight: -40
       env:
         MODE: "aggregate"
-        ASSETS: "kfg.extension.ctx7.mcp:kfg.extension.chrome-devtools.mcp:kfg.extension.playwright.mcp"
-        CONVERTER: "kfg.convert.self.mcp.gemini"
+        ASSETS: "ctx7.assets.mcp:chrome.assets.mcp:playwright.assets.mcp"
+        CONVERTER: "ai.gemini.conv.mcp"
         OUTPUTS: ".gemini/settings.json"
         WRAP_KEY: "mcpServers"
       when:
         output:
-          step: kfg.detect-agent
+          step: ai.steps.detect
           name: AGENT
           equals: "gemini"
     - name: agents.mcp.opencode
@@ -369,13 +369,13 @@ spec:
       weight: -40
       env:
         MODE: "aggregate"
-        ASSETS: "kfg.extension.ctx7.mcp:kfg.extension.chrome-devtools.mcp:kfg.extension.playwright.mcp"
-        CONVERTER: "kfg.convert.self.mcp.opencode"
+        ASSETS: "ctx7.assets.mcp:chrome.assets.mcp:playwright.assets.mcp"
+        CONVERTER: "ai.opencode.conv.mcp"
         OUTPUTS: "opencode.json"
         WRAP_KEY: "mcp"
       when:
         output:
-          step: kfg.detect-agent
+          step: ai.steps.detect
           name: AGENT
           equals: "opencode"
 
@@ -385,12 +385,12 @@ spec:
       weight: -35
       env:
         MODE: "per-item"
-        ASSETS: "kfg.extension.self.subagents.review-minimal"
-        CONVERTER: "kfg.convert.self.subagent.claude"
+        ASSETS: "ai.subagents.review-minimal"
+        CONVERTER: "ai.claude.conv.subagent"
         OUTPUTS: ".claude/agents/review-minimal.md"
       when:
         output:
-          step: kfg.detect-agent
+          step: ai.steps.detect
           name: AGENT
           equals: "claude"
     - name: agents.subagent.opencode
@@ -398,12 +398,12 @@ spec:
       weight: -35
       env:
         MODE: "per-item"
-        ASSETS: "kfg.extension.self.subagents.review-minimal"
-        CONVERTER: "kfg.convert.self.subagent.opencode"
+        ASSETS: "ai.subagents.review-minimal"
+        CONVERTER: "ai.opencode.conv.subagent"
         OUTPUTS: ".opencode/agents/review-minimal.md"
       when:
         output:
-          step: kfg.detect-agent
+          step: ai.steps.detect
           name: AGENT
           equals: "opencode"
 

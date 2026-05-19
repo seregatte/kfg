@@ -127,6 +127,8 @@ Integration tests are in `tests/bats/`. Run with `make test-bats` (canonical ent
 Directory structure:
 - `cli/`: CLI command tests
 - `workflows/`: Runtime/workflow tests (image, imagefile, store/workspace)
+- `manifests/base/extensions/ai-agents/`: AI agents extension structure tests
+- `manifests/base/extensions/ctx7/`: ctx7 extension naming tests
 - `manifests/base/steps/`: Manifest resource tests (mirrored from `.manifests/base/steps/`)
 - `helpers/`: Shared test helpers (common.bash, manifests.bash, vendor/)
 
@@ -135,6 +137,7 @@ Key test files:
 - `workflows/image_layer_system.bats`: Image build/push/start/stop
 - `workflows/imagefile_features.bats`: Imagefile parsing
 - `workflows/store_workspace.bats`: Workspace operations
+- `manifests/base/extensions/ai-agents/*.bats`: AI agents extension validation
 - `manifests/base/steps/*.bats`: Step validation tests
 
 Compatibility alias: `make test-manifests` runs only manifest tests.

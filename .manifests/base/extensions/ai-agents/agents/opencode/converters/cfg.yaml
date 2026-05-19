@@ -1,0 +1,17 @@
+apiVersion: kfg.dev/v1alpha1
+kind: Converter
+metadata:
+  name: ai.opencode.conv.cfg
+spec:
+  input:
+    format: yaml
+  engine:
+    expression: |
+      {
+        "$schema": "https://opencode.ai/config.json",
+        "instructions": .instructions,
+        "model": .model,
+        "mode": .mode
+      }
+  output:
+    format: json

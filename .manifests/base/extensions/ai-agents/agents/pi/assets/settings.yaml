@@ -1,0 +1,28 @@
+apiVersion: kfg.dev/v1alpha1
+kind: Assets
+metadata:
+  name: ai.pi.asset.settings
+spec:
+  input:
+    format: yaml
+  data:
+    defaultProvider: ""
+    defaultModel: ""
+    defaultThinkingLevel: medium
+    theme: dark
+    compaction:
+      enabled: true
+      reserveTokens: 16384
+      keepRecentTokens: 20000
+    retry:
+      enabled: true
+      maxRetries: 3
+      baseDelayMs: 2000
+      maxDelayMs: 60000
+    packages: []
+    extensions: []
+    skills:
+      - ./skills
+    prompts:
+      - ./prompts
+    themes: []

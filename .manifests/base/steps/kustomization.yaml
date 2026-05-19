@@ -4,8 +4,6 @@ kind: Kustomization
 resources:
   - cleanup.yaml
   - copy-context.yaml
-  - detect-agent.yaml
   - ensure-gitignore.yaml
-  - inject-ctx7-context.yaml
   - materialize.yaml
   - materialize-scaffold.yaml

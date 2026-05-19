@@ -3,3 +3,4 @@ kind: Kustomization
 
 resources:
   - install.yaml
+  - inject-ctx7-context.yaml

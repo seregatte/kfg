@@ -1,0 +1,12 @@
+apiVersion: kfg.dev/v1alpha1
+kind: Converter
+metadata:
+  name: ai.gemini.conv.command
+spec:
+  input:
+    format: yaml
+  engine:
+    expression: |
+      "name = \"" + .name + "\"\ndescription = \"" + .description + "\"\nprompt = \"\"\"\n" + .prompt + "\n\"\"\"\n"
+  output:
+    format: raw

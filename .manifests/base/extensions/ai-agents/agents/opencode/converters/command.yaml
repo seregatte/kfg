@@ -1,0 +1,12 @@
+apiVersion: kfg.dev/v1alpha1
+kind: Converter
+metadata:
+  name: ai.opencode.conv.command
+spec:
+  input:
+    format: yaml
+  engine:
+    expression: |
+      "---\nname: " + .name + "\ndescription: " + .description + "\n---\n\n" + .prompt
+  output:
+    format: raw

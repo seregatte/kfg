@@ -1,0 +1,11 @@
+apiVersion: kfg.dev/v1alpha1
+kind: Assets
+metadata:
+  name: ai.gemini.asset.settings
+spec:
+  input:
+    format: yaml
+  data:
+    preferredEditor: code
+    context:
+      fileName: AGENTS.md

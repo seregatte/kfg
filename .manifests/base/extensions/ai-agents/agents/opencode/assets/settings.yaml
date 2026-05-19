@@ -1,0 +1,15 @@
+apiVersion: kfg.dev/v1alpha1
+kind: Assets
+metadata:
+  name: ai.opencode.asset.settings
+spec:
+  input:
+    format: yaml
+  data:
+    instructions:
+      - AGENTS.md
+    mode:
+      plan:
+        model: opencode/minimax-m2.5-free
+      build:
+        model: github-copilot/claude-haiku-4.5

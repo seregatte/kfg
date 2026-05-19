@@ -1,7 +1,7 @@
 apiVersion: kfg.dev/v1alpha1
 kind: Step
 metadata:
-  name: kfg.extension.openspec.install
+  name: openspec.steps.install
 spec:
   run: |
     _kfg.log.info "Installing openspec skills..."

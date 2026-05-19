@@ -1,0 +1,43 @@
+apiVersion: kfg.dev/v1alpha1
+kind: Cmd
+metadata:
+  name: ai.claude.cmd.main
+  commandName: claude
+spec:
+  run: |
+    command claude "$@"
+  env:
+    AGENT: "claude"
+---
+apiVersion: kfg.dev/v1alpha1
+kind: Cmd
+metadata:
+  name: ai.gemini.cmd.main
+  commandName: gemini
+spec:
+  run: |
+    command gemini "$@"
+  env:
+    AGENT: "gemini"
+---
+apiVersion: kfg.dev/v1alpha1
+kind: Cmd
+metadata:
+  name: ai.opencode.cmd.main
+  commandName: opencode
+spec:
+  run: |
+    command opencode "$@"
+  env:
+    AGENT: "opencode"
+---
+apiVersion: kfg.dev/v1alpha1
+kind: Cmd
+metadata:
+  name: ai.pi.cmd.main
+  commandName: pi
+spec:
+  run: |
+    command pi "$@"
+  env:
+    AGENT: "pi"

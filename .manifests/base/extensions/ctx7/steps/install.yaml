@@ -1,7 +1,7 @@
 apiVersion: kfg.dev/v1alpha1
 kind: Step
 metadata:
-  name: kfg.extension.ctx7.install
+  name: ctx7.steps.install
 spec:
   run: |
     _kfg.log.info "Installing ctx7 skills..."

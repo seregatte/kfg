@@ -1,0 +1,11 @@
+apiVersion: kfg.dev/v1alpha1
+kind: Step
+metadata:
+  name: ai.steps.detect
+spec:
+  run: |
+    echo "$AGENT"
+    _kfg.log.debug "step:detect-agent" "Agent: $AGENT"
+  output:
+    name: AGENT
+    type: string
