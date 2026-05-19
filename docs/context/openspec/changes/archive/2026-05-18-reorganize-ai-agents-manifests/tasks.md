@@ -89,6 +89,6 @@
 
 - [ ] 12.1 Run `kustomize build .manifests/base` and verify no errors
 - [ ] 12.2 Run `kustomize build .manifests/overlay/dev` and verify no errors
-- [ ] 12.3 Run `make build && ./bin/kfg build .manifests/overlay/dev` and verify no errors
-- [ ] 12.4 Run `make test-bats` and verify all tests pass
-- [ ] 12.5 Run `make test` and verify Go tests still pass
+- [x] 12.3 Run `make build && ./bin/kfg build .manifests/overlay/dev` and verify no errors
+- [x] 12.4 Run `make test-bats` and verify all tests pass
+- [x] 12.5 Run `make test` and verify Go tests still pass
