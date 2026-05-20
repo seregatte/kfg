@@ -65,8 +65,10 @@ type CmdData struct {
 
 // WorkflowStepData represents a step in workflow context.
 // Used for global workflow before/after steps.
+// StepRefName is the StepReference.name (runtime execution identity) used for output addressing.
 type WorkflowStepData struct {
-	StepName      string
+	StepRefName   string            // StepReference.name (runtime execution identity)
+	StepName      string            // Step metadata.name (for function lookup)
 	IgnoreFailure bool
 	WhenCondition string
 	Env           map[string]string // NEW: merged env for this step invocation

@@ -29,7 +29,7 @@ spec:
       weight: -65
       when:
         output:
-          step: ai.steps.detect
+          step: agents.detect-agent
           name: AGENT
           equals: "claude"
       env:
@@ -41,7 +41,7 @@ spec:
       weight: -65
       when:
         output:
-          step: ai.steps.detect
+          step: agents.detect-agent
           name: AGENT
           equals: "opencode"
       env:
@@ -53,7 +53,7 @@ spec:
       weight: -65
       when:
         output:
-          step: ai.steps.detect
+          step: agents.detect-agent
           name: AGENT
           equals: "gemini"
       env:
@@ -65,7 +65,7 @@ spec:
       weight: -65
       when:
         output:
-          step: ai.steps.detect
+          step: agents.detect-agent
           name: AGENT
           equals: "pi"
       env:
@@ -78,7 +78,7 @@ spec:
       weight: -63
       when:
         output:
-          step: ai.steps.detect
+          step: agents.detect-agent
           name: AGENT
           equals: "claude"
       env:
@@ -91,7 +91,7 @@ spec:
       weight: -63
       when:
         output:
-          step: ai.steps.detect
+          step: agents.detect-agent
           name: AGENT
           equals: "gemini"
       env:
@@ -104,7 +104,7 @@ spec:
       weight: -63
       when:
         output:
-          step: ai.steps.detect
+          step: agents.detect-agent
           name: AGENT
           equals: "pi"
       env:
@@ -117,7 +117,7 @@ spec:
       weight: -63
       when:
         output:
-          step: ai.steps.detect
+          step: agents.detect-agent
           name: AGENT
           equals: "opencode"
       env:
@@ -138,7 +138,7 @@ spec:
         DEST: "CLAUDE.md"
       when:
         output:
-          step: ai.steps.detect
+          step: agents.detect-agent
           name: AGENT
           equals: "claude"
       artifacts:
@@ -153,7 +153,7 @@ spec:
         - AGENTS.md
       when:
         output:
-          step: ai.steps.detect
+          step: agents.detect-agent
           name: AGENT
           in: ["opencode", "gemini", "pi"]
 
@@ -163,7 +163,7 @@ spec:
       weight: -55
       when:
         output:
-          step: ai.steps.detect
+          step: agents.detect-agent
           name: AGENT
           equals: "claude"
       env:
@@ -174,7 +174,7 @@ spec:
       weight: -55
       when:
         output:
-          step: ai.steps.detect
+          step: agents.detect-agent
           name: AGENT
           equals: "gemini"
       env:
@@ -185,7 +185,7 @@ spec:
       weight: -55
       when:
         output:
-          step: ai.steps.detect
+          step: agents.detect-agent
           name: AGENT
           equals: "opencode"
       env:
@@ -196,7 +196,7 @@ spec:
       weight: -55
       when:
         output:
-          step: ai.steps.detect
+          step: agents.detect-agent
           name: AGENT
           equals: "pi"
       env:
@@ -210,7 +210,7 @@ spec:
       failurePolicy: Ignore
       when:
         output:
-          step: ai.steps.detect
+          step: agents.detect-agent
           name: AGENT
           equals: "claude"
       env:
@@ -223,7 +223,7 @@ spec:
       failurePolicy: Ignore
       when:
         output:
-          step: ai.steps.detect
+          step: agents.detect-agent
           name: AGENT
           equals: "gemini"
       env:
@@ -236,7 +236,7 @@ spec:
       failurePolicy: Ignore
       when:
         output:
-          step: ai.steps.detect
+          step: agents.detect-agent
           name: AGENT
           equals: "opencode"
       env:
@@ -249,7 +249,7 @@ spec:
       failurePolicy: Ignore
       when:
         output:
-          step: ai.steps.detect
+          step: agents.detect-agent
           name: AGENT
           equals: "pi"
       env:
@@ -263,21 +263,45 @@ spec:
       weight: -50
       when:
         output:
-          step: ai.steps.detect
+          step: agents.detect-agent
           name: AGENT
           equals: "claude"
       env:
         TARGET_FILE: "CLAUDE.md"
-    - name: agents.inject-ctx7-context.others
+        CTX7_CONTEXT: "$kfg.output(agents.ctx7.install.claude)"
+    - name: agents.inject-ctx7-context.opencode
       step: ctx7.steps.inject
       weight: -50
       when:
         output:
-          step: ai.steps.detect
+          step: agents.detect-agent
           name: AGENT
-          in: ["opencode", "gemini", "pi"]
+          equals: "opencode"
       env:
         TARGET_FILE: "AGENTS.md"
+        CTX7_CONTEXT: "$kfg.output(agents.ctx7.install.opencode)"
+    - name: agents.inject-ctx7-context.gemini
+      step: ctx7.steps.inject
+      weight: -50
+      when:
+        output:
+          step: agents.detect-agent
+          name: AGENT
+          equals: "gemini"
+      env:
+        TARGET_FILE: "AGENTS.md"
+        CTX7_CONTEXT: "$kfg.output(agents.ctx7.install.gemini)"
+    - name: agents.inject-ctx7-context.pi
+      step: ctx7.steps.inject
+      weight: -50
+      when:
+        output:
+          step: agents.detect-agent
+          name: AGENT
+          equals: "pi"
+      env:
+        TARGET_FILE: "AGENTS.md"
+        CTX7_CONTEXT: "$kfg.output(agents.ctx7.install.pi)"
 
     # Phase 9 (-45): Commands (per-agent)
     - name: agents.commands.claude
@@ -290,7 +314,7 @@ spec:
         OUTPUTS: ".claude/commands/git-commit.md"
       when:
         output:
-          step: ai.steps.detect
+          step: agents.detect-agent
           name: AGENT
           equals: "claude"
     - name: agents.commands.gemini
@@ -303,7 +327,7 @@ spec:
         OUTPUTS: ".gemini/commands/git-commit.toml"
       when:
         output:
-          step: ai.steps.detect
+          step: agents.detect-agent
           name: AGENT
           equals: "gemini"
     - name: agents.commands.opencode
@@ -316,7 +340,7 @@ spec:
         OUTPUTS: ".opencode/commands/git-commit.md"
       when:
         output:
-          step: ai.steps.detect
+          step: agents.detect-agent
           name: AGENT
           equals: "opencode"
     - name: agents.commands.pi
@@ -329,7 +353,7 @@ spec:
         OUTPUTS: ".pi/prompts/git-commit.md"
       when:
         output:
-          step: ai.steps.detect
+          step: agents.detect-agent
           name: AGENT
           equals: "pi"
 
@@ -345,7 +369,7 @@ spec:
         WRAP_KEY: "mcpServers"
       when:
         output:
-          step: ai.steps.detect
+          step: agents.detect-agent
           name: AGENT
           equals: "claude"
       artifacts:
@@ -361,7 +385,7 @@ spec:
         WRAP_KEY: "mcpServers"
       when:
         output:
-          step: ai.steps.detect
+          step: agents.detect-agent
           name: AGENT
           equals: "gemini"
     - name: agents.mcp.opencode
@@ -375,7 +399,7 @@ spec:
         WRAP_KEY: "mcp"
       when:
         output:
-          step: ai.steps.detect
+          step: agents.detect-agent
           name: AGENT
           equals: "opencode"
 
@@ -390,7 +414,7 @@ spec:
         OUTPUTS: ".claude/agents/review-minimal.md"
       when:
         output:
-          step: ai.steps.detect
+          step: agents.detect-agent
           name: AGENT
           equals: "claude"
     - name: agents.subagent.opencode
@@ -403,7 +427,7 @@ spec:
         OUTPUTS: ".opencode/agents/review-minimal.md"
       when:
         output:
-          step: ai.steps.detect
+          step: agents.detect-agent
           name: AGENT
           equals: "opencode"
 
@@ -412,6 +436,6 @@ spec:
       step: kfg.cleanup
       when:
         output:
-          step: ai.steps.detect
+          step: agents.detect-agent
           name: AGENT
           in: ["claude", "gemini", "opencode", "pi"]

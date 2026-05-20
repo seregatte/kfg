@@ -20,6 +20,18 @@ spec:
     _kfg.log.debug "step:ctx7.install" "FLAGS=$FLAGS"
     _kfg.log.debug "step:ctx7.install" "OUTPUT_DIR=$OUTPUT_DIR"
 
+    # Determine agent from FLAGS
+    AGENT=""
+    if echo "$FLAGS" | grep -q "claude"; then
+      AGENT="claude"
+    elif echo "$FLAGS" | grep -q "opencode"; then
+      AGENT="opencode"
+    elif echo "$FLAGS" | grep -q "gemini"; then
+      AGENT="gemini"
+    elif echo "$FLAGS" | grep -q "pi"; then
+      AGENT="pi"
+    fi
+
     # Ensure output directory exists
     mkdir -p "$OUTPUT_DIR"
 
@@ -28,14 +40,8 @@ spec:
 
     # Determine source directory based on FLAGS
     SKILL_SRC=""
-    if echo "$FLAGS" | grep -q "opencode"; then
-      SKILL_SRC=".agents/skills"
-    elif echo "$FLAGS" | grep -q "claude"; then
-      SKILL_SRC=".claude/skills"
-    elif echo "$FLAGS" | grep -q "gemini"; then
-      SKILL_SRC=".gemini/skills"
-    elif echo "$FLAGS" | grep -q "pi"; then
-      SKILL_SRC=".pi/skills"
+    if [ -n "$AGENT" ]; then
+      SKILL_SRC=".${AGENT}/skills"
     fi
 
     # Copy generated skills into OUTPUT_DIR
@@ -47,17 +53,35 @@ spec:
       _kfg.log.debug "step:ctx7.install" "No skills directory found at $SKILL_SRC"
     fi
 
+    # Extract ctx7 context for output
+    CONTEXT_FILE=".${AGENT}/ctx7-agents.md"
+    CTX7_CONTENT=""
+    if [ -f "$CONTEXT_FILE" ]; then
+      # Extract content between <!-- context7 --> markers
+      if grep -q '<!-- context7 -->' "$CONTEXT_FILE"; then
+        CTX7_CONTENT=$(sed -n '/^<!-- context7 -->$/,/^<!-- context7 -->$/p' "$CONTEXT_FILE" | sed '1d;$d')
+        _kfg.log.debug "step:ctx7.install" "Extracted ctx7 context from $CONTEXT_FILE"
+      else
+        _kfg.log.debug "step:ctx7.install" "No <!-- context7 --> markers found in $CONTEXT_FILE"
+      fi
+    else
+      _kfg.log.debug "step:ctx7.install" "Context file not found: $CONTEXT_FILE"
+    fi
+
     # Cleanup temporary agent home if opencode
-    if echo "$FLAGS" | grep -q "opencode"; then
+    if [ "$AGENT" = "opencode" ]; then
       _kfg.log.debug "step:ctx7.install" "removing .agents directory"
       rm -rf .agents
     fi
 
     _kfg.log.info "step:ctx7.install" "installed"
 
+    # Output ctx7 context (will be captured by kfg)
+    echo "$CTX7_CONTENT"
+
   env:
     FLAGS: "--yes"
     OUTPUT_DIR: ""
   output:
-    name: installed
+    name: ctx7_context
     type: string

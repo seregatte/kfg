@@ -2,6 +2,7 @@ package manifest
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 )
 
@@ -115,7 +116,36 @@ type CmdWorkflowSpec struct {
 	After  []StepReference `yaml:"after"`  // Optional: steps to run after ALL cmds
 }
 
+// StepReference represents a reference to a Step within a workflow.
+//
+// Key concepts:
+// - Name: The runtime execution identity for this step reference. It must be unique
+//   within the workflow and is used to address outputs (e.g., $kfg.output(name.outputName)).
+// - Step: The Step resource's metadata.name that this reference points to.
+//
+// Multiple StepReferences can point to the same Step (by Step name) but must have
+// different Name values. This allows the same Step to be used multiple times in a
+// workflow with different configurations (env overrides) and independent outputs.
+//
+// Example:
+//
+//	spec:
+//	  before:
+//	    - name: install-claude      # Runtime identity for this reference
+//	      step: ctx7.steps.install  # Points to Step metadata.name
+//	      env:
+//	        FLAGS: "--claude"
+//	    - name: install-gemini      # Different runtime identity
+//	      step: ctx7.steps.install  # Same Step, different Name
+//	      env:
+//	        FLAGS: "--gemini"
+//
+// Outputs are stored under Name, not Step:
+//
+//	$kfg.output(install-claude.ctx7_context)  # Correct: uses StepReference.Name
+//	$kfg.output(ctx7.steps.install.ctx7_context)  # Incorrect: would conflict
 type StepReference struct {
+	Name          string            `yaml:"name"`          // Required: unique name for this step reference within the workflow
 	Step          string            `yaml:"step"`          // Required: Step metadata.name
 	When          *WhenClause       `yaml:"when"`          // Optional: contextual condition
 	FailurePolicy string            `yaml:"failurePolicy"` // Optional: "Fail" (default) or "Ignore"
@@ -132,8 +162,26 @@ type WhenClause struct {
 }
 
 // OutputCondition defines a condition based on a step output.
+//
+// The Step field references the StepReference.Name (runtime identity), not the Step
+// metadata.name. This allows conditions to target specific invocations of a Step
+// when the same Step is used multiple times in a workflow.
+//
+// Example:
+//
+//	spec:
+//	  before:
+//	    - name: detect-agent
+//	      step: agents.detect
+//	    - name: setup-claude
+//	      step: agents.setup
+//	      when:
+//	        output:
+//	          step: detect-agent  # References StepReference.Name
+//	          name: AGENT
+//	          equals: "claude"
 type OutputCondition struct {
-	Step     string   `yaml:"step"`     // Required: step that produced the output
+	Step     string   `yaml:"step"`     // Required: StepReference.Name that produced the output
 	Name     string   `yaml:"name"`     // Required: output variable name
 	Equals   string   `yaml:"equals"`   // Optional: exact match
 	In       []string `yaml:"in"`       // Optional: value in list
@@ -269,6 +317,30 @@ func (w CmdWorkflow) Validate() error {
 	if len(w.Spec.Cmds) == 0 && len(w.Spec.Before) == 0 && len(w.Spec.After) == 0 {
 		return fmt.Errorf("spec must have at least one of: cmds, before, after for CmdWorkflow resources")
 	}
+
+	// Validate step references have required names and names are unique
+	if err := validateStepReferences(w.Spec.Before, "before", w.Metadata.Name); err != nil {
+		return err
+	}
+	if err := validateStepReferences(w.Spec.After, "after", w.Metadata.Name); err != nil {
+		return err
+	}
+
+	// Check for duplicate names across before and after
+	if err := validateStepReferenceUniqueness(w.Spec.Before, w.Spec.After, w.Metadata.Name); err != nil {
+		return err
+	}
+
+	// Validate when.output.step references
+	if err := validateWhenOutputStepReferences(w.Spec.Before, w.Spec.After, w.Metadata.Name); err != nil {
+		return err
+	}
+
+	// Validate $kfg.output(<step-reference-name>) env references
+	if err := validateEnvKfgOutputReferences(w.Spec.Before, w.Spec.After, w.Metadata.Name); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -313,6 +385,231 @@ func (w CmdWorkflow) ValidateKind() error {
 	if w.Kind != "CmdWorkflow" {
 		return fmt.Errorf("kind must be CmdWorkflow, got %s", w.Kind)
 	}
+	return nil
+}
+
+// validateStepReferences validates that all step references have required names.
+func validateStepReferences(refs []StepReference, phase string, workflowName string) error {
+	for _, ref := range refs {
+		if ref.Name == "" {
+			return fmt.Errorf("CmdWorkflow/%s: spec.%s step reference missing required 'name' field (step: %s)", workflowName, phase, ref.Step)
+		}
+		if !isValidNamespaceName(ref.Name) {
+			return fmt.Errorf("CmdWorkflow/%s: spec.%s step reference name '%s' is not a valid namespace identifier", workflowName, phase, ref.Name)
+		}
+		if ref.Step == "" {
+			return fmt.Errorf("CmdWorkflow/%s: spec.%s step reference '%s' missing required 'step' field", workflowName, phase, ref.Name)
+		}
+	}
+	return nil
+}
+
+// validateStepReferenceUniqueness validates that step reference names are unique across before and after.
+func validateStepReferenceUniqueness(before, after []StepReference, workflowName string) error {
+	seen := make(map[string]string) // name -> phase where first seen
+
+	for _, ref := range before {
+		if existingPhase, exists := seen[ref.Name]; exists {
+			return fmt.Errorf("CmdWorkflow/%s: duplicate step reference name '%s' in spec.before (already defined in spec.%s)", workflowName, ref.Name, existingPhase)
+		}
+		seen[ref.Name] = "before"
+	}
+
+	for _, ref := range after {
+		if existingPhase, exists := seen[ref.Name]; exists {
+			return fmt.Errorf("CmdWorkflow/%s: duplicate step reference name '%s' in spec.after (already defined in spec.%s)", workflowName, ref.Name, existingPhase)
+		}
+		seen[ref.Name] = "after"
+	}
+
+	return nil
+}
+
+// validateWhenOutputStepReferences validates that when.output.step references match existing StepReference names.
+func validateWhenOutputStepReferences(before, after []StepReference, workflowName string) error {
+	// Collect all step reference names
+	stepRefNames := make(map[string]bool)
+	for _, ref := range before {
+		stepRefNames[ref.Name] = true
+	}
+	for _, ref := range after {
+		stepRefNames[ref.Name] = true
+	}
+
+	// Validate when.output.step references in before steps
+	for _, ref := range before {
+		if ref.When != nil && ref.When.Output != nil {
+			if ref.When.Output.Step == "" {
+				return fmt.Errorf("CmdWorkflow/%s: spec.before step reference '%s' has when.output with missing 'step' field", workflowName, ref.Name)
+			}
+			if !stepRefNames[ref.When.Output.Step] {
+				return fmt.Errorf("CmdWorkflow/%s: spec.before step reference '%s' references non-existent step reference name '%s' in when.output.step", workflowName, ref.Name, ref.When.Output.Step)
+			}
+			if ref.When.Output.Name == "" {
+				return fmt.Errorf("CmdWorkflow/%s: spec.before step reference '%s' has when.output with missing 'name' field", workflowName, ref.Name)
+			}
+			// Validate operators - at least one must be specified
+			if ref.When.Output.Equals == "" && len(ref.When.Output.In) == 0 && ref.When.Output.Contains == "" && ref.When.Output.Matches == "" {
+				return fmt.Errorf("CmdWorkflow/%s: spec.before step reference '%s' has when.output without any operator (equals, in, contains, matches)", workflowName, ref.Name)
+			}
+		}
+		// Validate nested when clauses (allOf, anyOf, not)
+		if err := validateNestedWhenOutputStepReferences(ref.When, stepRefNames, workflowName, "before", ref.Name); err != nil {
+			return err
+		}
+	}
+
+	// Validate when.output.step references in after steps
+	for _, ref := range after {
+		if ref.When != nil && ref.When.Output != nil {
+			if ref.When.Output.Step == "" {
+				return fmt.Errorf("CmdWorkflow/%s: spec.after step reference '%s' has when.output with missing 'step' field", workflowName, ref.Name)
+			}
+			if !stepRefNames[ref.When.Output.Step] {
+				return fmt.Errorf("CmdWorkflow/%s: spec.after step reference '%s' references non-existent step reference name '%s' in when.output.step", workflowName, ref.Name, ref.When.Output.Step)
+			}
+			if ref.When.Output.Name == "" {
+				return fmt.Errorf("CmdWorkflow/%s: spec.after step reference '%s' has when.output with missing 'name' field", workflowName, ref.Name)
+			}
+			// Validate operators - at least one must be specified
+			if ref.When.Output.Equals == "" && len(ref.When.Output.In) == 0 && ref.When.Output.Contains == "" && ref.When.Output.Matches == "" {
+				return fmt.Errorf("CmdWorkflow/%s: spec.after step reference '%s' has when.output without any operator (equals, in, contains, matches)", workflowName, ref.Name)
+			}
+		}
+		// Validate nested when clauses (allOf, anyOf, not)
+		if err := validateNestedWhenOutputStepReferences(ref.When, stepRefNames, workflowName, "after", ref.Name); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// validateNestedWhenOutputStepReferences validates nested when clauses for output.step references.
+func validateNestedWhenOutputStepReferences(when *WhenClause, stepRefNames map[string]bool, workflowName string, phase string, refName string) error {
+	if when == nil {
+		return nil
+	}
+
+	// Validate allOf
+	for _, nested := range when.AllOf {
+		if nested.Output != nil {
+			if nested.Output.Step != "" && !stepRefNames[nested.Output.Step] {
+				return fmt.Errorf("CmdWorkflow/%s: spec.%s step reference '%s' references non-existent step reference name '%s' in nested when.output.step", workflowName, phase, refName, nested.Output.Step)
+			}
+		}
+		if err := validateNestedWhenOutputStepReferences(&nested, stepRefNames, workflowName, phase, refName); err != nil {
+			return err
+		}
+	}
+
+	// Validate anyOf
+	for _, nested := range when.AnyOf {
+		if nested.Output != nil {
+			if nested.Output.Step != "" && !stepRefNames[nested.Output.Step] {
+				return fmt.Errorf("CmdWorkflow/%s: spec.%s step reference '%s' references non-existent step reference name '%s' in nested when.output.step", workflowName, phase, refName, nested.Output.Step)
+			}
+		}
+		if err := validateNestedWhenOutputStepReferences(&nested, stepRefNames, workflowName, phase, refName); err != nil {
+			return err
+		}
+	}
+
+	// Validate not
+	if when.Not != nil {
+		if when.Not.Output != nil {
+			if when.Not.Output.Step != "" && !stepRefNames[when.Not.Output.Step] {
+				return fmt.Errorf("CmdWorkflow/%s: spec.%s step reference '%s' references non-existent step reference name '%s' in nested when.output.step", workflowName, phase, refName, when.Not.Output.Step)
+			}
+		}
+		if err := validateNestedWhenOutputStepReferences(when.Not, stepRefNames, workflowName, phase, refName); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// kfgOutputPattern matches $kfg.output(<step-reference-name>) syntax
+var kfgOutputPattern = regexp.MustCompile(`\$kfg\.output\(([a-zA-Z0-9._-]+)\)`)
+
+// validateEnvKfgOutputReferences validates $kfg.output(<step-reference-name>) references in env values.
+func validateEnvKfgOutputReferences(before, after []StepReference, workflowName string) error {
+	// Collect all step reference names
+	stepRefNames := make(map[string]bool)
+	for _, ref := range before {
+		stepRefNames[ref.Name] = true
+	}
+	for _, ref := range after {
+		stepRefNames[ref.Name] = true
+	}
+
+	// Validate env references in before steps
+	for _, ref := range before {
+		for envKey, envValue := range ref.Env {
+			matches := kfgOutputPattern.FindAllStringSubmatch(envValue, -1)
+			for _, match := range matches {
+				if len(match) > 1 {
+					// Parse the reference - could be "stepRefName" or "stepRefName.outputName"
+					fullRef := match[1]
+					// Try to find the step reference name:
+					// 1. First check if fullRef is a valid step reference name
+					// 2. If not, progressively remove last segment to handle stepRefName.outputName
+					refName := fullRef
+					found := false
+					for {
+						if stepRefNames[refName] {
+							found = true
+							break
+						}
+						// Try removing last segment (for stepRefName.outputName format)
+						if idx := strings.LastIndex(refName, "."); idx >= 0 {
+							refName = refName[:idx]
+						} else {
+							break // No more dots, stop searching
+						}
+					}
+					if !found {
+						return fmt.Errorf("CmdWorkflow/%s: spec.before step reference '%s' env.%s references non-existent step reference name '%s' in $kfg.output()", workflowName, ref.Name, envKey, fullRef)
+					}
+				}
+			}
+		}
+	}
+
+	// Validate env references in after steps
+	for _, ref := range after {
+		for envKey, envValue := range ref.Env {
+			matches := kfgOutputPattern.FindAllStringSubmatch(envValue, -1)
+			for _, match := range matches {
+				if len(match) > 1 {
+					// Parse the reference - could be "stepRefName" or "stepRefName.outputName"
+					fullRef := match[1]
+					// Try to find the step reference name:
+					// 1. First check if fullRef is a valid step reference name
+					// 2. If not, progressively remove last segment to handle stepRefName.outputName
+					refName := fullRef
+					found := false
+					for {
+						if stepRefNames[refName] {
+							found = true
+							break
+						}
+						// Try removing last segment (for stepRefName.outputName format)
+						if idx := strings.LastIndex(refName, "."); idx >= 0 {
+							refName = refName[:idx]
+						} else {
+							break // No more dots, stop searching
+						}
+					}
+					if !found {
+						return fmt.Errorf("CmdWorkflow/%s: spec.after step reference '%s' env.%s references non-existent step reference name '%s' in $kfg.output()", workflowName, ref.Name, envKey, fullRef)
+					}
+				}
+			}
+		}
+	}
+
 	return nil
 }
 

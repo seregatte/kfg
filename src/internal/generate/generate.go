@@ -2,6 +2,7 @@ package generate
 
 import (
 	"encoding/base64"
+	"regexp"
 	"sort"
 	"strings"
 
@@ -372,6 +373,29 @@ func (g *Generator) generateWorkflowCmdWrappers(code *strings.Builder, rw *resol
 
 // convertWorkflowCmdToTemplateData converts a workflow cmd entry to template data.
 func (g *Generator) convertWorkflowCmdToTemplateData(rw *resolve.ResolvedCmdWorkflow, entry *resolve.ResolvedCmdEntry) templates.WorkflowCmdData {
+	// Build step output lookup for $kfg.output(...) expansion
+	stepOutputLookup := make(map[string]string)
+	for _, step := range rw.BeforeSteps {
+		if step.Step.Spec.Output != nil {
+			stepOutputLookup[step.Name] = step.Step.Spec.Output.Name
+		}
+	}
+	for _, step := range rw.AfterSteps {
+		if step.Step.Spec.Output != nil {
+			stepOutputLookup[step.Name] = step.Step.Spec.Output.Name
+		}
+	}
+	for _, step := range entry.BeforeSteps {
+		if step.Step.Spec.Output != nil {
+			stepOutputLookup[step.Name] = step.Step.Spec.Output.Name
+		}
+	}
+	for _, step := range entry.AfterSteps {
+		if step.Step.Spec.Output != nil {
+			stepOutputLookup[step.Name] = step.Step.Spec.Output.Name
+		}
+	}
+
 	// Collect all artifacts from Cmd and dependent steps
 	allArtifacts := entry.Cmd.Spec.Artifacts
 	for _, step := range entry.BeforeSteps {
@@ -421,10 +445,11 @@ func (g *Generator) convertWorkflowCmdToTemplateData(rw *resolve.ResolvedCmdWork
 				whenCondition = g.generateWhenCondition(step.When)
 			}
 			data.GlobalBeforeSteps[i] = templates.WorkflowStepData{
-				StepName:      step.Step.Metadata.Name,
+				StepRefName:   step.Name,                 // StepReference.name (runtime execution identity)
+				StepName:      step.Step.Metadata.Name,   // Step metadata.name (for function lookup)
 				IgnoreFailure: step.FailurePolicy == "Ignore",
 				WhenCondition: whenCondition,
-				Env:           formatEnvDefaults(resolver.ResolveMap(step.Env)), // Resolve env placeholders
+				Env:           formatEnvWithKfgOutput(resolver.ResolveMap(step.Env), stepOutputLookup), // Resolve env placeholders
 			}
 		}
 	}
@@ -439,10 +464,11 @@ func (g *Generator) convertWorkflowCmdToTemplateData(rw *resolve.ResolvedCmdWork
 				whenCondition = g.generateWhenCondition(step.When)
 			}
 			data.GlobalAfterSteps[i] = templates.WorkflowStepData{
-				StepName:      step.Step.Metadata.Name,
+				StepRefName:   step.Name,                 // StepReference.name (runtime execution identity)
+				StepName:      step.Step.Metadata.Name,   // Step metadata.name (for function lookup)
 				IgnoreFailure: step.FailurePolicy == "Ignore",
 				WhenCondition: whenCondition,
-				Env:           formatEnvDefaults(resolver.ResolveMap(step.Env)), // Resolve env placeholders
+				Env:           formatEnvWithKfgOutput(resolver.ResolveMap(step.Env), stepOutputLookup), // Resolve env placeholders
 			}
 		}
 	}
@@ -457,10 +483,11 @@ func (g *Generator) convertWorkflowCmdToTemplateData(rw *resolve.ResolvedCmdWork
 				whenCondition = g.generateWhenCondition(step.When)
 			}
 			data.CmdBeforeSteps[i] = templates.WorkflowStepData{
-				StepName:      step.Step.Metadata.Name,
+				StepRefName:   step.Name,                 // StepReference.name (runtime execution identity)
+				StepName:      step.Step.Metadata.Name,   // Step metadata.name (for function lookup)
 				IgnoreFailure: step.FailurePolicy == "Ignore",
 				WhenCondition: whenCondition,
-				Env:           formatEnvDefaults(resolver.ResolveMap(step.Env)), // Resolve env placeholders
+				Env:           formatEnvWithKfgOutput(resolver.ResolveMap(step.Env), stepOutputLookup), // Resolve env placeholders
 			}
 		}
 	}
@@ -475,10 +502,11 @@ func (g *Generator) convertWorkflowCmdToTemplateData(rw *resolve.ResolvedCmdWork
 				whenCondition = g.generateWhenCondition(step.When)
 			}
 			data.CmdAfterSteps[i] = templates.WorkflowStepData{
-				StepName:      step.Step.Metadata.Name,
+				StepRefName:   step.Name,                 // StepReference.name (runtime execution identity)
+				StepName:      step.Step.Metadata.Name,   // Step metadata.name (for function lookup)
 				IgnoreFailure: step.FailurePolicy == "Ignore",
 				WhenCondition: whenCondition,
-				Env:           formatEnvDefaults(resolver.ResolveMap(step.Env)), // Resolve env placeholders
+				Env:           formatEnvWithKfgOutput(resolver.ResolveMap(step.Env), stepOutputLookup), // Resolve env placeholders
 			}
 		}
 	}
@@ -582,64 +610,36 @@ func (g *Generator) generateWorkflowCmdCode(data templates.WorkflowCmdData) stri
 func (g *Generator) generateStepCall(code *strings.Builder, step templates.WorkflowStepData, indent int) {
 	spaces := strings.Repeat("    ", indent)
 
-	// Check if we need subshell for env
+	// Check if we need inline env assignment
 	hasEnv := len(step.Env) > 0
+
+	// Generate inline env string if needed
+	envStr := ""
+	if hasEnv {
+		// Sort env keys for deterministic output
+		keys := make([]string, 0, len(step.Env))
+		for k := range step.Env {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+		for _, k := range keys {
+			envStr += k + "=\"" + step.Env[k] + "\" "
+		}
+	}
 
 	if step.WhenCondition != "" {
 		code.WriteString(spaces + "if " + step.WhenCondition + "; then\n")
-		if hasEnv {
-			// Wrap in subshell with env exports
-			code.WriteString(spaces + "    (\n")
-			// Sort env keys for deterministic output
-			keys := make([]string, 0, len(step.Env))
-			for k := range step.Env {
-				keys = append(keys, k)
-			}
-			sort.Strings(keys)
-			for _, k := range keys {
-				code.WriteString(spaces + "        export " + k + "=\"" + step.Env[k] + "\"\n")
-			}
-			code.WriteString(spaces + "        __kfg_run_step_" + step.StepName + "\n")
-			code.WriteString(spaces + "    )")
-			if step.IgnoreFailure {
-				code.WriteString(" || true\n")
-			} else {
-				code.WriteString(" || return $?\n")
-			}
+		if step.IgnoreFailure {
+			code.WriteString(spaces + "    " + envStr + "__kfg_run_step_" + step.StepName + " \"" + step.StepRefName + "\" || true\n")
 		} else {
-			if step.IgnoreFailure {
-				code.WriteString(spaces + "    __kfg_run_step_" + step.StepName + " || true\n")
-			} else {
-				code.WriteString(spaces + "    __kfg_run_step_" + step.StepName + " || return $?\n")
-			}
+			code.WriteString(spaces + "    " + envStr + "__kfg_run_step_" + step.StepName + " \"" + step.StepRefName + "\" || return $?\n")
 		}
 		code.WriteString(spaces + "fi\n")
 	} else {
-		if hasEnv {
-			// Wrap in subshell with env exports
-			code.WriteString(spaces + "(\n")
-			// Sort env keys for deterministic output
-			keys := make([]string, 0, len(step.Env))
-			for k := range step.Env {
-				keys = append(keys, k)
-			}
-			sort.Strings(keys)
-			for _, k := range keys {
-				code.WriteString(spaces + "    export " + k + "=\"" + step.Env[k] + "\"\n")
-			}
-			code.WriteString(spaces + "    __kfg_run_step_" + step.StepName + "\n")
-			code.WriteString(spaces + ")")
-			if step.IgnoreFailure {
-				code.WriteString(" || true\n")
-			} else {
-				code.WriteString(" || return $?\n")
-			}
+		if step.IgnoreFailure {
+			code.WriteString(spaces + envStr + "__kfg_run_step_" + step.StepName + " \"" + step.StepRefName + "\" || true\n")
 		} else {
-			if step.IgnoreFailure {
-				code.WriteString(spaces + "__kfg_run_step_" + step.StepName + " || true\n")
-			} else {
-				code.WriteString(spaces + "__kfg_run_step_" + step.StepName + " || return $?\n")
-			}
+			code.WriteString(spaces + envStr + "__kfg_run_step_" + step.StepName + " \"" + step.StepRefName + "\" || return $?\n")
 		}
 	}
 }
@@ -648,64 +648,36 @@ func (g *Generator) generateStepCall(code *strings.Builder, step templates.Workf
 func (g *Generator) generateAfterStepCall(code *strings.Builder, step templates.WorkflowStepData, indent int) {
 	spaces := strings.Repeat("    ", indent)
 
-	// Check if we need subshell for env
+	// Check if we need inline env assignment
 	hasEnv := len(step.Env) > 0
+
+	// Generate inline env string if needed
+	envStr := ""
+	if hasEnv {
+		// Sort env keys for deterministic output
+		keys := make([]string, 0, len(step.Env))
+		for k := range step.Env {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+		for _, k := range keys {
+			envStr += k + "=\"" + step.Env[k] + "\" "
+		}
+	}
 
 	if step.WhenCondition != "" {
 		code.WriteString(spaces + "if " + step.WhenCondition + "; then\n")
-		if hasEnv {
-			// Wrap in subshell with env exports
-			code.WriteString(spaces + "    (\n")
-			// Sort env keys for deterministic output
-			keys := make([]string, 0, len(step.Env))
-			for k := range step.Env {
-				keys = append(keys, k)
-			}
-			sort.Strings(keys)
-			for _, k := range keys {
-				code.WriteString(spaces + "        export " + k + "=\"" + step.Env[k] + "\"\n")
-			}
-			code.WriteString(spaces + "        __kfg_run_step_" + step.StepName + "\n")
-			code.WriteString(spaces + "    )")
-			if step.IgnoreFailure {
-				code.WriteString(" || true\n")
-			} else {
-				code.WriteString("\n")
-			}
+		if step.IgnoreFailure {
+			code.WriteString(spaces + "    " + envStr + "__kfg_run_step_" + step.StepName + " \"" + step.StepRefName + "\" || true\n")
 		} else {
-			if step.IgnoreFailure {
-				code.WriteString(spaces + "    __kfg_run_step_" + step.StepName + " || true\n")
-			} else {
-				code.WriteString(spaces + "    [ $__kfg_status -eq 0 ] && __kfg_run_step_" + step.StepName + "\n")
-			}
+			code.WriteString(spaces + "    [ $__kfg_status -eq 0 ] && " + envStr + "__kfg_run_step_" + step.StepName + " \"" + step.StepRefName + "\"\n")
 		}
 		code.WriteString(spaces + "fi\n")
 	} else {
-		if hasEnv {
-			// Wrap in subshell with env exports
-			code.WriteString(spaces + "(\n")
-			// Sort env keys for deterministic output
-			keys := make([]string, 0, len(step.Env))
-			for k := range step.Env {
-				keys = append(keys, k)
-			}
-			sort.Strings(keys)
-			for _, k := range keys {
-				code.WriteString(spaces + "    export " + k + "=\"" + step.Env[k] + "\"\n")
-			}
-			code.WriteString(spaces + "    __kfg_run_step_" + step.StepName + "\n")
-			code.WriteString(spaces + ")")
-			if step.IgnoreFailure {
-				code.WriteString(" || true\n")
-			} else {
-				code.WriteString("\n")
-			}
+		if step.IgnoreFailure {
+			code.WriteString(spaces + envStr + "__kfg_run_step_" + step.StepName + " \"" + step.StepRefName + "\" || true\n")
 		} else {
-			if step.IgnoreFailure {
-				code.WriteString(spaces + "__kfg_run_step_" + step.StepName + " || true\n")
-			} else {
-				code.WriteString(spaces + "[ $__kfg_status -eq 0 ] && __kfg_run_step_" + step.StepName + "\n")
-			}
+			code.WriteString(spaces + "[ $__kfg_status -eq 0 ] && " + envStr + "__kfg_run_step_" + step.StepName + " \"" + step.StepRefName + "\"\n")
 		}
 	}
 }
@@ -729,6 +701,56 @@ func formatCmdEnv(env map[string]string) map[string]string {
 	result := make(map[string]string)
 	for k, v := range env {
 		result[k] = v
+	}
+	return result
+}
+
+// buildStepOutputLookup builds a lookup map from step-ref-name to output name.
+// This is used to expand $kfg.output(step-ref-name) references in env values.
+func buildStepOutputLookup(steps []resolve.ResolvedStep) map[string]string {
+	lookup := make(map[string]string)
+	for _, step := range steps {
+		if step.Step.Spec.Output != nil {
+			lookup[step.Name] = step.Step.Spec.Output.Name
+		}
+	}
+	return lookup
+}
+
+// expandKfgOutputInEnv expands $kfg.output(step-ref-name) references in env values.
+// The pattern is replaced with $(__kfg_output_get "step-ref-name" "output-name").
+// If the referenced step doesn't have an output, the pattern is left unchanged
+// (validation should catch this earlier).
+func expandKfgOutputInEnv(envValue string, stepOutputLookup map[string]string) string {
+	// Pattern: $kfg.output(step-ref-name)
+	re := regexp.MustCompile(`\$kfg\.output\(([a-zA-Z0-9._-]+)\)`)
+	
+	result := re.ReplaceAllStringFunc(envValue, func(match string) string {
+		// Extract the step-ref-name from the match
+		submatch := re.FindStringSubmatch(match)
+		if len(submatch) > 1 {
+			stepRefName := submatch[1]
+			outputName, ok := stepOutputLookup[stepRefName]
+			if ok {
+				return "$(__kfg_output_get \"" + stepRefName + "\" \"" + outputName + "\")"
+			}
+			// If no output found, return unchanged (validation should catch this)
+			return match
+		}
+		return match
+	})
+	
+	return result
+}
+
+// formatEnvWithKfgOutput formats env values with default expansion and $kfg.output expansion.
+func formatEnvWithKfgOutput(env map[string]string, stepOutputLookup map[string]string) map[string]string {
+	result := make(map[string]string)
+	for k, v := range env {
+		// First expand $kfg.output references
+		expanded := expandKfgOutputInEnv(v, stepOutputLookup)
+		// Then wrap in default expansion
+		result[k] = "${" + k + ":-" + expanded + "}"
 	}
 	return result
 }

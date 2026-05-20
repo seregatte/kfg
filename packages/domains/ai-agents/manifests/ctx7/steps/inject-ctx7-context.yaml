@@ -4,36 +4,15 @@ metadata:
   name: ctx7.steps.inject
 spec:
   run: |
-    AGENT="${AGENT:-}"
     TARGET_FILE="${TARGET_FILE:-AGENTS.md}"
+    CTX7_CONTEXT="${CTX7_CONTEXT:-}"
 
-    _kfg.log.debug "step:inject-ctx7-context" "AGENT=$AGENT"
     _kfg.log.debug "step:inject-ctx7-context" "TARGET_FILE=$TARGET_FILE"
+    _kfg.log.debug "step:inject-ctx7-context" "CTX7_CONTEXT length=${#CTX7_CONTEXT}"
 
-    # Source file path
-    SOURCE_FILE=".${AGENT}/ctx7-agents.md"
-
-    # Check if source file exists
-    if [ ! -f "$SOURCE_FILE" ]; then
-      _kfg.log.warn "step:inject-ctx7-context" "Source file not found: $SOURCE_FILE"
-      exit 0
-    fi
-
-    # Extract content between <!-- context7 --> markers
-    if ! grep -q '<!-- context7 -->' "$SOURCE_FILE"; then
-      _kfg.log.warn "step:inject-ctx7-context" "No <!-- context7 --> markers found in $SOURCE_FILE"
-      exit 0
-    fi
-
-    # Extract content between markers (handle multiple sections)
-    start_marker="<!-- context7 -->"
-    end_marker="<!-- context7 -->"
-    
-    # Get content between first start and end marker
-    content=$(sed -n '/^<!-- context7 -->$/,/^<!-- context7 -->$/p' "$SOURCE_FILE" | sed '1d;$d')
-
-    if [ -z "$content" ]; then
-      _kfg.log.warn "step:inject-ctx7-context" "No content found between <!-- context7 --> markers in $SOURCE_FILE"
+    # Check if CTX7_CONTEXT is provided
+    if [ -z "$CTX7_CONTEXT" ]; then
+      _kfg.log.warn "step:inject-ctx7-context" "CTX7_CONTEXT is empty or unset"
       exit 0
     fi
 
@@ -44,10 +23,13 @@ spec:
     fi
 
     # Check if target already has context7 section
+    start_marker="<!-- context7 -->"
+    end_marker="<!-- context7 -->"
+
     if grep -q '<!-- context7 -->' "$TARGET_FILE"; then
       # Replace existing section
       temp_file=$(mktemp)
-      awk -v start="$start_marker" -v end="$end_marker" -v new_content="$content" '
+      awk -v start="$start_marker" -v end="$end_marker" -v new_content="$CTX7_CONTEXT" '
         BEGIN { in_section = 0; printed = 0 }
         {
           if ($0 ~ start && !in_section) {
@@ -70,14 +52,15 @@ spec:
       {
         echo ""
         echo "$start_marker"
-        echo "$content"
+        echo "$CTX7_CONTEXT"
         echo "$end_marker"
       } >> "$TARGET_FILE"
       _kfg.log.info "step:inject-ctx7-context" "Appended ctx7 section to $TARGET_FILE"
     fi
+
   env:
-    AGENT: ""
     TARGET_FILE: "AGENTS.md"
+    CTX7_CONTEXT: ""
   output:
     name: injected
     type: string

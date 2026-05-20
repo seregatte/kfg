@@ -115,7 +115,9 @@ func NewResolver(index *Index) *Resolver {
 
 // ResolvedStep represents a resolved step.
 // Execution order is determined by YAML order.
+// Name is the StepReference.name (runtime execution identity) used for output addressing.
 type ResolvedStep struct {
+	Name          string            // Required: StepReference.name (runtime execution identity)
 	Step          *manifest.Step
 	When          *manifest.WhenClause
 	FailurePolicy string            // "Fail" (default) or "Ignore"
@@ -321,6 +323,7 @@ func (r *Resolver) ResolveStepReferences(refs []manifest.StepReference) ([]Resol
 		mergedEnv := MergeEnv(step.Spec.Env, ref.Env)
 
 		resolved = append(resolved, ResolvedStep{
+			Name:          ref.Name, // StepReference.name (runtime execution identity)
 			Step:          step,
 			When:          ref.When,
 			FailurePolicy: failurePolicy,

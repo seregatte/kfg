@@ -816,3 +816,202 @@ func TestResolveWorkflowsByName_PartialNotFound(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "CmdWorkflow not found")
 }
+
+// ============================================================================
+// StepRefName Tests (StepReference.Name runtime identity)
+// ============================================================================
+
+func TestResolveStepReference_StepRefName(t *testing.T) {
+	step := &manifest.Step{
+		APIVersion: "kfg.dev/v1alpha1",
+		Kind:       "Step",
+		Metadata:   manifest.Metadata{Name: "detect-step"},
+		Spec: manifest.StepSpec{
+			Run: "echo detect",
+			Output: &manifest.Output{Name: "AGENT"},
+		},
+	}
+
+	workflow := &manifest.CmdWorkflow{
+		APIVersion: "kfg.dev/v1alpha1",
+		Kind:       "CmdWorkflow",
+		Metadata:   manifest.Metadata{Name: "test"},
+		Spec: manifest.CmdWorkflowSpec{
+			Cmds: []string{},
+			Before: []manifest.StepReference{
+				{
+					Name: "detect-agent", // StepReference.Name (runtime identity)
+					Step: "detect-step",   // Step metadata.name
+					Env: map[string]string{
+						"MODE": "auto",
+					},
+				},
+			},
+		},
+	}
+
+	index := NewIndex([]manifest.ParsedResource{
+		{Step: step},
+		{CmdWorkflow: workflow},
+	})
+
+	resolver := NewResolver(index)
+	resolved, err := resolver.ResolveKustomization("test", nil)
+
+	assert.NoError(t, err)
+	assert.Len(t, resolved.Workflow.BeforeSteps, 1)
+
+	// Verify StepRefName is populated from StepReference.Name
+	resolvedStep := resolved.Workflow.BeforeSteps[0]
+	assert.Equal(t, "detect-agent", resolvedStep.Name, "ResolvedStep.Name should be StepReference.Name")
+	assert.Equal(t, "detect-step", resolvedStep.Step.Metadata.Name, "Step metadata name should be unchanged")
+}
+
+func TestResolveStepReference_StepRefNameWithEnvOverride(t *testing.T) {
+	step := &manifest.Step{
+		APIVersion: "kfg.dev/v1alpha1",
+		Kind:       "Step",
+		Metadata:   manifest.Metadata{Name: "setup-step"},
+		Spec: manifest.StepSpec{
+			Run: "echo setup",
+			Env: map[string]string{
+				"SRC":  "default",
+				"DEST": "default",
+			},
+		},
+	}
+
+	workflow := &manifest.CmdWorkflow{
+		APIVersion: "kfg.dev/v1alpha1",
+		Kind:       "CmdWorkflow",
+		Metadata:   manifest.Metadata{Name: "test"},
+		Spec: manifest.CmdWorkflowSpec{
+			Cmds: []string{},
+			Before: []manifest.StepReference{
+				{
+					Name: "setup-claude", // StepReference.Name
+					Step: "setup-step",
+					Env: map[string]string{
+						"DEST": "CLAUDE.md",
+					},
+				},
+			},
+		},
+	}
+
+	index := NewIndex([]manifest.ParsedResource{
+		{Step: step},
+		{CmdWorkflow: workflow},
+	})
+
+	resolver := NewResolver(index)
+	resolved, err := resolver.ResolveKustomization("test", nil)
+
+	assert.NoError(t, err)
+	assert.Len(t, resolved.Workflow.BeforeSteps, 1)
+
+	resolvedStep := resolved.Workflow.BeforeSteps[0]
+	assert.Equal(t, "setup-claude", resolvedStep.Name)
+	assert.Equal(t, "setup-step", resolvedStep.Step.Metadata.Name)
+
+	// Verify env is merged properly
+	assert.Equal(t, "default", resolvedStep.Env["SRC"])
+	assert.Equal(t, "CLAUDE.md", resolvedStep.Env["DEST"])
+}
+
+func TestResolveStepReference_MultipleSameStepDifferentNames(t *testing.T) {
+	// Test that the same Step can be used multiple times with different StepRefNames
+	step := &manifest.Step{
+		APIVersion: "kfg.dev/v1alpha1",
+		Kind:       "Step",
+		Metadata:   manifest.Metadata{Name: "copy-step"},
+		Spec: manifest.StepSpec{
+			Run: "cp $SRC $DEST",
+			Env: map[string]string{
+				"SRC":  "default",
+				"DEST": "default",
+			},
+			Output: &manifest.Output{Name: "RESULT"},
+		},
+	}
+
+	workflow := &manifest.CmdWorkflow{
+		APIVersion: "kfg.dev/v1alpha1",
+		Kind:       "CmdWorkflow",
+		Metadata:   manifest.Metadata{Name: "test"},
+		Spec: manifest.CmdWorkflowSpec{
+			Cmds: []string{},
+			Before: []manifest.StepReference{
+				{
+					Name: "copy-claude",
+					Step: "copy-step",
+					Env: map[string]string{"DEST": "CLAUDE.md"},
+				},
+				{
+					Name: "copy-gemini",
+					Step: "copy-step",
+					Env: map[string]string{"DEST": "GEMINI.md"},
+				},
+			},
+		},
+	}
+
+	index := NewIndex([]manifest.ParsedResource{
+		{Step: step},
+		{CmdWorkflow: workflow},
+	})
+
+	resolver := NewResolver(index)
+	resolved, err := resolver.ResolveKustomization("test", nil)
+
+	assert.NoError(t, err)
+	assert.Len(t, resolved.Workflow.BeforeSteps, 2)
+
+	// Verify both step references have different names but same step
+	assert.Equal(t, "copy-claude", resolved.Workflow.BeforeSteps[0].Name)
+	assert.Equal(t, "copy-step", resolved.Workflow.BeforeSteps[0].Step.Metadata.Name)
+	assert.Equal(t, "CLAUDE.md", resolved.Workflow.BeforeSteps[0].Env["DEST"])
+
+	assert.Equal(t, "copy-gemini", resolved.Workflow.BeforeSteps[1].Name)
+	assert.Equal(t, "copy-step", resolved.Workflow.BeforeSteps[1].Step.Metadata.Name)
+	assert.Equal(t, "GEMINI.md", resolved.Workflow.BeforeSteps[1].Env["DEST"])
+}
+
+func TestResolveStepReference_AfterStepsWithNames(t *testing.T) {
+	step := &manifest.Step{
+		APIVersion: "kfg.dev/v1alpha1",
+		Kind:       "Step",
+		Metadata:   manifest.Metadata{Name: "cleanup-step"},
+		Spec:       manifest.StepSpec{Run: "rm -rf temp"},
+	}
+
+	workflow := &manifest.CmdWorkflow{
+		APIVersion: "kfg.dev/v1alpha1",
+		Kind:       "CmdWorkflow",
+		Metadata:   manifest.Metadata{Name: "test"},
+		Spec: manifest.CmdWorkflowSpec{
+			Cmds: []string{},
+			After: []manifest.StepReference{
+				{
+					Name: "cleanup-final",
+					Step: "cleanup-step",
+				},
+			},
+		},
+	}
+
+	index := NewIndex([]manifest.ParsedResource{
+		{Step: step},
+		{CmdWorkflow: workflow},
+	})
+
+	resolver := NewResolver(index)
+	resolved, err := resolver.ResolveKustomization("test", nil)
+
+	assert.NoError(t, err)
+	assert.Len(t, resolved.Workflow.AfterSteps, 1)
+
+	// Verify StepRefName is populated in after steps too
+	assert.Equal(t, "cleanup-final", resolved.Workflow.AfterSteps[0].Name)
+	assert.Equal(t, "cleanup-step", resolved.Workflow.AfterSteps[0].Step.Metadata.Name)
+}
