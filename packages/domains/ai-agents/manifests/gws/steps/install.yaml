@@ -21,7 +21,7 @@ spec:
     _kfg.log.debug "step:gws.install" "AGENT_FLAG=$AGENT_FLAG"
 
     # Install skill via npx skills add
-    npx -y skills add "$SKILL_NAME" --agent "$AGENT_FLAG" --copy --yes
+    npx -y skills add "$SKILL_NAME" --agent "$AGENT_FLAG" --copy --yes > /dev/null 2>&1
 
     _kfg.log.info "step:gws.install" "installed"
 

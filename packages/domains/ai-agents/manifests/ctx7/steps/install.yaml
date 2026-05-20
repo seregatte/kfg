@@ -24,7 +24,7 @@ spec:
     mkdir -p "$OUTPUT_DIR"
 
     # Execute install command
-    ctx7 setup --cli --project $FLAGS
+    ctx7 setup --cli --project $FLAGS > /dev/null 2>&1
 
     # Determine source directory based on FLAGS
     SKILL_SRC=""

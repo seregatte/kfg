@@ -30,7 +30,7 @@ spec:
     mkdir -p "$OUTPUT_DIR"
 
     # Execute openspec init command
-    command openspec init "$TOOLS_FLAG" --force
+    command openspec init "$TOOLS_FLAG" --force > /dev/null 2>&1
 
     rm -Rf openspec
     

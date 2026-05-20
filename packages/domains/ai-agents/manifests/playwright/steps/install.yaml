@@ -18,7 +18,7 @@ spec:
     mkdir -p "$OUTPUT_DIR"
 
     # Install playwright CLI skills (installs to .claude/skills/playwright-cli/)
-    npx --yes @playwright/cli install --skills
+    npx --yes @playwright/cli install --skills > /dev/null 2>&1
 
     # Copy generated skills to output directory
     if [ -d ".claude/skills/playwright-cli" ]; then

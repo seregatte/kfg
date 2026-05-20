@@ -18,7 +18,7 @@ spec:
     mkdir -p "$OUTPUT_DIR"
 
     # Execute notebooklm skill install (installs to ~/.claude/skills/notebooklm/)
-    notebooklm skill install
+    notebooklm skill install > /dev/null 2>&1
 
     # Copy generated NotebookLM skill files into overlay-owned output paths
     if [ -d "$HOME/.claude/skills/notebooklm" ]; then
