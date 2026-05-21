@@ -8,7 +8,7 @@ spec:
     local dest="${DEST:-}"
     local output_dir="${OUTPUT_DIR:-.}"
     
-    [ -z "$src" ] && { _kfg.log.warn "no source specified"; return 0; }
+    [ -z "$src" ] && { __kfg_log_warn "no source specified"; return 0; }
     
     [ -z "$dest" ] && dest=$(basename "$src")
     
@@ -18,14 +18,14 @@ spec:
       mkdir -p "$(dirname "$target")"
       cp "$src" "$target" 2>/dev/null || true
       __kfg_add_artifact "$dest"
-      _kfg.log.info "copied file: ${src} -> ${dest}"
+      __kfg_log_info "copied file: ${src} -> ${dest}"
     elif [ -d "$src" ]; then
       mkdir -p "$(dirname "$target")"
       cp -r "$src" "$target" 2>/dev/null || true
       __kfg_add_artifact "$dest"
-      _kfg.log.info "copied directory: ${src} -> ${dest}"
+      __kfg_log_info "copied directory: ${src} -> ${dest}"
     else
-      _kfg.log.warn "source not found: ${src}"
+      __kfg_log_warn "source not found: ${src}"
     fi
   artifacts:
     - context

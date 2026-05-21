@@ -6,14 +6,14 @@ spec:
   run: |
     local dirs="${DIRECTORIES:-}"
     
-    [ -z "$dirs" ] && { _kfg.log.warn "no directories to create"; return 0; }
+    [ -z "$dirs" ] && { __kfg_log_warn "no directories to create"; return 0; }
     
     IFS=':' read -ra dir_array <<< "$dirs"
     for dir in "${dir_array[@]}"; do
       [ -z "$dir" ] && continue
       mkdir -p "$dir"
       __kfg_add_artifact "$dir"
-      _kfg.log.info "scaffold: created directory ${dir}"
+      __kfg_log_info "scaffold: created directory ${dir}"
     done
   artifacts:
     - scaffold

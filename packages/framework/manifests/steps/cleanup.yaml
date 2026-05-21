@@ -4,14 +4,14 @@ metadata:
   name: kfg.cleanup
 spec:
   run: |
-    _kfg.log.info "cleaning up artifacts..."
+    __kfg_log_info "cleaning up artifacts..."
     if [ ${#KFG_ARTIFACTS[@]} -eq 0 ]; then
-        _kfg.log.info "no artifacts to clean up"
+        __kfg_log_info "no artifacts to clean up"
         return 0
     fi
     for artifact in "${KFG_ARTIFACTS[@]}"; do
         if [ -e "$artifact" ]; then
-            _kfg.log.info "removing artifact: $artifact"
+            __kfg_log_info "removing artifact: $artifact"
             rm -rf "$artifact"
         fi
     done

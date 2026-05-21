@@ -33,6 +33,9 @@ GitHub URLs are supported and will be cloned automatically:
   - https://github.com/owner/repo//path
   - https://github.com/owner/repo//path?ref=v1.0.0
 
+Environment variables:
+  KFG_KPATH      Default kustomization path if positional arg not specified
+
 Examples:
   kfg build .nixai/overlay/dev
   kfg build .nixai/base -o output.yaml

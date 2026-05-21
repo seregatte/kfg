@@ -7,19 +7,19 @@ spec:
     TARGET_FILE="${TARGET_FILE:-AGENTS.md}"
     CTX7_CONTEXT="${CTX7_CONTEXT:-}"
 
-    _kfg.log.debug "step:inject-ctx7-context" "TARGET_FILE=$TARGET_FILE"
-    _kfg.log.debug "step:inject-ctx7-context" "CTX7_CONTEXT length=${#CTX7_CONTEXT}"
+    __kfg_log_debug "step:inject-ctx7-context" "TARGET_FILE=$TARGET_FILE"
+    __kfg_log_debug "step:inject-ctx7-context" "CTX7_CONTEXT length=${#CTX7_CONTEXT}"
 
     # Check if CTX7_CONTEXT is provided
     if [ -z "$CTX7_CONTEXT" ]; then
-      _kfg.log.warn "step:inject-ctx7-context" "CTX7_CONTEXT is empty or unset"
+      __kfg_log_warn "step:inject-ctx7-context" "CTX7_CONTEXT is empty or unset"
       exit 0
     fi
 
     # Create target file if it doesn't exist
     if [ ! -f "$TARGET_FILE" ]; then
       touch "$TARGET_FILE"
-      _kfg.log.debug "step:inject-ctx7-context" "Created $TARGET_FILE"
+      __kfg_log_debug "step:inject-ctx7-context" "Created $TARGET_FILE"
     fi
 
     # Check if target already has context7 section
@@ -46,7 +46,7 @@ spec:
         }
       ' "$TARGET_FILE" > "$temp_file"
       mv "$temp_file" "$TARGET_FILE"
-      _kfg.log.info "step:inject-ctx7-context" "Replaced ctx7 section in $TARGET_FILE"
+      __kfg_log_info "step:inject-ctx7-context" "Replaced ctx7 section in $TARGET_FILE"
     else
       # Append new section
       {
@@ -55,7 +55,7 @@ spec:
         echo "$CTX7_CONTEXT"
         echo "$end_marker"
       } >> "$TARGET_FILE"
-      _kfg.log.info "step:inject-ctx7-context" "Appended ctx7 section to $TARGET_FILE"
+      __kfg_log_info "step:inject-ctx7-context" "Appended ctx7 section to $TARGET_FILE"
     fi
 
   env:

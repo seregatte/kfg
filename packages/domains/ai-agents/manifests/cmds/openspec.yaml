@@ -5,15 +5,15 @@ metadata:
   commandName: openspec
 spec:
   run: |
-    _kfg.log.debug "openspec:cmd" "$@"
+    __kfg_log_debug "openspec:cmd" "$@"
     if [ -n "$OPENSPEC_ROOT_DIR" ]; then
-      _kfg.log.debug "openspec:cmd" "Going to $OPENSPEC_ROOT_DIR"
+      __kfg_log_debug "openspec:cmd" "Going to $OPENSPEC_ROOT_DIR"
       cd "$OPENSPEC_ROOT_DIR"
     fi
     command openspec "$@"
     if [ -n "$OPENSPEC_ROOT_DIR" ]; then
       cd - 
-      _kfg.log.debug "openspec:cmd" "Going back to $OLDPWD"
+      __kfg_log_debug "openspec:cmd" "Going back to $OLDPWD"
     fi
   env:
     AGENT: "openspec"

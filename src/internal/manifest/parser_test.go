@@ -71,6 +71,130 @@ spec:
 	assert.Len(t, resources[0].CmdWorkflow.Spec.Before, 1)
 }
 
+func TestParseStepWithCache(t *testing.T) {
+	tests := []struct {
+		name     string
+		yaml     string
+		expected *CacheConfig
+	}{
+		{
+			name: "step with cache enabled",
+			yaml: `apiVersion: kfg.dev/v1alpha1
+kind: Step
+metadata:
+  name: cached-step
+spec:
+  run: echo 'hello'
+  cache:
+    enabled: true
+    key: stable-key
+`,
+			expected: &CacheConfig{Enabled: boolPtr(true), Key: "stable-key"},
+		},
+		{
+			name: "step with cache disabled",
+			yaml: `apiVersion: kfg.dev/v1alpha1
+kind: Step
+metadata:
+  name: uncached-step
+spec:
+  run: echo 'hello'
+  cache:
+    enabled: false
+`,
+			expected: &CacheConfig{Enabled: boolPtr(false), Key: ""},
+		},
+		{
+			name: "step with cache key only",
+			yaml: `apiVersion: kfg.dev/v1alpha1
+kind: Step
+metadata:
+  name: key-only-step
+spec:
+  run: echo 'hello'
+  cache:
+    key: my-cache-key
+`,
+			expected: &CacheConfig{Enabled: nil, Key: "my-cache-key"},
+		},
+		{
+			name: "step without cache",
+			yaml: `apiVersion: kfg.dev/v1alpha1
+kind: Step
+metadata:
+  name: no-cache-step
+spec:
+  run: echo 'hello'
+`,
+			expected: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			parser := NewParser()
+			resources, err := parser.ParseData("test.yaml", []byte(tt.yaml))
+
+			assert.NoError(t, err)
+			assert.Len(t, resources, 1)
+			assert.NotNil(t, resources[0].Step)
+
+			if tt.expected == nil {
+				assert.Nil(t, resources[0].Step.Spec.Cache)
+			} else {
+				assert.NotNil(t, resources[0].Step.Spec.Cache)
+				if tt.expected.Enabled != nil {
+					assert.NotNil(t, resources[0].Step.Spec.Cache.Enabled)
+					assert.Equal(t, *tt.expected.Enabled, *resources[0].Step.Spec.Cache.Enabled)
+				} else {
+					assert.Nil(t, resources[0].Step.Spec.Cache.Enabled)
+				}
+				assert.Equal(t, tt.expected.Key, resources[0].Step.Spec.Cache.Key)
+			}
+		})
+	}
+}
+
+func TestParseCmdWorkflowWithStepReferenceCache(t *testing.T) {
+	yaml := `apiVersion: kfg.dev/v1alpha1
+kind: CmdWorkflow
+metadata:
+  name: test-workflow
+  shell: bash
+spec:
+  cmds:
+    - cmd1
+  before:
+    - name: setup
+      step: setup-step
+      cache:
+        enabled: true
+        key: override-key
+`
+
+	parser := NewParser()
+	resources, err := parser.ParseData("test.yaml", []byte(yaml))
+
+	assert.NoError(t, err)
+	assert.Len(t, resources, 1)
+	assert.NotNil(t, resources[0].CmdWorkflow)
+
+	// Verify StepReference has cache configuration
+	assert.Len(t, resources[0].CmdWorkflow.Spec.Before, 1)
+	ref := resources[0].CmdWorkflow.Spec.Before[0]
+	assert.Equal(t, "setup", ref.Name)
+	assert.Equal(t, "setup-step", ref.Step)
+	assert.NotNil(t, ref.Cache)
+	assert.NotNil(t, ref.Cache.Enabled)
+	assert.True(t, *ref.Cache.Enabled)
+	assert.Equal(t, "override-key", ref.Cache.Key)
+}
+
+// Helper function to create bool pointer
+func boolPtr(b bool) *bool {
+	return &b
+}
+
 func TestParseMultiDocument(t *testing.T) {
 	yaml := `---
 apiVersion: kfg.dev/v1alpha1

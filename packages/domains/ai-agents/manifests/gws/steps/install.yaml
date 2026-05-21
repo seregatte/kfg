@@ -4,26 +4,26 @@ metadata:
   name: gws.steps.install
 spec:
   run: |
-    _kfg.log.info "Installing gws skills..."
+    __kfg_log_info "Installing gws skills..."
 
     # Validate required env vars
     if [ -z "$SKILL_NAME" ]; then
-      _kfg.log.error "missing required env var: SKILL_NAME"
+      __kfg_log_error "missing required env var: SKILL_NAME"
       exit 1
     fi
 
     if [ -z "$AGENT_FLAG" ]; then
-      _kfg.log.error "missing required env var: AGENT_FLAG"
+      __kfg_log_error "missing required env var: AGENT_FLAG"
       exit 1
     fi
 
-    _kfg.log.debug "step:gws.install" "SKILL_NAME=$SKILL_NAME"
-    _kfg.log.debug "step:gws.install" "AGENT_FLAG=$AGENT_FLAG"
+    __kfg_log_debug "step:gws.install" "SKILL_NAME=$SKILL_NAME"
+    __kfg_log_debug "step:gws.install" "AGENT_FLAG=$AGENT_FLAG"
 
     # Install skill via npx skills add
     npx -y skills add "$SKILL_NAME" --agent "$AGENT_FLAG" --copy --yes > /dev/null 2>&1
 
-    _kfg.log.info "step:gws.install" "installed"
+    __kfg_log_info "step:gws.install" "installed"
 
   env:
     SKILL_NAME: "googleworkspace/cli"
@@ -33,3 +33,6 @@ spec:
   output:
     name: installed
     type: string
+  cache:
+    enabled: true
+    key: gws-install

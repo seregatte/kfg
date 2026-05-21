@@ -21,6 +21,10 @@ type StepData struct {
 	IgnoreFailure bool
 	Artifacts     []string          // NEW: artifacts produced by this step
 	Env           map[string]string // NEW: environment variables for this step
+	// Cache configuration
+	CacheEnabled bool   // Whether caching is enabled for this step
+	CacheKey     string // User-provided cache key
+	ScriptHash   string // Hash of spec.run for cache identity
 }
 
 // BeforeStepData represents a before step in a command wrapper.
@@ -72,6 +76,12 @@ type WorkflowStepData struct {
 	IgnoreFailure bool
 	WhenCondition string
 	Env           map[string]string // NEW: merged env for this step invocation
+	// Cache configuration
+	CacheEnabled bool   // Whether caching is enabled for this step invocation
+	CacheKey     string // User-provided cache key for this invocation
+	ScriptHash   string // Hash of spec.run for cache identity
+	HasOutput    bool   // Whether this step has an output
+	OutputName   string // Output name if HasOutput is true
 }
 
 // WorkflowCmdData represents a cmd in workflow context.

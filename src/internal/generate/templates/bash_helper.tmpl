@@ -17,6 +17,105 @@ __kfg_output_get() {
     printf '%s' "${__kfg_outputs["${step}.${name}"]:-}"
 }
 
+# Cache helpers
+
+# Compute cache identity for a step invocation
+# Args: step_ref_name, cache_key, script_hash
+# Returns: cache entry path (printed to stdout)
+__kfg_cache_identity() {
+    local step_ref_name="$1"
+    local cache_key="$2"
+    local script_hash="$3"
+    
+    # Compute unique cache key from inputs
+    local identity_key="${step_ref_name}:${cache_key}:${script_hash}"
+    local identity_hash
+    identity_hash=$(printf '%s' "$identity_key" | sha256sum | cut -d' ' -f1)
+    
+    # Return cache entry path under KFG_STORE_DIR/cache/
+    local store_dir="${KFG_STORE_DIR:-${HOME}/.kfg/store}"
+    printf '%s/cache/%s' "$store_dir" "$identity_hash"
+}
+
+# Check if cache entry exists
+# Args: cache_path
+# Returns: 0 if exists, 1 if not
+__kfg_cache_exists() {
+    local cache_path="$1"
+    [ -d "$cache_path" ] && [ -f "$cache_path/metadata.yaml" ]
+}
+
+# Store artifacts and outputs for a cacheable step
+# Args: cache_path, step_ref_name, output_name (optional)
+__kfg_cache_store() {
+    local cache_path="$1"
+    local step_ref_name="$2"
+    local output_name="$3"
+    
+    # Create cache directory
+    mkdir -p "$cache_path/artifacts"
+    
+    # Snapshot artifacts from KFG_ARTIFACTS
+    local artifact
+    for artifact in "${KFG_ARTIFACTS[@]}"; do
+        if [ -e "$artifact" ]; then
+            # Store relative path under artifacts directory
+            local artifact_name
+            artifact_name=$(basename "$artifact")
+            cp -r "$artifact" "$cache_path/artifacts/$artifact_name" 2>/dev/null || true
+        fi
+    done
+    
+    # Store metadata
+    local metadata_content="stepRefName: ${step_ref_name}\ntimestamp: $(date -u +%Y-%m-%dT%H:%M:%SZ)\n"
+    if [ -n "$output_name" ]; then
+        # Serialize output value using base64 for multiline safety
+        local output_value
+        output_value=$(__kfg_output_get "$step_ref_name" "$output_name")
+        local output_encoded
+        output_encoded=$(printf '%s' "$output_value" | base64)
+        metadata_content+="output:\n  name: ${output_name}\n  valueEncoded: ${output_encoded}\n"
+    fi
+    printf '%b' "$metadata_content" > "$cache_path/metadata.yaml"
+    
+    # Store artifact paths list
+    printf '%s\n' "${KFG_ARTIFACTS[@]}" > "$cache_path/artifact_paths.txt"
+}
+
+# Restore artifacts and outputs from cache
+# Args: cache_path, step_ref_name, output_name (optional)
+__kfg_cache_restore() {
+    local cache_path="$1"
+    local step_ref_name="$2"
+    local output_name="$3"
+    
+    # Restore artifacts
+    if [ -d "$cache_path/artifacts" ]; then
+        local artifact
+        for artifact in "$cache_path/artifacts"/*; do
+            [ -e "$artifact" ] || continue
+            local artifact_name
+            artifact_name=$(basename "$artifact")
+            # Copy artifact to current working directory
+            cp -r "$artifact" "$artifact_name" 2>/dev/null || true
+            # Register artifact in KFG_ARTIFACTS
+            __kfg_add_artifact "$artifact_name"
+        done
+    fi
+    
+    # Restore output if metadata contains it
+    if [ -f "$cache_path/metadata.yaml" ] && [ -n "$output_name" ]; then
+        # Parse encoded output value from metadata
+        local output_encoded
+        output_encoded=$(grep 'valueEncoded:' "$cache_path/metadata.yaml" | cut -d' ' -f2 || true)
+        if [ -n "$output_encoded" ]; then
+            local output_value
+            output_value=$(printf '%s' "$output_encoded" | base64 -d)
+            __kfg_output_set "$step_ref_name" "$output_name" "$output_value"
+        fi
+    fi
+}
+
 # When condition evaluation
 
 __kfg_when_equals() {
@@ -80,51 +179,51 @@ __kfg_when_not() {
 # These helpers produce identical output to the Go logger.
 # Usage errors are written directly to stderr to avoid recursion.
 
-_kfg.log.error() {
+__kfg_log_error() {
     local component="${1:-}"
     local message="${2:-}"
     if [ -z "$component" ]; then
-        echo "Usage: _kfg.log.error <component> [message]" >&2
+        echo "Usage: __kfg_log_error <component> [message]" >&2
         return 1
     fi
     kfg sys log error "$component" "$message"
 }
 
-_kfg.log.warn() {
+__kfg_log_warn() {
     local component="${1:-}"
     local message="${2:-}"
     if [ -z "$component" ]; then
-        echo "Usage: _kfg.log.warn <component> [message]" >&2
+        echo "Usage: __kfg_log_warn <component> [message]" >&2
         return 1
     fi
     kfg sys log warn "$component" "$message"
 }
 
-_kfg.log.info() {
+__kfg_log_info() {
     local component="${1:-}"
     local message="${2:-}"
     if [ -z "$component" ]; then
-        echo "Usage: _kfg.log.info <component> [message]" >&2
+        echo "Usage: __kfg_log_info <component> [message]" >&2
         return 1
     fi
     kfg sys log info "$component" "$message"
 }
 
-_kfg.log.detail() {
+__kfg_log_detail() {
     local component="${1:-}"
     local message="${2:-}"
     if [ -z "$component" ]; then
-        echo "Usage: _kfg.log.detail <component> [message]" >&2
+        echo "Usage: __kfg_log_detail <component> [message]" >&2
         return 1
     fi
     kfg sys log detail "$component" "$message"
 }
 
-_kfg.log.debug() {
+__kfg_log_debug() {
     local component="${1:-}"
     local message="${2:-}"
     if [ -z "$component" ]; then
-        echo "Usage: _kfg.log.debug <component> [message]" >&2
+        echo "Usage: __kfg_log_debug <component> [message]" >&2
         return 1
     fi
     kfg sys log debug "$component" "$message"

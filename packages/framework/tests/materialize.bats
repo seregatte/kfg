@@ -38,9 +38,9 @@ YAML
     
     local script_file="${TEST_TMPDIR}/test-script.sh"
     cat > "$script_file" <<'HEADER'
-_kfg.log.info() { :; }
-_kfg.log.warn() { :; }
-_kfg.log.error() { :; }
+__kfg_log_info() { :; }
+__kfg_log_warn() { :; }
+__kfg_log_error() { :; }
 declare -a KFG_ARTIFACTS=()
 __kfg_add_artifact() { KFG_ARTIFACTS+=("$1"); }
 HEADER
@@ -111,9 +111,9 @@ YAML
     
     local script_file="${TEST_TMPDIR}/test-script.sh"
     cat > "$script_file" <<'HEADER'
-_kfg.log.info() { :; }
-_kfg.log.warn() { :; }
-_kfg.log.error() { :; }
+__kfg_log_info() { :; }
+__kfg_log_warn() { :; }
+__kfg_log_error() { :; }
 declare -a KFG_ARTIFACTS=()
 __kfg_add_artifact() { KFG_ARTIFACTS+=("$1"); }
 HEADER
@@ -181,9 +181,9 @@ YAML
     
     local script_file="${TEST_TMPDIR}/test-script.sh"
     cat > "$script_file" <<'HEADER'
-_kfg.log.info() { :; }
-_kfg.log.warn() { :; }
-_kfg.log.error() { :; }
+__kfg_log_info() { :; }
+__kfg_log_warn() { :; }
+__kfg_log_error() { :; }
 declare -a KFG_ARTIFACTS=()
 __kfg_add_artifact() { KFG_ARTIFACTS+=("$1"); }
 HEADER
@@ -249,9 +249,9 @@ YAML
     
     local script_file="${TEST_TMPDIR}/test-script.sh"
     cat > "$script_file" <<'HEADER'
-_kfg.log.info() { :; }
-_kfg.log.warn() { :; }
-_kfg.log.error() { :; }
+__kfg_log_info() { :; }
+__kfg_log_warn() { :; }
+__kfg_log_error() { :; }
 declare -a KFG_ARTIFACTS=()
 __kfg_add_artifact() { KFG_ARTIFACTS+=("$1"); }
 HEADER
@@ -313,9 +313,9 @@ YAML
     
     local script_file="${TEST_TMPDIR}/test-script.sh"
     cat > "$script_file" <<'HEADER'
-_kfg.log.info() { :; }
-_kfg.log.warn() { :; }
-_kfg.log.error() { :; }
+__kfg_log_info() { :; }
+__kfg_log_warn() { :; }
+__kfg_log_error() { :; }
 declare -a KFG_ARTIFACTS=()
 __kfg_add_artifact() { KFG_ARTIFACTS+=("$1"); }
 HEADER
@@ -376,9 +376,9 @@ YAML
     
     local script_file="${TEST_TMPDIR}/test-script.sh"
     cat > "$script_file" <<'HEADER'
-_kfg.log.info() { :; }
-_kfg.log.warn() { :; }
-_kfg.log.error() { :; }
+__kfg_log_info() { :; }
+__kfg_log_warn() { :; }
+__kfg_log_error() { :; }
 declare -a KFG_ARTIFACTS=()
 __kfg_add_artifact() { KFG_ARTIFACTS+=("$1"); }
 HEADER
@@ -437,9 +437,9 @@ YAML
     
     local script_file="${TEST_TMPDIR}/test-script.sh"
     cat > "$script_file" <<'HEADER'
-_kfg.log.info() { :; }
-_kfg.log.warn() { :; }
-_kfg.log.error() { :; }
+__kfg_log_info() { :; }
+__kfg_log_warn() { :; }
+__kfg_log_error() { :; }
 declare -a KFG_ARTIFACTS=()
 __kfg_add_artifact() { KFG_ARTIFACTS+=("$1"); }
 HEADER
@@ -492,9 +492,9 @@ YAML
     
     local script_file="${TEST_TMPDIR}/test-script.sh"
     cat > "$script_file" <<'HEADER'
-_kfg.log.info() { :; }
-_kfg.log.warn() { :; }
-_kfg.log.error() { echo "ERROR: $*" >&2; }
+__kfg_log_info() { :; }
+__kfg_log_warn() { :; }
+__kfg_log_error() { echo "ERROR: $*" >&2; }
 declare -a KFG_ARTIFACTS=()
 __kfg_add_artifact() { KFG_ARTIFACTS+=("$1"); }
 HEADER
@@ -516,9 +516,9 @@ HEADER
     
     local script_file="${TEST_TMPDIR}/test-script.sh"
     cat > "$script_file" <<'HEADER'
-_kfg.log.info() { :; }
-_kfg.log.warn() { :; }
-_kfg.log.error() { echo "ERROR: $*" >&2; }
+__kfg_log_info() { :; }
+__kfg_log_warn() { :; }
+__kfg_log_error() { echo "ERROR: $*" >&2; }
 declare -a KFG_ARTIFACTS=()
 __kfg_add_artifact() { KFG_ARTIFACTS+=("$1"); }
 HEADER
@@ -540,9 +540,9 @@ HEADER
     
     local script_file="${TEST_TMPDIR}/test-script.sh"
     cat > "$script_file" <<'HEADER'
-_kfg.log.info() { :; }
-_kfg.log.warn() { :; }
-_kfg.log.error() { echo "ERROR: $*" >&2; }
+__kfg_log_info() { :; }
+__kfg_log_warn() { :; }
+__kfg_log_error() { echo "ERROR: $*" >&2; }
 declare -a KFG_ARTIFACTS=()
 __kfg_add_artifact() { KFG_ARTIFACTS+=("$1"); }
 HEADER
@@ -564,9 +564,9 @@ HEADER
     
     local script_file="${TEST_TMPDIR}/test-script.sh"
     cat > "$script_file" <<'HEADER'
-_kfg.log.info() { :; }
-_kfg.log.warn() { :; }
-_kfg.log.error() { echo "ERROR: $*" >&2; }
+__kfg_log_info() { :; }
+__kfg_log_warn() { :; }
+__kfg_log_error() { echo "ERROR: $*" >&2; }
 declare -a KFG_ARTIFACTS=()
 __kfg_add_artifact() { KFG_ARTIFACTS+=("$1"); }
 HEADER
@@ -588,9 +588,9 @@ HEADER
     
     local script_file="${TEST_TMPDIR}/test-script.sh"
     cat > "$script_file" <<'HEADER'
-_kfg.log.info() { :; }
-_kfg.log.warn() { :; }
-_kfg.log.error() { echo "ERROR: $*" >&2; }
+__kfg_log_info() { :; }
+__kfg_log_warn() { :; }
+__kfg_log_error() { echo "ERROR: $*" >&2; }
 declare -a KFG_ARTIFACTS=()
 __kfg_add_artifact() { KFG_ARTIFACTS+=("$1"); }
 HEADER
@@ -635,9 +635,9 @@ YAML
     
     local script_file="${TEST_TMPDIR}/test-script.sh"
     cat > "$script_file" <<'HEADER'
-_kfg.log.info() { :; }
-_kfg.log.warn() { :; }
-_kfg.log.error() { echo "ERROR: $*" >&2; }
+__kfg_log_info() { :; }
+__kfg_log_warn() { :; }
+__kfg_log_error() { echo "ERROR: $*" >&2; }
 declare -a KFG_ARTIFACTS=()
 __kfg_add_artifact() { KFG_ARTIFACTS+=("$1"); }
 HEADER
@@ -683,9 +683,9 @@ YAML
     
     local script_file="${TEST_TMPDIR}/test-script.sh"
     cat > "$script_file" <<'HEADER'
-_kfg.log.info() { :; }
-_kfg.log.warn() { :; }
-_kfg.log.error() { echo "ERROR: $*" >&2; }
+__kfg_log_info() { :; }
+__kfg_log_warn() { :; }
+__kfg_log_error() { echo "ERROR: $*" >&2; }
 declare -a KFG_ARTIFACTS=()
 __kfg_add_artifact() { KFG_ARTIFACTS+=("$1"); }
 HEADER
@@ -709,9 +709,9 @@ HEADER
     
     local script_file="${TEST_TMPDIR}/test-script.sh"
     cat > "$script_file" <<'HEADER'
-_kfg.log.info() { :; }
-_kfg.log.warn() { :; }
-_kfg.log.error() { echo "ERROR: $*" >&2; }
+__kfg_log_info() { :; }
+__kfg_log_warn() { :; }
+__kfg_log_error() { echo "ERROR: $*" >&2; }
 declare -a KFG_ARTIFACTS=()
 __kfg_add_artifact() { KFG_ARTIFACTS+=("$1"); }
 HEADER
@@ -757,9 +757,9 @@ YAML
     
     local script_file="${TEST_TMPDIR}/test-script.sh"
     cat > "$script_file" <<'HEADER'
-_kfg.log.info() { :; }
-_kfg.log.warn() { :; }
-_kfg.log.error() { echo "ERROR: $*" >&2; }
+__kfg_log_info() { :; }
+__kfg_log_warn() { :; }
+__kfg_log_error() { echo "ERROR: $*" >&2; }
 declare -a KFG_ARTIFACTS=()
 __kfg_add_artifact() { KFG_ARTIFACTS+=("$1"); }
 HEADER

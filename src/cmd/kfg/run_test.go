@@ -343,6 +343,12 @@ func TestRunCommandFlags(t *testing.T) {
 	cmdsFlag := flags.Lookup("cmds")
 	assert.NotNil(t, cmdsFlag)
 	assert.Equal(t, "c", cmdsFlag.Shorthand)
+
+	// Check --refresh flag
+	refreshFlag := flags.Lookup("refresh")
+	assert.NotNil(t, refreshFlag)
+	assert.Equal(t, "r", refreshFlag.Shorthand)
+	assert.Equal(t, "false", refreshFlag.DefValue)
 }
 
 func TestRunCommandStructure(t *testing.T) {

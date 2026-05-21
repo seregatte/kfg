@@ -4,33 +4,33 @@ metadata:
   name: chrome-devtools.steps.install
 spec:
   run: |
-    _kfg.log.info "Installing chrome-devtools skills..."
+    __kfg_log_info "Installing chrome-devtools skills..."
 
     # Validate required env vars
     if [ -z "$SKILL_NAME" ]; then
-      _kfg.log.error "missing required env var: SKILL_NAME"
+      __kfg_log_error "missing required env var: SKILL_NAME"
       exit 1
     fi
 
     if [ -z "$AGENT_FLAG" ]; then
-      _kfg.log.error "missing required env var: AGENT_FLAG"
+      __kfg_log_error "missing required env var: AGENT_FLAG"
       exit 1
     fi
 
     if [ -z "$AGENT_HOME" ]; then
-      _kfg.log.error "missing required env var: AGENT_HOME"
+      __kfg_log_error "missing required env var: AGENT_HOME"
       exit 1
     fi
 
     if [ -z "$OUTPUT_DIR" ]; then
-      _kfg.log.error "missing required env var: OUTPUT_DIR"
+      __kfg_log_error "missing required env var: OUTPUT_DIR"
       exit 1
     fi
 
-    _kfg.log.debug "step:chrome-devtools.install" "SKILL_NAME=$SKILL_NAME"
-    _kfg.log.debug "step:chrome-devtools.install" "AGENT_FLAG=$AGENT_FLAG"
-    _kfg.log.debug "step:chrome-devtools.install" "AGENT_HOME=$AGENT_HOME"
-    _kfg.log.debug "step:chrome-devtools.install" "OUTPUT_DIR=$OUTPUT_DIR"
+    __kfg_log_debug "step:chrome-devtools.install" "SKILL_NAME=$SKILL_NAME"
+    __kfg_log_debug "step:chrome-devtools.install" "AGENT_FLAG=$AGENT_FLAG"
+    __kfg_log_debug "step:chrome-devtools.install" "AGENT_HOME=$AGENT_HOME"
+    __kfg_log_debug "step:chrome-devtools.install" "OUTPUT_DIR=$OUTPUT_DIR"
 
     # Ensure output directory exists
     mkdir -p "$OUTPUT_DIR"
@@ -41,10 +41,10 @@ spec:
     # Copy skills from agent home to output directory
     if [ -d "$AGENT_HOME/skills/" ]; then
       cp -r "$AGENT_HOME/skills/"* "$OUTPUT_DIR/" 2>/dev/null || true
-      _kfg.log.info "step:chrome-devtools.install" "Copied skills from $AGENT_HOME/skills/ to $OUTPUT_DIR"
+      __kfg_log_info "step:chrome-devtools.install" "Copied skills from $AGENT_HOME/skills/ to $OUTPUT_DIR"
     fi
 
-    _kfg.log.info "step:chrome-devtools.install" "installed"
+    __kfg_log_info "step:chrome-devtools.install" "installed"
 
   env:
     SKILL_NAME: "ChromeDevTools/chrome-devtools-mcp"
@@ -54,3 +54,6 @@ spec:
   output:
     name: installed
     type: string
+  cache:
+    enabled: true
+    key: chrome-devtools-install

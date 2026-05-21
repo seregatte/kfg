@@ -4,27 +4,27 @@ metadata:
   name: openspec.steps.install
 spec:
   run: |
-    _kfg.log.info "Installing openspec skills..."
+    __kfg_log_info "Installing openspec skills..."
 
     # Validate required env vars
     if [ -z "$TOOLS_FLAG" ]; then
-      _kfg.log.error "missing required env var: TOOLS_FLAG"
+      __kfg_log_error "missing required env var: TOOLS_FLAG"
       exit 1
     fi
 
     if [ -z "$AGENT_HOME" ]; then
-      _kfg.log.error "missing required env var: AGENT_HOME"
+      __kfg_log_error "missing required env var: AGENT_HOME"
       exit 1
     fi
 
     if [ -z "$OUTPUT_DIR" ]; then
-      _kfg.log.error "missing required env var: OUTPUT_DIR"
+      __kfg_log_error "missing required env var: OUTPUT_DIR"
       exit 1
     fi
 
-    _kfg.log.debug "step:openspec.install" "TOOLS_FLAG=$TOOLS_FLAG"
-    _kfg.log.debug "step:openspec.install" "AGENT_HOME=$AGENT_HOME"
-    _kfg.log.debug "step:openspec.install" "OUTPUT_DIR=$OUTPUT_DIR"
+    __kfg_log_debug "step:openspec.install" "TOOLS_FLAG=$TOOLS_FLAG"
+    __kfg_log_debug "step:openspec.install" "AGENT_HOME=$AGENT_HOME"
+    __kfg_log_debug "step:openspec.install" "OUTPUT_DIR=$OUTPUT_DIR"
 
     # Ensure output directory exists
     mkdir -p "$OUTPUT_DIR"
@@ -37,7 +37,7 @@ spec:
     # Track the created agent home directory
     __kfg_add_artifact "$AGENT_HOME"
     
-    _kfg.log.info "step:openspec.install" "installed"
+    __kfg_log_info "step:openspec.install" "installed"
 
   env:
     TOOLS_FLAG: "--tools=claude"
@@ -46,3 +46,6 @@ spec:
   output:
     name: installed
     type: string
+  cache:
+    enabled: true
+    key: openspec-install

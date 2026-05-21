@@ -4,21 +4,21 @@ metadata:
   name: ctx7.steps.install
 spec:
   run: |
-    _kfg.log.info "Installing ctx7 skills..."
+    __kfg_log_info "Installing ctx7 skills..."
 
     # Validate required env vars
     if [ -z "$FLAGS" ]; then
-      _kfg.log.error "missing required env var: FLAGS"
+      __kfg_log_error "missing required env var: FLAGS"
       exit 1
     fi
 
     if [ -z "$OUTPUT_DIR" ]; then
-      _kfg.log.error "missing required env var: OUTPUT_DIR"
+      __kfg_log_error "missing required env var: OUTPUT_DIR"
       exit 1
     fi
 
-    _kfg.log.debug "step:ctx7.install" "FLAGS=$FLAGS"
-    _kfg.log.debug "step:ctx7.install" "OUTPUT_DIR=$OUTPUT_DIR"
+    __kfg_log_debug "step:ctx7.install" "FLAGS=$FLAGS"
+    __kfg_log_debug "step:ctx7.install" "OUTPUT_DIR=$OUTPUT_DIR"
 
     # Determine agent from FLAGS
     AGENT=""
@@ -47,10 +47,10 @@ spec:
     # Copy generated skills into OUTPUT_DIR
     if [ -n "$SKILL_SRC" ] && [ -d "$SKILL_SRC" ]; then
       cp -Rf "$SKILL_SRC"/* "$OUTPUT_DIR/" 2>/dev/null || true
-      _kfg.log.info "step:ctx7.install" "Copied skills from $SKILL_SRC to $OUTPUT_DIR"
+      __kfg_log_info "step:ctx7.install" "Copied skills from $SKILL_SRC to $OUTPUT_DIR"
       __kfg_add_artifact "$OUTPUT_DIR"
     else
-      _kfg.log.debug "step:ctx7.install" "No skills directory found at $SKILL_SRC"
+      __kfg_log_debug "step:ctx7.install" "No skills directory found at $SKILL_SRC"
     fi
 
     # Extract ctx7 context for output
@@ -60,21 +60,21 @@ spec:
       # Extract content between <!-- context7 --> markers
       if grep -q '<!-- context7 -->' "$CONTEXT_FILE"; then
         CTX7_CONTENT=$(sed -n '/^<!-- context7 -->$/,/^<!-- context7 -->$/p' "$CONTEXT_FILE" | sed '1d;$d')
-        _kfg.log.debug "step:ctx7.install" "Extracted ctx7 context from $CONTEXT_FILE"
+        __kfg_log_debug "step:ctx7.install" "Extracted ctx7 context from $CONTEXT_FILE"
       else
-        _kfg.log.debug "step:ctx7.install" "No <!-- context7 --> markers found in $CONTEXT_FILE"
+        __kfg_log_debug "step:ctx7.install" "No <!-- context7 --> markers found in $CONTEXT_FILE"
       fi
     else
-      _kfg.log.debug "step:ctx7.install" "Context file not found: $CONTEXT_FILE"
+      __kfg_log_debug "step:ctx7.install" "Context file not found: $CONTEXT_FILE"
     fi
 
     # Cleanup temporary agent home if opencode
     if [ "$AGENT" = "opencode" ]; then
-      _kfg.log.debug "step:ctx7.install" "removing .agents directory"
+      __kfg_log_debug "step:ctx7.install" "removing .agents directory"
       rm -rf .agents
     fi
 
-    _kfg.log.info "step:ctx7.install" "installed"
+    __kfg_log_info "step:ctx7.install" "installed"
 
     # Output ctx7 context (will be captured by kfg)
     echo "$CTX7_CONTENT"
@@ -85,3 +85,6 @@ spec:
   output:
     name: ctx7_context
     type: string
+  cache:
+    enabled: true
+    key: ctx7-install

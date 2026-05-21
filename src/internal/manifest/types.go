@@ -57,12 +57,19 @@ type Output struct {
 	Type string `yaml:"type"` // Type of the output (string, boolean, etc.)
 }
 
+// CacheConfig defines cache behavior for a Step or StepReference.
+type CacheConfig struct {
+	Enabled *bool  `yaml:"enabled"` // Optional: whether caching is enabled (default: true if cache is declared)
+	Key     string `yaml:"key"`     // Optional: cache key for this step invocation
+}
+
 // StepSpec is the spec for Step resources.
 type StepSpec struct {
 	Run       string            `yaml:"run"`       // Required: shell script to execute
 	Output    *Output           `yaml:"output"`    // Optional: output capture configuration
 	Artifacts []string          `yaml:"artifacts"` // Optional: artifacts produced by this step
 	Env       map[string]string `yaml:"env"`       // Optional: environment variables for this step
+	Cache     *CacheConfig      `yaml:"cache"`     // Optional: cache configuration for this step
 }
 
 // Cmd represents a Cmd resource (pure shell function, no orchestration).
@@ -151,6 +158,7 @@ type StepReference struct {
 	FailurePolicy string            `yaml:"failurePolicy"` // Optional: "Fail" (default) or "Ignore"
 	Env           map[string]string `yaml:"env"`           // Optional: environment variable overrides
 	Artifacts     []string          `yaml:"artifacts"`     // Optional: additional artifacts produced by this step reference
+	Cache         *CacheConfig      `yaml:"cache"`         // Optional: cache configuration override for this step reference
 }
 
 // WhenClause defines conditional execution.

@@ -4,12 +4,12 @@ metadata:
   name: kfg.ensure-gitignore
 spec:
   run: |
-    _kfg.log.debug "step:ensure-gitignore" "GITIGNORE_FILE=${GITIGNORE_FILE:-.gitignore}"
-    _kfg.log.debug "step:ensure-gitignore" "GITIGNORE_ENTRIES=${GITIGNORE_ENTRIES:-}"
+    __kfg_log_debug "step:ensure-gitignore" "GITIGNORE_FILE=${GITIGNORE_FILE:-.gitignore}"
+    __kfg_log_debug "step:ensure-gitignore" "GITIGNORE_ENTRIES=${GITIGNORE_ENTRIES:-}"
 
     # Exit early if no entries configured
     if [ -z "$GITIGNORE_ENTRIES" ]; then
-      _kfg.log.info "step:ensure-gitignore" "No entries to add, exiting"
+      __kfg_log_info "step:ensure-gitignore" "No entries to add, exiting"
       exit 0
     fi
 
@@ -18,7 +18,7 @@ spec:
     # Create file if it doesn't exist
     if [ ! -f "$GITIGNORE_FILE" ]; then
       touch "$GITIGNORE_FILE"
-      _kfg.log.debug "step:ensure-gitignore" "Created $GITIGNORE_FILE"
+      __kfg_log_debug "step:ensure-gitignore" "Created $GITIGNORE_FILE"
     fi
 
     # Read existing entries into array
@@ -38,13 +38,13 @@ spec:
       fi
       if [ -z "${existing_entries[$entry]}" ]; then
         echo "$entry" >> "$GITIGNORE_FILE"
-        _kfg.log.debug "step:ensure-gitignore" "Added entry: $entry"
+        __kfg_log_debug "step:ensure-gitignore" "Added entry: $entry"
       else
-        _kfg.log.debug "step:ensure-gitignore" "Entry already exists: $entry"
+        __kfg_log_debug "step:ensure-gitignore" "Entry already exists: $entry"
       fi
     done
 
-    _kfg.log.info "step:ensure-gitignore" "Gitignore updated: $GITIGNORE_FILE"
+    __kfg_log_info "step:ensure-gitignore" "Gitignore updated: $GITIGNORE_FILE"
   env:
     GITIGNORE_FILE: ".gitignore"
     GITIGNORE_ENTRIES: ""

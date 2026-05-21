@@ -5,7 +5,7 @@ metadata:
 spec:
   run: |
     echo "$AGENT"
-    _kfg.log.debug "step:detect-agent" "Agent: $AGENT"
+    __kfg_log_debug "step:detect-agent" "Agent: $AGENT"
   output:
     name: AGENT
     type: string

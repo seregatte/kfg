@@ -435,6 +435,72 @@ func TestMergeEnv_OverrideWins(t *testing.T) {
 	assert.Len(t, result, 1)
 }
 
+// ============================================================================
+// Cache Merge Tests
+// ============================================================================
+
+func TestMergeCache_RefOverride(t *testing.T) {
+	// StepReference cache takes precedence
+	stepCache := &manifest.CacheConfig{Enabled: boolPtr(true), Key: "step-key"}
+	refCache := &manifest.CacheConfig{Enabled: boolPtr(false), Key: "ref-key"}
+
+	result := MergeCache(stepCache, refCache)
+
+	assert.NotNil(t, result)
+	assert.NotNil(t, result.Enabled)
+	assert.False(t, *result.Enabled) // ref takes precedence
+	assert.Equal(t, "ref-key", result.Key) // ref takes precedence
+}
+
+func TestMergeCache_OnlyStepCache(t *testing.T) {
+	// Use Step default when no ref override
+	stepCache := &manifest.CacheConfig{Enabled: boolPtr(true), Key: "step-key"}
+	var refCache *manifest.CacheConfig // nil
+
+	result := MergeCache(stepCache, refCache)
+
+	assert.NotNil(t, result)
+	assert.NotNil(t, result.Enabled)
+	assert.True(t, *result.Enabled)
+	assert.Equal(t, "step-key", result.Key)
+}
+
+func TestMergeCache_OnlyRefCache(t *testing.T) {
+	// Use ref cache when step has no cache
+	var stepCache *manifest.CacheConfig // nil
+	refCache := &manifest.CacheConfig{Enabled: boolPtr(true), Key: "ref-key"}
+
+	result := MergeCache(stepCache, refCache)
+
+	assert.NotNil(t, result)
+	assert.NotNil(t, result.Enabled)
+	assert.True(t, *result.Enabled)
+	assert.Equal(t, "ref-key", result.Key)
+}
+
+func TestMergeCache_BothNil(t *testing.T) {
+	result := MergeCache(nil, nil)
+
+	assert.Nil(t, result)
+}
+
+func TestMergeCache_RefEnabledNil(t *testing.T) {
+	// Ref cache with nil Enabled should still be used entirely
+	stepCache := &manifest.CacheConfig{Enabled: boolPtr(true), Key: "step-key"}
+	refCache := &manifest.CacheConfig{Enabled: nil, Key: "ref-key"}
+
+	result := MergeCache(stepCache, refCache)
+
+	assert.NotNil(t, result)
+	assert.Nil(t, result.Enabled) // ref's nil Enabled is used
+	assert.Equal(t, "ref-key", result.Key)
+}
+
+// Helper function to create bool pointer
+func boolPtr(b bool) *bool {
+	return &b
+}
+
 func TestResolveStepReferences_EnvPopulation(t *testing.T) {
 	step := &manifest.Step{
 		APIVersion: "kfg.dev/v1alpha1",
@@ -1014,4 +1080,183 @@ func TestResolveStepReference_AfterStepsWithNames(t *testing.T) {
 	// Verify StepRefName is populated in after steps too
 	assert.Equal(t, "cleanup-final", resolved.Workflow.AfterSteps[0].Name)
 	assert.Equal(t, "cleanup-step", resolved.Workflow.AfterSteps[0].Step.Metadata.Name)
+}
+
+// ============================================================================
+// Cache Resolution Tests
+// ============================================================================
+
+func TestResolveStepReferences_CachePopulation(t *testing.T) {
+	step := &manifest.Step{
+		APIVersion: "kfg.dev/v1alpha1",
+		Kind:       "Step",
+		Metadata:   manifest.Metadata{Name: "cached-step"},
+		Spec: manifest.StepSpec{
+			Run:   "echo cached",
+			Cache: &manifest.CacheConfig{Enabled: boolPtr(true), Key: "step-key"},
+		},
+	}
+
+	workflow := &manifest.CmdWorkflow{
+		APIVersion: "kfg.dev/v1alpha1",
+		Kind:       "CmdWorkflow",
+		Metadata:   manifest.Metadata{Name: "test"},
+		Spec: manifest.CmdWorkflowSpec{
+			Cmds: []string{},
+			Before: []manifest.StepReference{
+				{
+					Name:  "cached-ref",
+					Step:  "cached-step",
+					Cache: &manifest.CacheConfig{Enabled: boolPtr(false), Key: "ref-key"},
+				},
+			},
+		},
+	}
+
+	index := NewIndex([]manifest.ParsedResource{
+		{Step: step},
+		{CmdWorkflow: workflow},
+		})
+
+	resolver := NewResolver(index)
+	resolved, err := resolver.ResolveKustomization("test", nil)
+
+	assert.NoError(t, err)
+	assert.Len(t, resolved.Workflow.BeforeSteps, 1)
+
+	// Verify cache is merged with StepReference precedence
+	resolvedStep := resolved.Workflow.BeforeSteps[0]
+	assert.NotNil(t, resolvedStep.Cache)
+	assert.NotNil(t, resolvedStep.Cache.Enabled)
+	assert.False(t, *resolvedStep.Cache.Enabled) // ref overrides step
+	assert.Equal(t, "ref-key", resolvedStep.Cache.Key) // ref overrides step
+}
+
+func TestResolveStepReferences_CacheNoOverride(t *testing.T) {
+	step := &manifest.Step{
+		APIVersion: "kfg.dev/v1alpha1",
+		Kind:       "Step",
+		Metadata:   manifest.Metadata{Name: "cached-step"},
+		Spec: manifest.StepSpec{
+			Run:   "echo cached",
+			Cache: &manifest.CacheConfig{Enabled: boolPtr(true), Key: "step-key"},
+		},
+	}
+
+	workflow := &manifest.CmdWorkflow{
+		APIVersion: "kfg.dev/v1alpha1",
+		Kind:       "CmdWorkflow",
+		Metadata:   manifest.Metadata{Name: "test"},
+		Spec: manifest.CmdWorkflowSpec{
+			Cmds: []string{},
+			Before: []manifest.StepReference{
+					{
+						Name: "cached-ref",
+						Step: "cached-step",
+						// No cache override - should use step default
+						},
+					},
+				},
+			}
+
+	index := NewIndex([]manifest.ParsedResource{
+		{Step: step},
+		{CmdWorkflow: workflow},
+		})
+
+	resolver := NewResolver(index)
+	resolved, err := resolver.ResolveKustomization("test", nil)
+
+	assert.NoError(t, err)
+	assert.Len(t, resolved.Workflow.BeforeSteps, 1)
+
+	// Verify step default cache is used
+	resolvedStep := resolved.Workflow.BeforeSteps[0]
+	assert.NotNil(t, resolvedStep.Cache)
+	assert.NotNil(t, resolvedStep.Cache.Enabled)
+	assert.True(t, *resolvedStep.Cache.Enabled)
+	assert.Equal(t, "step-key", resolvedStep.Cache.Key)
+}
+
+func TestResolveStepReferences_NoCache(t *testing.T) {
+	step := &manifest.Step{
+		APIVersion: "kfg.dev/v1alpha1",
+		Kind:       "Step",
+		Metadata:   manifest.Metadata{Name: "no-cache-step"},
+		Spec:       manifest.StepSpec{Run: "echo nocache"},
+	}
+
+	workflow := &manifest.CmdWorkflow{
+		APIVersion: "kfg.dev/v1alpha1",
+		Kind:       "CmdWorkflow",
+		Metadata:   manifest.Metadata{Name: "test"},
+		Spec: manifest.CmdWorkflowSpec{
+			Cmds: []string{},
+			Before: []manifest.StepReference{
+					{
+						Name: "no-cache-ref",
+						Step: "no-cache-step",
+						},
+					},
+				},
+			}
+
+	index := NewIndex([]manifest.ParsedResource{
+		{Step: step},
+		{CmdWorkflow: workflow},
+		})
+
+	resolver := NewResolver(index)
+	resolved, err := resolver.ResolveKustomization("test", nil)
+
+	assert.NoError(t, err)
+	assert.Len(t, resolved.Workflow.BeforeSteps, 1)
+
+	// Verify no cache
+	resolvedStep := resolved.Workflow.BeforeSteps[0]
+	assert.Nil(t, resolvedStep.Cache)
+}
+
+func TestResolveStepReferences_RefCacheOnly(t *testing.T) {
+	// Step has no cache, but ref adds cache
+	step := &manifest.Step{
+		APIVersion: "kfg.dev/v1alpha1",
+		Kind:       "Step",
+		Metadata:   manifest.Metadata{Name: "nocache-step"},
+		Spec:       manifest.StepSpec{Run: "echo nocache"},
+	}
+
+	workflow := &manifest.CmdWorkflow{
+		APIVersion: "kfg.dev/v1alpha1",
+		Kind:       "CmdWorkflow",
+		Metadata:   manifest.Metadata{Name: "test"},
+		Spec: manifest.CmdWorkflowSpec{
+			Cmds: []string{},
+			Before: []manifest.StepReference{
+					{
+						Name:  "ref-cached",
+						Step:  "nocache-step",
+						Cache: &manifest.CacheConfig{Enabled: boolPtr(true), Key: "ref-only-key"},
+						},
+					},
+				},
+			}
+
+	index := NewIndex([]manifest.ParsedResource{
+		{Step: step},
+		{CmdWorkflow: workflow},
+		})
+
+	resolver := NewResolver(index)
+	resolved, err := resolver.ResolveKustomization("test", nil)
+
+	assert.NoError(t, err)
+	assert.Len(t, resolved.Workflow.BeforeSteps, 1)
+
+	// Verify ref cache is applied
+	resolvedStep := resolved.Workflow.BeforeSteps[0]
+	assert.NotNil(t, resolvedStep.Cache)
+	assert.NotNil(t, resolvedStep.Cache.Enabled)
+	assert.True(t, *resolvedStep.Cache.Enabled)
+	assert.Equal(t, "ref-only-key", resolvedStep.Cache.Key)
 }

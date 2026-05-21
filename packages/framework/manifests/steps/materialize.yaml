@@ -38,21 +38,21 @@ spec:
     [ -z "$outputs_str" ] && missing="${missing}OUTPUTS "
     
     if [ -n "$missing" ]; then
-      _kfg.log.error "kfg.materialize: missing required inputs:${missing}"
+      __kfg_log_error "kfg.materialize: missing required inputs:${missing}"
       return 1
     fi
 
     # ---- Validation: Mode value ----
     
     if [ "$mode" != "per-item" ] && [ "$mode" != "aggregate" ]; then
-      _kfg.log.error "kfg.materialize: invalid MODE='$mode'. Supported values: per-item, aggregate"
+      __kfg_log_error "kfg.materialize: invalid MODE='$mode'. Supported values: per-item, aggregate"
       return 1
     fi
 
     # ---- Validation: WRAP_KEY only in aggregate mode ----
     
     if [ -n "$wrap_key" ] && [ "$mode" != "aggregate" ]; then
-      _kfg.log.error "kfg.materialize: WRAP_KEY is only valid in aggregate mode"
+      __kfg_log_error "kfg.materialize: WRAP_KEY is only valid in aggregate mode"
       return 1
     fi
 
@@ -68,12 +68,12 @@ spec:
     
     if [ "$mode" = "per-item" ]; then
       if [ "$asset_count" -ne "$output_count" ]; then
-        _kfg.log.error "kfg.materialize: per-item mode requires ASSETS and OUTPUTS counts to match (got $asset_count assets, $output_count outputs)"
+        __kfg_log_error "kfg.materialize: per-item mode requires ASSETS and OUTPUTS counts to match (got $asset_count assets, $output_count outputs)"
         return 1
       fi
     elif [ "$mode" = "aggregate" ]; then
       if [ "$output_count" -ne 1 ]; then
-        _kfg.log.error "kfg.materialize: aggregate mode requires exactly one output path (got $output_count)"
+        __kfg_log_error "kfg.materialize: aggregate mode requires exactly one output path (got $output_count)"
         return 1
       fi
     fi
@@ -81,7 +81,7 @@ spec:
     # ---- Execute based on mode ----
     
     if [ "$mode" = "per-item" ]; then
-      _kfg.log.info "kfg.materialize: per-item mode, converting $asset_count asset(s)"
+      __kfg_log_info "kfg.materialize: per-item mode, converting $asset_count asset(s)"
       
       for i in "${!assets[@]}"; do
         local asset="${assets[$i]}"
@@ -95,11 +95,11 @@ spec:
         
         # Register artifact
         __kfg_add_artifact "$output"
-        _kfg.log.info "kfg.materialize: converted '$asset' -> $output"
+        __kfg_log_info "kfg.materialize: converted '$asset' -> $output"
       done
       
     elif [ "$mode" = "aggregate" ]; then
-      _kfg.log.info "kfg.materialize: aggregate mode, merging $asset_count asset(s)"
+      __kfg_log_info "kfg.materialize: aggregate mode, merging $asset_count asset(s)"
       
       local target="${outputs[0]}"
       
@@ -137,10 +137,10 @@ spec:
         printf '%s\n---\n%s\n' "$(cat "$target")" "$result" \
           | kfg apply -f - --with '. as $item ireduce ({}; . * $item)' > "$tmp" \
           && mv "$tmp" "$target"
-        _kfg.log.info "kfg.materialize: merged $asset_count asset(s) into $target (with existing content)"
+        __kfg_log_info "kfg.materialize: merged $asset_count asset(s) into $target (with existing content)"
       else
         printf '%s\n' "$result" > "$target"
-        _kfg.log.info "kfg.materialize: created $target with $asset_count merged asset(s)"
+        __kfg_log_info "kfg.materialize: created $target with $asset_count merged asset(s)"
       fi
       
       # Register artifact

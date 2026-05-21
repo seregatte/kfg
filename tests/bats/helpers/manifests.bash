@@ -72,13 +72,13 @@ step_run_code() {
     yq eval '.spec.run' "$(step_file "$step")" 2>/dev/null
 }
 
-# Helper: mock _kfg.log functions
+# Helper: mock __kfg_log functions
 mock_kfg_log() {
     cat <<'EOF'
-_kfg.log.info() { :; }
-_kfg.log.warn() { :; }
-_kfg.log.error() { :; }
-_kfg.log.debug() { :; }
+__kfg_log_info() { :; }
+__kfg_log_warn() { :; }
+__kfg_log_error() { :; }
+__kfg_log_debug() { :; }
 EOF
 }
 
@@ -98,7 +98,7 @@ run_step() {
     local dirs="$2"
     cd "$TEST_TMPDIR"
     local code
-    code=$(printf '%s\n__kfg_run_step_test() {\n%s\n}\n__kfg_run_step_test' "$(mock_kfg_log)" "$(step_run_code "$step")")
+    code=$(printf '%s\n%s\n__kfg_run_step_test() {\n%s\n}\n__kfg_run_step_test' "$(mock_kfg_log)" "$(mock_artifact_tracking)" "$(step_run_code "$step")")
     DIRECTORIES="$dirs" bash -c "$code"
 }
 
@@ -106,7 +106,7 @@ run_step() {
 run_step_with_env() {
     local step="$1"
     local code
-    code=$(printf '%s\n__kfg_run_step_test() {\n%s\n}\n__kfg_run_step_test' "$(mock_kfg_log)" "$(step_run_code "$step")")
+    code=$(printf '%s\n%s\n__kfg_run_step_test() {\n%s\n}\n__kfg_run_step_test' "$(mock_kfg_log)" "$(mock_artifact_tracking)" "$(step_run_code "$step")")
     bash -c "$code"
 }
 

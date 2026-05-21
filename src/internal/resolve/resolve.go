@@ -123,6 +123,7 @@ type ResolvedStep struct {
 	FailurePolicy string            // "Fail" (default) or "Ignore"
 	Env           map[string]string // Merged env: StepSpec.Env + StepReference.Env
 	Artifacts     []string          // Additional artifacts from StepReference
+	Cache         *manifest.CacheConfig // Merged cache: StepReference.Cache takes precedence over Step.Spec.Cache
 }
 
 // ResolvedCmd represents a resolved Cmd (pure function, no before/after).
@@ -322,6 +323,9 @@ func (r *Resolver) ResolveStepReferences(refs []manifest.StepReference) ([]Resol
 		// Merge step default env with reference override env
 		mergedEnv := MergeEnv(step.Spec.Env, ref.Env)
 
+		// Merge cache configuration (reference takes precedence)
+		mergedCache := MergeCache(step.Spec.Cache, ref.Cache)
+
 		resolved = append(resolved, ResolvedStep{
 			Name:          ref.Name, // StepReference.name (runtime execution identity)
 			Step:          step,
@@ -329,6 +333,7 @@ func (r *Resolver) ResolveStepReferences(refs []manifest.StepReference) ([]Resol
 			FailurePolicy: failurePolicy,
 			Env:           mergedEnv,
 			Artifacts:     ref.Artifacts,
+			Cache:         mergedCache,
 		})
 	}
 
@@ -449,6 +454,18 @@ func MergeEnv(base, override map[string]string) map[string]string {
 	}
 
 	return result
+}
+
+// MergeCache merges Step default cache with StepReference override.
+// StepReference.Cache takes precedence if both are specified.
+// Returns nil if both are nil.
+func MergeCache(stepCache, refCache *manifest.CacheConfig) *manifest.CacheConfig {
+	// If reference has cache config, use it entirely (override)
+	if refCache != nil {
+		return refCache
+	}
+	// Otherwise use step default
+	return stepCache
 }
 
 // GetCmdFunctionName returns the bash function name for the Cmd.

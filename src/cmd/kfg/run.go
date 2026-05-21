@@ -22,6 +22,7 @@ var (
 	runFile          string
 	runWorkflow      string
 	runCmds          string
+	runRefresh       bool
 )
 
 // runCmd represents the run command
@@ -43,6 +44,11 @@ GitHub URLs are supported and will be cloned automatically:
   - https://github.com/owner/repo//path
   - https://github.com/owner/repo//path?ref=v1.0.0
 
+Environment variables:
+  KFG_KPATH      Default kustomization path if -k or -f not specified
+  KFG_REFRESH    Set to "1" to force refresh of cached Steps (bypasses cache)
+  KFG_STORE_DIR  Custom store directory for cache entries (defaults to ~/.kfg/store)
+
 Arguments after '--' are passed directly to the command.
 
 Examples:
@@ -52,6 +58,7 @@ Examples:
   kfg run -k packages/domains/ai-agents/overlays/dev -w openspec my-cmd
   kfg run -f manifest.yaml my-cmd
   kfg run -k packages/domains/ai-agents/overlays/dev (lists available commands)
+  kfg run -k packages/domains/ai-agents/overlays/dev my-cmd --refresh  (bypass cache)
   KFG_KPATH=./packages/framework kfg run my-cmd
   KFG_KPATH=https://github.com/owner/repo//packages/framework kfg run my-cmd`,
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -116,7 +123,7 @@ Examples:
 		}
 
 		// Execute the command
-		executeCmd(shellCode, shellType, cmdName, extraArgs)
+		executeCmd(shellCode, shellType, cmdName, extraArgs, runRefresh)
 		return nil
 	},
 }
@@ -129,6 +136,7 @@ func init() {
 	runCmd.Flags().StringVarP(&runFile, "file", "f", "", "Manifest file path (use '-' for stdin)")
 	runCmd.Flags().StringVarP(&runWorkflow, "workflow", "w", "", "CmdWorkflow name (auto-detected if not specified)")
 	runCmd.Flags().StringVarP(&runCmds, "cmds", "c", "", "Comma-separated list of cmds to run")
+	runCmd.Flags().BoolVarP(&runRefresh, "refresh", "r", false, "Force refresh of cached steps (sets KFG_REFRESH=1)")
 }
 
 // parseLaunchArgs splits args using Cobra's dash boundary into command name and extra args.
@@ -248,7 +256,7 @@ func generateForCmd(result *ApplyResult, workflowName string, cmdMetadataName st
 }
 
 // executeCmd writes a temp script, runs bash, and propagates exit code.
-func executeCmd(shellCode string, shellType string, cmdName string, extraArgs []string) {
+func executeCmd(shellCode string, shellType string, cmdName string, extraArgs []string, refresh bool) {
 	// Generate unique temp file name
 	hash := sha256.Sum256([]byte(shellCode))
 	tempFileName := fmt.Sprintf("kfg-run-%s.%s", hex.EncodeToString(hash[:8]), shellType)
@@ -256,6 +264,9 @@ func executeCmd(shellCode string, shellType string, cmdName string, extraArgs []
 
 	// Build the script: generated shell code + trap + command call
 	script := shellCode + "\n\n"
+	if refresh {
+		script += "export KFG_REFRESH=1\n\n"
+	}
 	script += fmt.Sprintf("trap 'rm -f %s' EXIT\n", tempFile)
 	script += fmt.Sprintf("%s \"$@\"\n", cmdName)
 

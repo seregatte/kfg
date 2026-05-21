@@ -287,3 +287,13 @@ func TestWriteOutputToStdout(t *testing.T) {
 	err := writeOutput("test output", "")
 	assert.NoError(t, err)
 }
+
+func TestApplyCommandRefreshFlag(t *testing.T) {
+	// Test that --refresh flag is registered
+	flags := applyCmd.Flags()
+
+	refreshFlag := flags.Lookup("refresh")
+	assert.NotNil(t, refreshFlag)
+	assert.Equal(t, "r", refreshFlag.Shorthand)
+	assert.Equal(t, "false", refreshFlag.DefValue)
+}

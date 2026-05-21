@@ -7,6 +7,20 @@ __kfg_run_step_{{ .StepName }}() {
     fi
 
 {{- end }}
+{{- if .CacheEnabled }}
+    # Cache check
+    if [ -z "${KFG_REFRESH:-}" ]; then
+        local __cache_path
+        __cache_path=$(__kfg_cache_identity "$__step_ref_name" "{{ .CacheKey }}" "{{ .ScriptHash }}")
+        
+        if __kfg_cache_exists "$__cache_path"; then
+            # Cache hit - restore artifacts and outputs
+            __kfg_cache_restore "$__cache_path" "$__step_ref_name" "{{ .OutputName }}"
+            return 0  # Cache hit, skip execution
+        fi
+    fi
+
+{{- end }}
 {{- if .Env }}
     # Environment variables (defaults, caller overrides win)
 {{- range $key, $value := .Env }}
@@ -37,5 +51,12 @@ __kfg_run_step_{{ .StepName }}() {
 {{- range .Artifacts }}
     __kfg_add_artifact "{{ . }}"
 {{- end }}
+{{- end }}
+{{- if .CacheEnabled }}
+
+    # Cache store (after execution)
+    if [ -z "${KFG_REFRESH:-}" ]; then
+        __kfg_cache_store "$__cache_path" "$__step_ref_name" "{{ .OutputName }}"
+    fi
 {{- end }}
 }

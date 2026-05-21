@@ -32,31 +32,19 @@ kfg apply -f -                                           # From stdin
 KFG_KPATH=./manifests kfg apply                         # Using env var
 ```
 
-### `kfg image` (alias: `img`)
+### `kfg sys gc`
 
-Manage configuration images.
+Garbage collection commands for managing Step cache entries.
 
-**Image operations**:
 ```bash
-kfg image build --name myconfig:latest    # Build from Imagefile
-kfg image build --push                     # Build + push (fails if exists)
-kfg image build --push --keep-build        # Build + push, keep build dir
-kfg image list [--json]                    # List images
-kfg image inspect myconfig:latest          # Metadata
-kfg image inspect myconfig:latest --files  # Artifact paths
-kfg image inspect myconfig:latest --recipe # Imagefile only
-kfg image push myconfig:latest             # Push existing image
-kfg image remove myconfig:latest           # Remove image
+kfg sys gc ls                    # List cache entries with metadata
+kfg sys gc inspect <id>          # Show detailed metadata for an entry
+kfg sys gc rm <id> [<id>...]     # Remove specific cache entries
+kfg sys gc prune                 # Remove entries older than 30 days
+kfg sys gc du                    # Show disk usage of cache entries
 ```
 
-### `kfg workspace` (alias: `ws`)
-
-Manage workspace instances.
-```bash
-kfg workspace start myconfig:latest              # Materialize (default instance)
-kfg workspace start myconfig:latest --name proj1 # Named instance
-kfg workspace stop --name proj1                  # Restore + cleanup
-```
+Cache entries are stored under `KFG_STORE_DIR/cache` (defaults to `~/.kfg/store/cache`).
 
 ### `kfg sys log`
 
@@ -102,8 +90,9 @@ Use `kfg apply -k` instead.
 |----------|---------|-------------|
 | `KFG_MANIFEST_PATH` | `~/.config/kfg/manifests:.kfg/manifests` | Colon-separated manifest paths (rightmost wins) |
 | `KFG_KPATH` | (empty) | Default kustomization source path or GitHub URL |
+| `KFG_REFRESH` | (empty) | Set to "1" to force refresh of cached Steps (bypasses cache) |
 | `KFG_VERBOSE` | `0` | `0`=quiet, `1`=error/warn/info, `2`=+detail, `3`=+debug |
-| `KFG_STORE_DIR` | `~/.config/kfg/store` | Store directory |
+| `KFG_STORE_DIR` | `~/.config/kfg/store` | Store directory for cache entries |
 | `KFG_LOG_FILE` | `$XDG_STATE_HOME/kfg/logs/kfg.jsonl` | Override JSONL log file path |
 | `KFG_LOG_DIR` | `$XDG_STATE_HOME/kfg/logs` | Override log directory |
 | `KFG_LOG_COLOR` | `auto` | `auto`/`always`/`never` |
