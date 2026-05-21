@@ -398,42 +398,14 @@ func (g *Generator) convertWorkflowCmdToTemplateData(rw *resolve.ResolvedCmdWork
 		}
 	}
 
-	// Collect all artifacts from Cmd and dependent steps
-	allArtifacts := entry.Cmd.Spec.Artifacts
-	for _, step := range entry.BeforeSteps {
-		allArtifacts = append(allArtifacts, step.Step.Spec.Artifacts...)
-		allArtifacts = append(allArtifacts, step.Artifacts...)
-	}
-	for _, step := range entry.AfterSteps {
-		allArtifacts = append(allArtifacts, step.Step.Spec.Artifacts...)
-		allArtifacts = append(allArtifacts, step.Artifacts...)
-	}
-	// Also include global workflow steps
-	for _, step := range rw.BeforeSteps {
-		allArtifacts = append(allArtifacts, step.Step.Spec.Artifacts...)
-		allArtifacts = append(allArtifacts, step.Artifacts...)
-	}
-	for _, step := range rw.AfterSteps {
-		allArtifacts = append(allArtifacts, step.Step.Spec.Artifacts...)
-		allArtifacts = append(allArtifacts, step.Artifacts...)
-	}
-	// Sort for determinism
-	sort.Strings(allArtifacts)
-	// Remove duplicates
-	if len(allArtifacts) > 0 {
-		uniqueArtifacts := allArtifacts[:1]
-		for i := 1; i < len(allArtifacts); i++ {
-			if allArtifacts[i] != allArtifacts[i-1] {
-				uniqueArtifacts = append(uniqueArtifacts, allArtifacts[i])
-			}
-		}
-		allArtifacts = uniqueArtifacts
-	}
+	// Note: We no longer pre-register Step artifacts globally before execution.
+	// Artifacts should only be registered when the Step itself runs or restores from cache.
+	// This allows cache persistence to compute a meaningful delta of Step-local artifacts.
+	// See: fix-step-cache-artifact-isolation design decision on reducing wrapper-level pre-registration.
 
 	data := templates.WorkflowCmdData{
 		CmdName:   entry.Cmd.Metadata.CommandName,
 		RunScript: strings.TrimSpace(entry.Cmd.Spec.Run),
-		Artifacts: allArtifacts,
 		Env:       formatCmdEnv(resolver.ResolveMap(entry.Cmd.Spec.Env)), // Cmd env: direct assignment
 	}
 
@@ -457,6 +429,9 @@ func (g *Generator) convertWorkflowCmdToTemplateData(rw *resolve.ResolvedCmdWork
 				ScriptHash:   computeScriptHash(step.Step.Spec.Run),
 				HasOutput:    step.Step.Spec.Output != nil,
 				OutputName:   getOutputName(step.Step.Spec.Output),
+				// Declarative artifacts
+				StepArtifacts: step.Step.Spec.Artifacts, // Artifacts declared in Step.Spec
+				RefArtifacts:  step.Artifacts,            // Artifacts declared in StepReference
 			}
 		}
 	}
@@ -481,6 +456,9 @@ func (g *Generator) convertWorkflowCmdToTemplateData(rw *resolve.ResolvedCmdWork
 				ScriptHash:   computeScriptHash(step.Step.Spec.Run),
 				HasOutput:    step.Step.Spec.Output != nil,
 				OutputName:   getOutputName(step.Step.Spec.Output),
+				// Declarative artifacts
+				StepArtifacts: step.Step.Spec.Artifacts, // Artifacts declared in Step.Spec
+				RefArtifacts:  step.Artifacts,            // Artifacts declared in StepReference
 			}
 		}
 	}
@@ -505,6 +483,9 @@ func (g *Generator) convertWorkflowCmdToTemplateData(rw *resolve.ResolvedCmdWork
 				ScriptHash:   computeScriptHash(step.Step.Spec.Run),
 				HasOutput:    step.Step.Spec.Output != nil,
 				OutputName:   getOutputName(step.Step.Spec.Output),
+				// Declarative artifacts
+				StepArtifacts: step.Step.Spec.Artifacts, // Artifacts declared in Step.Spec
+				RefArtifacts:  step.Artifacts,            // Artifacts declared in StepReference
 			}
 		}
 	}
@@ -529,6 +510,9 @@ func (g *Generator) convertWorkflowCmdToTemplateData(rw *resolve.ResolvedCmdWork
 				ScriptHash:   computeScriptHash(step.Step.Spec.Run),
 				HasOutput:    step.Step.Spec.Output != nil,
 				OutputName:   getOutputName(step.Step.Spec.Output),
+				// Declarative artifacts
+				StepArtifacts: step.Step.Spec.Artifacts, // Artifacts declared in Step.Spec
+				RefArtifacts:  step.Artifacts,            // Artifacts declared in StepReference
 			}
 		}
 	}
@@ -566,15 +550,6 @@ func (g *Generator) generateWorkflowCmdCode(data templates.WorkflowCmdData) stri
 		sort.Strings(keys)
 		for _, k := range keys {
 			code.WriteString("    export " + k + "=\"" + data.Env[k] + "\"\n")
-		}
-		code.WriteString("\n")
-	}
-
-	// Artifacts from cmd and steps
-	if len(data.Artifacts) > 0 {
-		code.WriteString("    # Artifacts\n")
-		for _, artifact := range data.Artifacts {
-			code.WriteString("    __kfg_add_artifact \"" + artifact + "\"\n")
 		}
 		code.WriteString("\n")
 	}
@@ -649,20 +624,37 @@ func (g *Generator) generateStepCall(code *strings.Builder, step templates.Workf
 		}
 	}
 
+	// Build declarative artifacts string (Step.Spec.Artifacts + StepReference.Artifacts)
+	declArtifacts := ""
+	allDeclArtifacts := append([]string{}, step.StepArtifacts...) // Copy to avoid modifying original
+	allDeclArtifacts = append(allDeclArtifacts, step.RefArtifacts...)
+	if len(allDeclArtifacts) > 0 {
+		// Sort for determinism
+		sort.Strings(allDeclArtifacts)
+		// Remove duplicates
+		uniqueDecl := make([]string, 0, len(allDeclArtifacts))
+		for i, art := range allDeclArtifacts {
+			if i == 0 || art != allDeclArtifacts[i-1] {
+				uniqueDecl = append(uniqueDecl, art)
+			}
+		}
+		declArtifacts = strings.Join(uniqueDecl, " ")
+	}
+
+	// Generate the step call with declarative artifacts as second argument
+	stepCall := "__kfg_run_step_" + step.StepName + " \"" + step.StepRefName + "\" \"" + declArtifacts + "\""
+	if step.IgnoreFailure {
+		stepCall += " || true"
+	} else {
+		stepCall += " || return $?"
+	}
+
 	if step.WhenCondition != "" {
 		code.WriteString(spaces + "if " + step.WhenCondition + "; then\n")
-		if step.IgnoreFailure {
-			code.WriteString(spaces + "    " + envStr + "__kfg_run_step_" + step.StepName + " \"" + step.StepRefName + "\" || true\n")
-		} else {
-			code.WriteString(spaces + "    " + envStr + "__kfg_run_step_" + step.StepName + " \"" + step.StepRefName + "\" || return $?\n")
-		}
+		code.WriteString(spaces + "    " + envStr + stepCall + "\n")
 		code.WriteString(spaces + "fi\n")
 	} else {
-		if step.IgnoreFailure {
-			code.WriteString(spaces + envStr + "__kfg_run_step_" + step.StepName + " \"" + step.StepRefName + "\" || true\n")
-		} else {
-			code.WriteString(spaces + envStr + "__kfg_run_step_" + step.StepName + " \"" + step.StepRefName + "\" || return $?\n")
-		}
+		code.WriteString(spaces + envStr + stepCall + "\n")
 	}
 }
 
@@ -687,19 +679,39 @@ func (g *Generator) generateAfterStepCall(code *strings.Builder, step templates.
 		}
 	}
 
+	// Build declarative artifacts string (Step.Spec.Artifacts + StepReference.Artifacts)
+	declArtifacts := ""
+	allDeclArtifacts := append([]string{}, step.StepArtifacts...) // Copy to avoid modifying original
+	allDeclArtifacts = append(allDeclArtifacts, step.RefArtifacts...)
+	if len(allDeclArtifacts) > 0 {
+		// Sort for determinism
+		sort.Strings(allDeclArtifacts)
+		// Remove duplicates
+		uniqueDecl := make([]string, 0, len(allDeclArtifacts))
+		for i, art := range allDeclArtifacts {
+			if i == 0 || art != allDeclArtifacts[i-1] {
+				uniqueDecl = append(uniqueDecl, art)
+			}
+		}
+		declArtifacts = strings.Join(uniqueDecl, " ")
+	}
+
+	// Generate the step call with declarative artifacts as second argument
+	stepCall := "__kfg_run_step_" + step.StepName + " \"" + step.StepRefName + "\" \"" + declArtifacts + "\""
+
 	if step.WhenCondition != "" {
 		code.WriteString(spaces + "if " + step.WhenCondition + "; then\n")
 		if step.IgnoreFailure {
-			code.WriteString(spaces + "    " + envStr + "__kfg_run_step_" + step.StepName + " \"" + step.StepRefName + "\" || true\n")
+			code.WriteString(spaces + "    " + envStr + stepCall + " || true\n")
 		} else {
-			code.WriteString(spaces + "    [ $__kfg_status -eq 0 ] && " + envStr + "__kfg_run_step_" + step.StepName + " \"" + step.StepRefName + "\"\n")
+			code.WriteString(spaces + "    [ $__kfg_status -eq 0 ] && " + envStr + stepCall + "\n")
 		}
 		code.WriteString(spaces + "fi\n")
 	} else {
 		if step.IgnoreFailure {
-			code.WriteString(spaces + envStr + "__kfg_run_step_" + step.StepName + " \"" + step.StepRefName + "\" || true\n")
+			code.WriteString(spaces + envStr + stepCall + " || true\n")
 		} else {
-			code.WriteString(spaces + "[ $__kfg_status -eq 0 ] && " + envStr + "__kfg_run_step_" + step.StepName + " \"" + step.StepRefName + "\"\n")
+			code.WriteString(spaces + "[ $__kfg_status -eq 0 ] && " + envStr + stepCall + "\n")
 		}
 	}
 }

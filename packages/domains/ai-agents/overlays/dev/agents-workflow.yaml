@@ -169,6 +169,8 @@ spec:
       env:
         FLAGS: "--claude --yes"
         OUTPUT_DIR: ".claude/skills/"
+      artifacts:
+        - .claude/skills/find-docs
     - name: agents.ctx7.install.gemini
       step: ctx7.steps.install
       weight: -55
@@ -180,6 +182,8 @@ spec:
       env:
         FLAGS: "--opencode --yes"
         OUTPUT_DIR: ".gemini/skills/"
+      artifacts:
+        - .gemini/skills/find-docs
     - name: agents.ctx7.install.opencode
       step: ctx7.steps.install
       weight: -55
@@ -191,6 +195,8 @@ spec:
       env:
         FLAGS: "--opencode --yes"
         OUTPUT_DIR: ".opencode/skills/"
+      artifacts:
+        - .opencode/skills/find-docs
     - name: agents.ctx7.install.pi
       step: ctx7.steps.install
       weight: -55
@@ -202,6 +208,8 @@ spec:
       env:
         FLAGS: "--opencode --yes"
         OUTPUT_DIR: ".pi/skills/"
+      artifacts:
+        - .pi/skills/find-docs
 
     # Phase 7 (-53): openspec install (per-agent)
     - name: agents.openspec.install.claude
@@ -217,6 +225,15 @@ spec:
         TOOLS_FLAG: "--tools=claude"
         AGENT_HOME: ".claude"
         OUTPUT_DIR: ".claude/skills/"
+      artifacts:
+        - .claude/skills/openspec-apply-change
+        - .claude/skills/openspec-archive-change
+        - .claude/skills/openspec-explore
+        - .claude/skills/openspec-propose
+        - .claude/commands/opsx-apply.md
+        - .claude/commands/opsx-archive.md
+        - .claude/commands/opsx-explore.md
+        - .claude/commands/opsx-propose.md
     - name: agents.openspec.install.gemini
       step: openspec.steps.install
       weight: -53
@@ -230,6 +247,15 @@ spec:
         TOOLS_FLAG: "--tools=gemini"
         AGENT_HOME: ".gemini"
         OUTPUT_DIR: ".gemini/skills/"
+      artifacts:
+        - .gemini/skills/openspec-apply-change
+        - .gemini/skills/openspec-archive-change
+        - .gemini/skills/openspec-explore
+        - .gemini/skills/openspec-propose
+        - .gemini/commands/opsx-apply.md
+        - .gemini/commands/opsx-archive.md
+        - .gemini/commands/opsx-explore.md
+        - .gemini/commands/opsx-propose.md
     - name: agents.openspec.install.opencode
       step: openspec.steps.install
       weight: -53
@@ -243,6 +269,15 @@ spec:
         TOOLS_FLAG: "--tools=opencode"
         AGENT_HOME: ".opencode"
         OUTPUT_DIR: ".opencode/skills/"
+      artifacts:
+        - .opencode/skills/openspec-apply-change
+        - .opencode/skills/openspec-archive-change
+        - .opencode/skills/openspec-explore
+        - .opencode/skills/openspec-propose
+        - .opencode/commands/opsx-apply.md
+        - .opencode/commands/opsx-archive.md
+        - .opencode/commands/opsx-explore.md
+        - .opencode/commands/opsx-propose.md
     - name: agents.openspec.install.pi
       step: openspec.steps.install
       weight: -53
@@ -256,6 +291,15 @@ spec:
         TOOLS_FLAG: "--tools=pi"
         AGENT_HOME: ".pi"
         OUTPUT_DIR: ".pi/skills/"
+      artifacts:
+        - .pi/skills/openspec-apply-change
+        - .pi/skills/openspec-archive-change
+        - .pi/skills/openspec-explore
+        - .pi/skills/openspec-propose
+        - .pi/prompts/opsx-apply.md
+        - .pi/prompts/opsx-archive.md
+        - .pi/prompts/opsx-explore.md
+        - .pi/prompts/opsx-propose.md
 
     # Phase 8 (-50): inject ctx7 context (per-agent)
     - name: agents.inject-ctx7-context.claude

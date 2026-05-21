@@ -22,14 +22,17 @@ spec:
 
     # Determine agent from FLAGS
     AGENT=""
+    SKILL_SRC=""
     if echo "$FLAGS" | grep -q "claude"; then
       AGENT="claude"
     elif echo "$FLAGS" | grep -q "opencode"; then
       AGENT="opencode"
+      SKILL_SRC=".agents/skills"
     elif echo "$FLAGS" | grep -q "gemini"; then
       AGENT="gemini"
     elif echo "$FLAGS" | grep -q "pi"; then
       AGENT="pi"
+      SKILL_SRC=".agents/skills"
     fi
 
     # Ensure output directory exists
@@ -38,17 +41,12 @@ spec:
     # Execute install command
     ctx7 setup --cli --project $FLAGS > /dev/null 2>&1
 
-    # Determine source directory based on FLAGS
-    SKILL_SRC=""
-    if [ -n "$AGENT" ]; then
-      SKILL_SRC=".${AGENT}/skills"
-    fi
-
     # Copy generated skills into OUTPUT_DIR
     if [ -n "$SKILL_SRC" ] && [ -d "$SKILL_SRC" ]; then
       cp -Rf "$SKILL_SRC"/* "$OUTPUT_DIR/" 2>/dev/null || true
       __kfg_log_info "step:ctx7.install" "Copied skills from $SKILL_SRC to $OUTPUT_DIR"
       __kfg_add_artifact "$OUTPUT_DIR"
+      rm -rf "$SKILL_SRC"
     else
       __kfg_log_debug "step:ctx7.install" "No skills directory found at $SKILL_SRC"
     fi

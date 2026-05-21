@@ -46,23 +46,54 @@ __kfg_cache_exists() {
 }
 
 # Store artifacts and outputs for a cacheable step
-# Args: cache_path, step_ref_name, output_name (optional)
+# Args: cache_path, step_ref_name, output_name (optional), step_artifacts_array_name, decl_artifacts_array_name
+# The array names are passed by reference and expanded within this function
 __kfg_cache_store() {
     local cache_path="$1"
     local step_ref_name="$2"
     local output_name="$3"
+    local step_artifacts_array_name="$4"  # Name of the array variable (passed as string)
+    local decl_artifacts_array_name="$5"   # Name of the array variable (passed as string)
     
     # Create cache directory
     mkdir -p "$cache_path/artifacts"
     
-    # Snapshot artifacts from KFG_ARTIFACTS
+    # Expand the arrays by name
+    local -a step_artifacts=()
+    local -a decl_artifacts=()
+    eval "step_artifacts=(\"\${${step_artifacts_array_name}[@]}\")"
+    eval "decl_artifacts=(\"\${${decl_artifacts_array_name}[@]}\")"
+    
+    # Combine step artifacts (runtime delta) with declarative artifacts
+    local -a all_artifacts=()
+    all_artifacts=("${step_artifacts[@]}" "${decl_artifacts[@]}")
+    
+    # Remove duplicates while preserving order
+    local -a unique_artifacts=()
+    local seen_art
+    declare -A seen_arts=()
+    for seen_art in "${all_artifacts[@]}"; do
+        if [ -z "${seen_arts[$seen_art]}" ]; then
+            unique_artifacts+=("$seen_art")
+            seen_arts[$seen_art]=1
+        fi
+    done
+    
+    # Store artifacts with their original relative paths
     local artifact
-    for artifact in "${KFG_ARTIFACTS[@]}"; do
+    for artifact in "${unique_artifacts[@]}"; do
         if [ -e "$artifact" ]; then
-            # Store relative path under artifacts directory
-            local artifact_name
-            artifact_name=$(basename "$artifact")
-            cp -r "$artifact" "$cache_path/artifacts/$artifact_name" 2>/dev/null || true
+            # Preserve the full relative path in the cache
+            # Create parent directories in the cache to match the artifact's path
+            local artifact_dir
+            artifact_dir=$(dirname "$artifact")
+            if [ "$artifact_dir" != "." ] && [ -n "$artifact_dir" ]; then
+                mkdir -p "$cache_path/artifacts/$artifact_dir"
+            fi
+            
+            # Copy artifact preserving its relative path structure
+            __kfg_log_debug "cache" "Storing artifact: $artifact"
+            cp -r "$artifact" "$cache_path/artifacts/$artifact" 2>/dev/null || true
         fi
     done
     
@@ -78,30 +109,72 @@ __kfg_cache_store() {
     fi
     printf '%b' "$metadata_content" > "$cache_path/metadata.yaml"
     
-    # Store artifact paths list
-    printf '%s\n' "${KFG_ARTIFACTS[@]}" > "$cache_path/artifact_paths.txt"
+    # Store artifact paths list (for restore)
+    printf '%s\n' "${unique_artifacts[@]}" > "$cache_path/artifact_paths.txt"
 }
 
 # Restore artifacts and outputs from cache
-# Args: cache_path, step_ref_name, output_name (optional)
+# Args: cache_path, step_ref_name, output_name (optional), decl_artifacts_array_name
+# decl_artifacts_array_name is the name of the declarative artifacts array to register after restore
 __kfg_cache_restore() {
     local cache_path="$1"
     local step_ref_name="$2"
     local output_name="$3"
+    local decl_artifacts_array_name="$4"  # Name of the array variable (passed as string)
     
-    # Restore artifacts
-    if [ -d "$cache_path/artifacts" ]; then
-        local artifact
-        for artifact in "$cache_path/artifacts"/*; do
-            [ -e "$artifact" ] || continue
-            local artifact_name
-            artifact_name=$(basename "$artifact")
-            # Copy artifact to current working directory
-            cp -r "$artifact" "$artifact_name" 2>/dev/null || true
-            # Register artifact in KFG_ARTIFACTS
-            __kfg_add_artifact "$artifact_name"
+    # Expand the declarative artifacts array by name
+    local -a decl_artifacts=()
+    eval "decl_artifacts=(\"\${${decl_artifacts_array_name}[@]}\")"
+    
+    # Restore artifacts to their original relative paths
+    if [ -f "$cache_path/artifact_paths.txt" ]; then
+        # Read stored artifact paths
+        local -a stored_artifacts=()
+        while IFS= read -r artifact_path; do
+            [ -n "$artifact_path" ] && stored_artifacts+=("$artifact_path")
+        done < "$cache_path/artifact_paths.txt"
+        
+        # Restore each artifact to its original relative path
+        local artifact_path
+        for artifact_path in "${stored_artifacts[@]}"; do
+            if [ -e "$cache_path/artifacts/$artifact_path" ]; then
+                # Recreate parent directories if needed
+                local artifact_dir
+                artifact_dir=$(dirname "$artifact_path")
+                if [ "$artifact_dir" != "." ] && [ -n "$artifact_dir" ]; then
+                    mkdir -p "$artifact_dir"
+                fi
+                
+                # Copy artifact to its original relative path
+                __kfg_log_debug "cache" "Restoring artifact: $artifact_path"
+                cp -r "$cache_path/artifacts/$artifact_path" "$artifact_path" 2>/dev/null || true
+                
+                # Register artifact in KFG_ARTIFACTS
+                __kfg_add_artifact "$artifact_path"
+            fi
         done
     fi
+    
+    # Register declarative artifacts that weren't stored in cache
+    # These are artifacts that were declared but not actually produced
+    local decl_art
+    for decl_art in "${decl_artifacts[@]}"; do
+        # Check if it's already registered (from cache restore)
+        local already_registered=0
+        local check_art
+        for check_art in "${KFG_ARTIFACTS[@]}"; do
+            if [ "$check_art" = "$decl_art" ]; then
+                already_registered=1
+                break
+            fi
+        done
+        
+        # If not already registered, register it now
+        if [ $already_registered -eq 0 ] && [ -e "$decl_art" ]; then
+            __kfg_log_debug "cache" "Registering declarative artifact: $decl_art"
+            __kfg_add_artifact "$decl_art"
+        fi
+    done
     
     # Restore output if metadata contains it
     if [ -f "$cache_path/metadata.yaml" ] && [ -n "$output_name" ]; then

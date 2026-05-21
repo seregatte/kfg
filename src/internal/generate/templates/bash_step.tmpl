@@ -1,5 +1,13 @@
 __kfg_run_step_{{ .StepName }}() {
     local __step_ref_name="${1:-{{ .StepName }}}"  # Runtime execution identity (defaults to StepName)
+    local -a __decl_artifacts=()  # Declarative artifacts passed from caller
+    # Parse declarative artifacts if provided as second argument
+    if [ $# -ge 2 ]; then
+        local __decl_str="$2"
+        if [ -n "$__decl_str" ]; then
+            IFS=' ' read -ra __decl_artifacts <<< "$__decl_str"
+        fi
+    fi
 {{- if .WhenCondition }}
     # When condition
     if ! {{ .WhenCondition }}; then
@@ -10,14 +18,20 @@ __kfg_run_step_{{ .StepName }}() {
 {{- if .CacheEnabled }}
     # Cache check
     if [ -z "${KFG_REFRESH:-}" ]; then
+        __kfg_log_detail "cache" "Checking cache for step: $__step_ref_name"
         local __cache_path
         __cache_path=$(__kfg_cache_identity "$__step_ref_name" "{{ .CacheKey }}" "{{ .ScriptHash }}")
+        __kfg_log_debug "cache" "Cache path: $__cache_path"
         
         if __kfg_cache_exists "$__cache_path"; then
-            # Cache hit - restore artifacts and outputs
-            __kfg_cache_restore "$__cache_path" "$__step_ref_name" "{{ .OutputName }}"
+            __kfg_log_detail "cache" "Cache hit for step: $__step_ref_name"
+            __kfg_cache_restore "$__cache_path" "$__step_ref_name" "{{ .OutputName }}" __decl_artifacts
             return 0  # Cache hit, skip execution
+        else
+            __kfg_log_detail "cache" "Cache miss for step: $__step_ref_name"
         fi
+    else
+        __kfg_log_detail "cache" "Cache bypassed (refresh enabled) for step: $__step_ref_name"
     fi
 
 {{- end }}
@@ -26,6 +40,15 @@ __kfg_run_step_{{ .StepName }}() {
 {{- range $key, $value := .Env }}
     export {{ $key }}="{{ $value }}"
 {{- end }}
+
+{{- end }}
+{{- if .CacheEnabled }}
+    # Snapshot artifacts before step execution
+    local -a __artifacts_before=()
+    local __artifact
+    for __artifact in "${KFG_ARTIFACTS[@]}"; do
+        __artifacts_before+=("$__artifact")
+    done
 
 {{- end }}
 {{- if .HasOutput }}
@@ -45,9 +68,13 @@ __kfg_run_step_{{ .StepName }}() {
     {{ .RunScript }}{{- if .IgnoreFailure }} || true{{- else }} || return $?{{- end }}
 {{- end }}
 {{- end }}
-{{- if .Artifacts }}
 
-    # Artifacts
+    # Register declarative artifacts (Step.Spec.Artifacts from template + caller-provided RefArtifacts)
+    local __decl_art
+    for __decl_art in "${__decl_artifacts[@]}"; do
+        __kfg_add_artifact "$__decl_art"
+    done
+{{- if .Artifacts }}
 {{- range .Artifacts }}
     __kfg_add_artifact "{{ . }}"
 {{- end }}
@@ -56,7 +83,25 @@ __kfg_run_step_{{ .StepName }}() {
 
     # Cache store (after execution)
     if [ -z "${KFG_REFRESH:-}" ]; then
-        __kfg_cache_store "$__cache_path" "$__step_ref_name" "{{ .OutputName }}"
+        __kfg_log_detail "cache" "Storing cache for step: $__step_ref_name"
+        # Compute Step-local artifacts delta
+        local -a __step_artifacts=()
+        local __found
+        for __artifact in "${KFG_ARTIFACTS[@]}"; do
+            __found=0
+            for __before in "${__artifacts_before[@]}"; do
+                if [ "$__artifact" = "$__before" ]; then
+                    __found=1
+                    break
+                fi
+            done
+            if [ $__found -eq 0 ]; then
+                __step_artifacts+=("$__artifact")
+                __kfg_log_debug "cache" "Step-local artifact: $__artifact"
+            fi
+        done
+        __kfg_cache_store "$__cache_path" "$__step_ref_name" "{{ .OutputName }}" __step_artifacts __decl_artifacts
+        __kfg_log_detail "cache" "Cache stored for step: $__step_ref_name"
     fi
 {{- end }}
 }

@@ -82,6 +82,9 @@ type WorkflowStepData struct {
 	ScriptHash   string // Hash of spec.run for cache identity
 	HasOutput    bool   // Whether this step has an output
 	OutputName   string // Output name if HasOutput is true
+	// Declarative artifacts
+	StepArtifacts []string // Artifacts declared in Step.Spec.Artifacts
+	RefArtifacts  []string // Artifacts declared in StepReference.Artifacts
 }
 
 // WorkflowCmdData represents a cmd in workflow context.
