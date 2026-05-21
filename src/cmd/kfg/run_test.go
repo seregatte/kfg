@@ -14,59 +14,59 @@ import (
 
 func TestSplitArgsAtDash(t *testing.T) {
 	tests := []struct {
-		name         string
-		dashIndex    int
-		args         []string
-		expectedCmd  string
+		name          string
+		dashIndex     int
+		args          []string
+		expectedCmd   string
 		expectedExtra []string
 	}{
 		{
-			name:         "no args",
-			dashIndex:    -1,
-			args:         []string{},
-			expectedCmd:  "",
+			name:          "no args",
+			dashIndex:     -1,
+			args:          []string{},
+			expectedCmd:   "",
 			expectedExtra: []string{},
 		},
 		{
-			name:         "command only",
-			dashIndex:    -1,
-			args:         []string{"claude"},
-			expectedCmd:  "claude",
+			name:          "command only",
+			dashIndex:     -1,
+			args:          []string{"claude"},
+			expectedCmd:   "claude",
 			expectedExtra: []string{},
 		},
 		{
-			name:         "command with forwarded args after --",
-			dashIndex:    1,
-			args:         []string{"claude", "--model", "gpt-4"},
-			expectedCmd:  "claude",
+			name:          "command with forwarded args after --",
+			dashIndex:     1,
+			args:          []string{"claude", "--model", "gpt-4"},
+			expectedCmd:   "claude",
 			expectedExtra: []string{"--model", "gpt-4"},
 		},
 		{
-			name:         "separator only (no command before --)",
-			dashIndex:    0,
-			args:         []string{"--model", "gpt-4"},
-			expectedCmd:  "",
+			name:          "separator only (no command before --)",
+			dashIndex:     0,
+			args:          []string{"--model", "gpt-4"},
+			expectedCmd:   "",
 			expectedExtra: []string{"--model", "gpt-4"},
 		},
 		{
-			name:         "multiple forwarded args",
-			dashIndex:    1,
-			args:         []string{"opencode", "--help", "--verbose"},
-			expectedCmd:  "opencode",
+			name:          "multiple forwarded args",
+			dashIndex:     1,
+			args:          []string{"opencode", "--help", "--verbose"},
+			expectedCmd:   "opencode",
 			expectedExtra: []string{"--help", "--verbose"},
 		},
 		{
-			name:         "single forwarded arg",
-			dashIndex:    1,
-			args:         []string{"claude", "--model"},
-			expectedCmd:  "claude",
+			name:          "single forwarded arg",
+			dashIndex:     1,
+			args:          []string{"claude", "--model"},
+			expectedCmd:   "claude",
 			expectedExtra: []string{"--model"},
 		},
 		{
-			name:         "no separator with multiple args (all before --)",
-			dashIndex:    -1,
-			args:         []string{"claude", "extra"},
-			expectedCmd:  "claude",
+			name:          "no separator with multiple args (all before --)",
+			dashIndex:     -1,
+			args:          []string{"claude", "extra"},
+			expectedCmd:   "claude",
 			expectedExtra: []string{},
 		},
 	}
@@ -166,10 +166,10 @@ func TestFindCmd(t *testing.T) {
 			expectedWorkflow: "dev.workflows.dev",
 		},
 		{
-			name:          "command not found",
-			cmdName:       "nonexistent",
+			name:           "command not found",
+			cmdName:        "nonexistent",
 			workflowFilter: "",
-			expectError:   true,
+			expectError:    true,
 		},
 		{
 			name:           "command not in specified workflow",

@@ -40,9 +40,9 @@ Framework capability specifications document the behavior and contract of export
 
 Framework-specific changes are tracked here. Changes affecting both the engine and framework are coordinated as sibling changes with matching slugs across:
 
-- `docs/context/openspec/changes/<slug>/` (engine-level)
-- `packages/framework/openspec/changes/<slug>/` (framework-level)
-- `packages/domains/*/openspec/changes/<slug>/` (domain-level, if affected)
+- `docs/context/kfg/openspec/changes/<slug>/` (engine-level)
+- `docs/context/framework/openspec/changes/<slug>/` (framework-level)
+- `docs/context/domains/ai-agents/openspec/changes/<slug>/` (domain-level, if affected)
 
 ## Running Framework Tests
 

@@ -12,7 +12,7 @@ context: |
   - packages/domains/ai-agents/kustomization.yaml - public domain entrypoint
   - packages/domains/ai-agents/manifests/ - domain-specific manifests
   - packages/domains/ai-agents/overlays/dev/ - development overlay
-  - packages/domains/ai-agents/openspec/ - domain-specific specs and changes
+  - docs/context/domains/ai-agents/openspec/ - domain-specific specs and changes
   - packages/domains/ai-agents/tests/ - domain validation tests
   
   Domain composition:
@@ -27,8 +27,8 @@ context: |
   - All domain tests live in packages/domains/ai-agents/tests/
   
   Domain development:
-  - Domain changes are tracked in packages/domains/ai-agents/openspec/changes/
-  - Domain specs document domain-specific capabilities in packages/domains/ai-agents/openspec/specs/
+  - Domain changes are tracked in docs/context/domains/ai-agents/openspec/changes/
+  - Domain specs document domain-specific capabilities in docs/context/domains/ai-agents/openspec/specs/
   - Cross-layer changes use sibling changes with the same slug across engine, framework, and domain roots
   
   Backward compatibility:

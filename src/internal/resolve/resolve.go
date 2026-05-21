@@ -117,7 +117,7 @@ func NewResolver(index *Index) *Resolver {
 // Execution order is determined by YAML order.
 // Name is the StepReference.name (runtime execution identity) used for output addressing.
 type ResolvedStep struct {
-	Name          string            // Required: StepReference.name (runtime execution identity)
+	Name          string // Required: StepReference.name (runtime execution identity)
 	Step          *manifest.Step
 	When          *manifest.WhenClause
 	FailurePolicy string            // "Fail" (default) or "Ignore"

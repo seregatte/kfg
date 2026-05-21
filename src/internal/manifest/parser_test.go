@@ -148,10 +148,10 @@ func TestParsedResourceName(t *testing.T) {
 
 func TestValidateStepReferenceNames_Required(t *testing.T) {
 	tests := []struct {
-		name           string
-		yaml           string
-		expectError    bool
-		errorContains  string
+		name          string
+		yaml          string
+		expectError   bool
+		errorContains string
 	}{
 		{
 			name: "workflow step reference without name should error",
@@ -243,10 +243,10 @@ spec:
 
 func TestValidateStepReferenceNames_Uniqueness(t *testing.T) {
 	tests := []struct {
-		name           string
-		yaml           string
-		expectError    bool
-		errorContains  string
+		name          string
+		yaml          string
+		expectError   bool
+		errorContains string
 	}{
 		{
 			name: "duplicate step reference names should error",
@@ -327,10 +327,10 @@ spec:
 
 func TestValidateWhenOutputStepReferences(t *testing.T) {
 	tests := []struct {
-		name           string
-		yaml           string
-		expectError    bool
-		errorContains  string
+		name          string
+		yaml          string
+		expectError   bool
+		errorContains string
 	}{
 		{
 			name: "valid when.output.step reference should pass",
@@ -472,10 +472,10 @@ spec:
 
 func TestValidateEnvKfgOutputReferences(t *testing.T) {
 	tests := []struct {
-		name           string
-		yaml           string
-		expectError    bool
-		errorContains  string
+		name          string
+		yaml          string
+		expectError   bool
+		errorContains string
 	}{
 		{
 			name: "valid $kfg.output reference should pass",

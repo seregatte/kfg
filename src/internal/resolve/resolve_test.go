@@ -827,7 +827,7 @@ func TestResolveStepReference_StepRefName(t *testing.T) {
 		Kind:       "Step",
 		Metadata:   manifest.Metadata{Name: "detect-step"},
 		Spec: manifest.StepSpec{
-			Run: "echo detect",
+			Run:    "echo detect",
 			Output: &manifest.Output{Name: "AGENT"},
 		},
 	}
@@ -841,7 +841,7 @@ func TestResolveStepReference_StepRefName(t *testing.T) {
 			Before: []manifest.StepReference{
 				{
 					Name: "detect-agent", // StepReference.Name (runtime identity)
-					Step: "detect-step",   // Step metadata.name
+					Step: "detect-step",  // Step metadata.name
 					Env: map[string]string{
 						"MODE": "auto",
 					},
@@ -945,12 +945,12 @@ func TestResolveStepReference_MultipleSameStepDifferentNames(t *testing.T) {
 				{
 					Name: "copy-claude",
 					Step: "copy-step",
-					Env: map[string]string{"DEST": "CLAUDE.md"},
+					Env:  map[string]string{"DEST": "CLAUDE.md"},
 				},
 				{
 					Name: "copy-gemini",
 					Step: "copy-step",
-					Env: map[string]string{"DEST": "GEMINI.md"},
+					Env:  map[string]string{"DEST": "GEMINI.md"},
 				},
 			},
 		},

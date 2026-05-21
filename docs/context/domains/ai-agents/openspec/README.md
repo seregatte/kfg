@@ -41,9 +41,9 @@ Domain capability specifications document domain-specific behavior. Specs use no
 
 Domain-specific changes are tracked here. Changes affecting both the engine/framework and domain are coordinated as sibling changes with matching slugs across:
 
-- `docs/context/openspec/changes/<slug>/` (engine-level)
-- `packages/framework/openspec/changes/<slug>/` (framework-level, if affected)
-- `packages/domains/ai-agents/openspec/changes/<slug>/` (domain-level)
+- `docs/context/kfg/openspec/changes/<slug>/` (engine-level)
+- `docs/context/framework/openspec/changes/<slug>/` (framework-level, if affected)
+- `docs/context/domains/ai-agents/openspec/changes/<slug>/` (domain-level)
 
 ## Running Domain Tests
 

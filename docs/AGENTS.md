@@ -68,19 +68,19 @@ Key test roots:
 
 For detailed design and authoritative behavior, refer to
 the OpenSpec roots corresponding to the layer you are
-changing, not just `docs/context/openspec/specs/`.
+changing, not just `docs/context/kfg/openspec/specs/`.
 
 ### OpenSpec Roots & Syncing
 
 When working on changes or proposals, always sync specs
 across all relevant OpenSpec roots:
 
-- `docs/context/openspec/` - engine/core kfg specs and
+- `docs/context/kfg/openspec/` - engine/core kfg specs and
   changes
-- `packages/framework/openspec/` - framework package specs
-  and changes
-- `packages/domains/ai-agents/openspec/` - AI agents domain
+- `docs/context/framework/openspec/` - framework package
   specs and changes
+- `docs/context/domains/ai-agents/openspec/` - AI agents
+  domain specs and changes
 
 **Sync behavior:**
 
@@ -88,11 +88,11 @@ across all relevant OpenSpec roots:
 - Keep sibling changes with the same slug aligned across
   engine, framework, and domain roots when a change spans
   multiple layers
-- Treat `docs/context/openspec/specs/` as canonical for
+- Treat `docs/context/kfg/openspec/specs/` as canonical for
   engine behavior
-- Treat `packages/framework/openspec/specs/` as canonical
+- Treat `docs/context/framework/openspec/specs/` as canonical
   for shared manifest/framework capabilities
-- Treat `packages/domains/ai-agents/openspec/specs/` as
+- Treat `docs/context/domains/ai-agents/openspec/specs/` as
   canonical for AI agents domain capabilities
 - Check `config.yaml` and `changes/` even when `specs/` is
   still empty, as they define scope and context
@@ -111,8 +111,26 @@ across all relevant OpenSpec roots:
 
 ### Package/Domain Spec Roots
 
-- `packages/framework/openspec/specs/`
-- `packages/domains/ai-agents/openspec/specs/`
+- `docs/context/framework/openspec/specs/`
+- `docs/context/domains/ai-agents/openspec/specs/`
+
+## Language Policy
+
+All repository-facing written content MUST be in en-US.
+
+This applies to:
+
+- All files under `docs/`, including `docs/context/`
+- All OpenSpec content in `docs/context/kfg/openspec/`,
+  `docs/context/framework/openspec/`, and
+  `docs/context/domains/ai-agents/openspec/`
+- Code comments in all source files
+- User-facing strings in source files
+- Examples, guides, and agent instructions
+
+Do not introduce Portuguese or mixed-language content in
+new or updated files unless the file intentionally records
+external third-party content or localized product strings.
 
 ## Local State & Gotchas
 

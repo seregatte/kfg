@@ -11,7 +11,7 @@ context: |
   Framework structure:
   - packages/framework/kustomization.yaml - public entrypoint
   - packages/framework/manifests/steps/ - reusable steps
-  - packages/framework/openspec/ - framework-specific specs and changes
+  - docs/context/framework/openspec/ - framework-specific specs and changes
   - packages/framework/tests/ - framework validation tests
   
   Framework tests:
@@ -21,8 +21,8 @@ context: |
   - All framework tests live in packages/framework/tests/
   
   Framework development:
-  - Framework changes are tracked in packages/framework/openspec/changes/
-  - Framework specs document exported capabilities in packages/framework/openspec/specs/
+  - Framework changes are tracked in docs/context/framework/openspec/changes/
+  - Framework specs document exported capabilities in docs/context/framework/openspec/specs/
   - Cross-layer changes (affecting engine and framework) use sibling changes with the same slug
   
   Backward compatibility:

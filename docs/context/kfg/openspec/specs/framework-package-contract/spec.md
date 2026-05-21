@@ -40,10 +40,7 @@ The framework package MUST follow a consistent internal directory layout.
   │       ├── materialize-step.yaml
   │       └── ...
   ├── overlays/                     # Framework overlays (if any)
-  ├── openspec/
-  │   ├── config.yaml               # Package-local OpenSpec config
-  │   ├── specs/                    # Framework capability specs
-  │   └── changes/                  # Framework-specific changes
+├── docs/                       # OpenSpec root at docs/context/framework/openspec/
   └── tests/
       └── ...                       # Framework-specific Bats tests
   ```
@@ -62,7 +59,7 @@ The framework package MUST export a documented set of reusable manifest steps.
   - `kfg.ensure-gitignore`: Manage gitignore entries
   - `kfg.copy-context`: Copy context files into generated artifacts
   - `kfg.materialize-scaffold`: Generate scaffolding from templates
-- **AND** each exported step SHALL have a documented specification in `packages/framework/openspec/specs/`
+- **AND** each exported step SHALL have a documented specification in `docs/context/framework/openspec/specs/`
 
 #### Scenario: New framework step addition
 - **WHEN** new framework steps are added
@@ -76,9 +73,9 @@ The framework package MUST have its own OpenSpec root for package-specific speci
 
 #### Scenario: Framework OpenSpec location
 - **WHEN** framework-specific capability specs are defined
-- **THEN** `packages/framework/openspec/config.yaml` SHALL be the package-local OpenSpec root
-- **AND** framework specs SHALL reside under `packages/framework/openspec/specs/`
-- **AND** framework changes SHALL be tracked under `packages/framework/openspec/changes/`
+- **THEN** `docs/context/framework/openspec/config.yaml` SHALL be the package-local OpenSpec root
+- **AND** framework specs SHALL reside under `docs/context/framework/openspec/specs/`
+- **AND** framework changes SHALL be tracked under `docs/context/framework/openspec/changes/`
 
 #### Scenario: Framework spec ownership
 - **WHEN** a capability spec applies specifically to framework behavior

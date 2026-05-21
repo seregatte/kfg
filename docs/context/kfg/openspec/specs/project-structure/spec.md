@@ -36,18 +36,18 @@ OpenSpec artifacts MUST follow a consistent directory structure.
 
 #### Scenario: OpenSpec root location
 - **WHEN** the OpenSpec system stores specs and changes
-- **THEN** `docs/context/openspec/` SHALL be the root directory
-- **AND** `docs/context/openspec/config.yaml` SHALL define schema and context
-- **AND** `docs/context/openspec/README.md` SHALL provide navigation
+- **THEN** `docs/context/kfg/openspec/` SHALL be the engine-level root directory
+- **AND** `docs/context/kfg/openspec/config.yaml` SHALL define schema and context
+- **AND** `docs/context/kfg/openspec/README.md` SHALL provide navigation
 
 #### Scenario: Durable specs location
 - **WHEN** durable capability specifications are defined
-- **THEN** `docs/context/openspec/specs/<capability>/spec.md` SHALL contain each spec
+- **THEN** `docs/context/kfg/openspec/specs/<capability>/spec.md` SHALL contain each spec
 - **AND** specs SHALL use normative language (MUST, SHALL)
 
 #### Scenario: Active changes location
 - **WHEN** implementation changes are tracked
-- **THEN** `docs/context/openspec/changes/<change-name>/` SHALL contain each change
+- **THEN** `docs/context/kfg/openspec/changes/<change-name>/` SHALL contain each change
 - **AND** each change SHALL include `proposal.md`, `design.md`, and `tasks.md`
 
 ### Requirement: Package Structure
@@ -59,7 +59,7 @@ The project SHALL use a package-oriented structure with explicit layers for engi
 - **THEN** `packages/framework/` SHALL contain the framework package
 - **AND** `packages/framework/manifests/steps/` SHALL contain shared steps
 - **AND** `packages/framework/kustomization.yaml` SHALL be the public entrypoint
-- **AND** `packages/framework/openspec/` SHALL contain package-local OpenSpec artifacts
+- **AND** `docs/context/framework/openspec/` SHALL contain package-local OpenSpec artifacts
 - **AND** `packages/framework/tests/` SHALL contain package-specific Bats suites
 
 #### Scenario: Domain package location
@@ -68,7 +68,7 @@ The project SHALL use a package-oriented structure with explicit layers for engi
 - **AND** `packages/domains/<domain>/manifests/` SHALL contain domain-specific manifests
 - **AND** `packages/domains/<domain>/overlays/` SHALL contain domain-specific overlays
 - **AND** `packages/domains/<domain>/kustomization.yaml` SHALL be the public domain entrypoint
-- **AND** `packages/domains/<domain>/openspec/` SHALL contain package-local OpenSpec artifacts
+- **AND** `docs/context/domains/ai-agents/openspec/` SHALL contain package-local OpenSpec artifacts
 - **AND** `packages/domains/<domain>/tests/` SHALL contain package-specific Bats suites
 
 ### Requirement: Manifest Storage
@@ -116,10 +116,7 @@ kfg/
 │   │   │   ├── kustomization.yaml
 │   │   │   └── steps/                # Shared reusable steps
 │   │   ├── overlays/                 # Framework-level overlays
-│   │   ├── openspec/                 # Package-local OpenSpec root
-│   │   │   ├── config.yaml
-│   │   │   ├── specs/
-│   │   │   └── changes/
+│   │   └── docs/context/framework/openspec/  # Framework OpenSpec root (symlink or ref)
 │   │   └── tests/                    # Framework-specific Bats suites
 │   └── domains/
 │       └── ai-agents/                # AI agents domain package
@@ -129,17 +126,14 @@ kfg/
 │           │   └── ...
 │           ├── overlays/              # Domain overlays
 │           │   └── dev/
-│           ├── openspec/              # Package-local OpenSpec root
-│           │   ├── config.yaml
-│           │   ├── specs/
-│           │   └── changes/
+│           └── docs/context/domains/ai-agents/openspec/  # Domain OpenSpec root (symlink or ref)
 │           └── tests/                 # Domain-specific Bats suites
 ├── docs/
 │   ├── AGENTS.md                     # Agent context file
 │   ├── CHANGELOG.md                  # Version history
 │   ├── DEVELOPMENT.md                # Development guidelines
 │   └── context/
-│       └── openspec/
+│       └── kfg/openspec/             # Engine OpenSpec root
 │           ├── config.yaml           # Engine-level OpenSpec configuration
 │           ├── README.md             # OpenSpec navigation
 │           ├── specs/                # Engine and CLI capability specs

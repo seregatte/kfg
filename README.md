@@ -153,17 +153,18 @@ KFG uses a package-oriented architecture:
 ├── packages/
 │   ├── framework/                # Shared manifest primitives
 │   │   ├── manifests/            # Reusable steps (materialize, cleanup, etc.)
-│   │   ├── openspec/             # Framework specs and changes
 │   │   └── tests/                # Framework test suite
 │   └── domains/
 │       └── ai-agents/            # AI agents domain package
 │           ├── manifests/        # AI agent resources
 │           ├── overlays/dev/     # Development overlay
-│           ├── openspec/         # Domain specs and changes
 │           └── tests/            # Domain test suite
 ├── docs/
 │   ├── AGENTS.md                 # AI agent operating context
-│   └── context/openspec/         # Engine-level specifications
+│   └── context/
+│       ├── kfg/openspec/         # Engine-level specifications
+│       ├── framework/openspec/   # Framework specifications
+│       └── domains/ai-agents/openspec/  # Domain specifications
 ├── tests/
 │   └── bats/                     # Engine and integration tests
 │       ├── cli/                  # CLI command tests

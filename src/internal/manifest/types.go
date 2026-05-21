@@ -119,9 +119,9 @@ type CmdWorkflowSpec struct {
 // StepReference represents a reference to a Step within a workflow.
 //
 // Key concepts:
-// - Name: The runtime execution identity for this step reference. It must be unique
-//   within the workflow and is used to address outputs (e.g., $kfg.output(name.outputName)).
-// - Step: The Step resource's metadata.name that this reference points to.
+//   - Name: The runtime execution identity for this step reference. It must be unique
+//     within the workflow and is used to address outputs (e.g., $kfg.output(name.outputName)).
+//   - Step: The Step resource's metadata.name that this reference points to.
 //
 // Multiple StepReferences can point to the same Step (by Step name) but must have
 // different Name values. This allows the same Step to be used multiple times in a

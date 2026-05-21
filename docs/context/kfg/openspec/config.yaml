@@ -3,12 +3,12 @@ context: |
   Project: kfg, a standalone CLI for processing YAML manifests into shell functions.
   Backward compatibility is NOT a project requirement.
   
-  Source of truth:
-  - flake.nix defines Nix packaging and development shells
-  - docs/AGENTS.md provides agent operating context
-  - docs/context/openspec/ is the engine-level OpenSpec root
-  - packages/framework/openspec/ is the framework package OpenSpec root
-  - packages/domains/*/openspec/ are domain-specific OpenSpec roots
+   Source of truth:
+   - flake.nix defines Nix packaging and development shells
+   - docs/AGENTS.md provides agent operating context
+   - docs/context/kfg/openspec/ is the engine-level OpenSpec root
+   - docs/context/framework/openspec/ is the framework package OpenSpec root
+   - docs/context/domains/ai-agents/openspec/ is the AI agents domain OpenSpec root
   
   Project structure:
   - Manifests are loaded from KFG_MANIFEST_PATH (configured manifest sources)
@@ -18,7 +18,7 @@ context: |
   - Public kustomization entrypoints: packages/framework/kustomization.yaml and packages/domains/*/kustomization.yaml
   - Engine and integration tests live in tests/bats/
   - Package-specific tests live in packages/*/tests/
-  - See docs/context/openspec/specs/project-structure/spec.md for full specification
+   - See docs/context/kfg/openspec/specs/project-structure/spec.md for full specification
   
   Architecture:
   - Manifests define Steps, Cmds, and CmdWorkflows

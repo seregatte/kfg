@@ -445,8 +445,8 @@ func (g *Generator) convertWorkflowCmdToTemplateData(rw *resolve.ResolvedCmdWork
 				whenCondition = g.generateWhenCondition(step.When)
 			}
 			data.GlobalBeforeSteps[i] = templates.WorkflowStepData{
-				StepRefName:   step.Name,                 // StepReference.name (runtime execution identity)
-				StepName:      step.Step.Metadata.Name,   // Step metadata.name (for function lookup)
+				StepRefName:   step.Name,               // StepReference.name (runtime execution identity)
+				StepName:      step.Step.Metadata.Name, // Step metadata.name (for function lookup)
 				IgnoreFailure: step.FailurePolicy == "Ignore",
 				WhenCondition: whenCondition,
 				Env:           formatEnvWithKfgOutput(resolver.ResolveMap(step.Env), stepOutputLookup), // Resolve env placeholders
@@ -464,8 +464,8 @@ func (g *Generator) convertWorkflowCmdToTemplateData(rw *resolve.ResolvedCmdWork
 				whenCondition = g.generateWhenCondition(step.When)
 			}
 			data.GlobalAfterSteps[i] = templates.WorkflowStepData{
-				StepRefName:   step.Name,                 // StepReference.name (runtime execution identity)
-				StepName:      step.Step.Metadata.Name,   // Step metadata.name (for function lookup)
+				StepRefName:   step.Name,               // StepReference.name (runtime execution identity)
+				StepName:      step.Step.Metadata.Name, // Step metadata.name (for function lookup)
 				IgnoreFailure: step.FailurePolicy == "Ignore",
 				WhenCondition: whenCondition,
 				Env:           formatEnvWithKfgOutput(resolver.ResolveMap(step.Env), stepOutputLookup), // Resolve env placeholders
@@ -483,8 +483,8 @@ func (g *Generator) convertWorkflowCmdToTemplateData(rw *resolve.ResolvedCmdWork
 				whenCondition = g.generateWhenCondition(step.When)
 			}
 			data.CmdBeforeSteps[i] = templates.WorkflowStepData{
-				StepRefName:   step.Name,                 // StepReference.name (runtime execution identity)
-				StepName:      step.Step.Metadata.Name,   // Step metadata.name (for function lookup)
+				StepRefName:   step.Name,               // StepReference.name (runtime execution identity)
+				StepName:      step.Step.Metadata.Name, // Step metadata.name (for function lookup)
 				IgnoreFailure: step.FailurePolicy == "Ignore",
 				WhenCondition: whenCondition,
 				Env:           formatEnvWithKfgOutput(resolver.ResolveMap(step.Env), stepOutputLookup), // Resolve env placeholders
@@ -502,8 +502,8 @@ func (g *Generator) convertWorkflowCmdToTemplateData(rw *resolve.ResolvedCmdWork
 				whenCondition = g.generateWhenCondition(step.When)
 			}
 			data.CmdAfterSteps[i] = templates.WorkflowStepData{
-				StepRefName:   step.Name,                 // StepReference.name (runtime execution identity)
-				StepName:      step.Step.Metadata.Name,   // Step metadata.name (for function lookup)
+				StepRefName:   step.Name,               // StepReference.name (runtime execution identity)
+				StepName:      step.Step.Metadata.Name, // Step metadata.name (for function lookup)
 				IgnoreFailure: step.FailurePolicy == "Ignore",
 				WhenCondition: whenCondition,
 				Env:           formatEnvWithKfgOutput(resolver.ResolveMap(step.Env), stepOutputLookup), // Resolve env placeholders
@@ -724,7 +724,7 @@ func buildStepOutputLookup(steps []resolve.ResolvedStep) map[string]string {
 func expandKfgOutputInEnv(envValue string, stepOutputLookup map[string]string) string {
 	// Pattern: $kfg.output(step-ref-name)
 	re := regexp.MustCompile(`\$kfg\.output\(([a-zA-Z0-9._-]+)\)`)
-	
+
 	result := re.ReplaceAllStringFunc(envValue, func(match string) string {
 		// Extract the step-ref-name from the match
 		submatch := re.FindStringSubmatch(match)
@@ -739,7 +739,7 @@ func expandKfgOutputInEnv(envValue string, stepOutputLookup map[string]string) s
 		}
 		return match
 	})
-	
+
 	return result
 }
 

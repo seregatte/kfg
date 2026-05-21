@@ -1135,6 +1135,3 @@ func TestGenerateAllWorkflows_DifferentShells(t *testing.T) {
 	assert.Contains(t, code, "#!/bin/bash")
 	assert.Contains(t, code, "KFG_SHELL=bash")
 }
-
-
-

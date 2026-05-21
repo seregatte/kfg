@@ -77,12 +77,12 @@ Framework steps MUST NOT hardcode engine-specific paths or make assumptions abou
 
 ## Framework Specifications
 
-Framework-specific capabilities are documented in `packages/framework/openspec/specs/`:
+Framework-specific capabilities are documented in `docs/context/framework/openspec/specs/`:
 
 - **reusable-framework-steps** - Contract and behavior of exported steps
 - **framework-package-contract** - Public API and stability guarantees
 
-See `packages/framework/openspec/README.md` for the framework OpenSpec root.
+See `docs/context/framework/openspec/README.md` for the framework OpenSpec root.
 
 ## Framework Tests
 
@@ -111,15 +111,15 @@ make test-bats  # Runs all tests including framework
 
 1. Create the step manifest in `packages/framework/manifests/steps/<name>.yaml`
 2. Add it to `packages/framework/manifests/steps/kustomization.yaml`
-3. Create a spec in `packages/framework/openspec/specs/` documenting the step
+3. Create a spec in `docs/context/framework/openspec/specs/` documenting the step
 4. Add Bats tests in `packages/framework/tests/`
 5. Update this documentation
 
 ### Updating Framework Behavior
 
-Framework changes are tracked in `packages/framework/openspec/changes/`. When making changes that affect framework behavior:
+Framework changes are tracked in `docs/context/framework/openspec/changes/`. When making changes that affect framework behavior:
 
-1. Create a change proposal in `packages/framework/openspec/changes/`
+1. Create a change proposal in `docs/context/framework/openspec/changes/`
 2. Update relevant specs
 3. Update this documentation
 4. Add or update Bats tests
@@ -147,6 +147,6 @@ See `packages/domains/ai-agents/kustomization.yaml` for an example.
 
 ## Further Reading
 
-- **Shell Runtime API:** `docs/context/openspec/specs/shell-runtime-api/spec.md`
-- **Framework Package Contract:** `docs/context/openspec/specs/framework-package-contract/spec.md`
-- **Reusable Steps:** `packages/framework/openspec/specs/reusable-framework-steps/spec.md`
+- **Shell Runtime API:** `docs/context/kfg/openspec/specs/shell-runtime-api/spec.md`
+- **Framework Package Contract:** `docs/context/kfg/openspec/specs/framework-package-contract/spec.md`
+- **Reusable Steps:** `docs/context/framework/openspec/specs/reusable-framework-steps/spec.md`
