@@ -66,10 +66,38 @@ Key test roots:
 
 ## Canonical Specs
 
-For detailed design and authoritative behavior, prefer
-the OpenSpec specs in `docs/context/openspec/specs/`.
+For detailed design and authoritative behavior, refer to
+the OpenSpec roots corresponding to the layer you are
+changing, not just `docs/context/openspec/specs/`.
 
-Especially relevant specs:
+### OpenSpec Roots & Syncing
+
+When working on changes or proposals, always sync specs
+across all relevant OpenSpec roots:
+
+- `docs/context/openspec/` - engine/core kfg specs and
+  changes
+- `packages/framework/openspec/` - framework package specs
+  and changes
+- `packages/domains/ai-agents/openspec/` - AI agents domain
+  specs and changes
+
+**Sync behavior:**
+
+- Read `specs/` and `changes/` from every affected root
+- Keep sibling changes with the same slug aligned across
+  engine, framework, and domain roots when a change spans
+  multiple layers
+- Treat `docs/context/openspec/specs/` as canonical for
+  engine behavior
+- Treat `packages/framework/openspec/specs/` as canonical
+  for shared manifest/framework capabilities
+- Treat `packages/domains/ai-agents/openspec/specs/` as
+  canonical for AI agents domain capabilities
+- Check `config.yaml` and `changes/` even when `specs/` is
+  still empty, as they define scope and context
+
+### Especially Relevant Engine Specs
 
 - `project-structure/spec.md`
 - `manifest-model/spec.md`
@@ -80,6 +108,11 @@ Especially relevant specs:
 - `store-imagefile/spec.md`
 - `store-workspace/spec.md`
 - `session-system/spec.md`
+
+### Package/Domain Spec Roots
+
+- `packages/framework/openspec/specs/`
+- `packages/domains/ai-agents/openspec/specs/`
 
 ## Local State & Gotchas
 
