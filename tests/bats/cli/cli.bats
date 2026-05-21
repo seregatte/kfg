@@ -421,7 +421,8 @@ spec:
   cmds:
     - kfg.cmds.build
   before:
-    - step: kfg.steps.setup
+    - name: setup-dev
+      step: kfg.steps.setup
 ---
 apiVersion: kfg.dev/v1alpha1
 kind: CmdWorkflow
@@ -432,7 +433,8 @@ spec:
   cmds:
     - kfg.cmds.deploy
   before:
-    - step: kfg.steps.setup
+    - name: setup-prod
+      step: kfg.steps.setup
 WFEOF
     
     cat > /tmp/test_multi_wf_kust/cmds.yaml << 'CMDEOF'
@@ -551,7 +553,8 @@ spec:
   cmds:
     - cmd1
   before:
-    - step: shared-setup
+    - name: shared-setup-ref
+      step: shared-setup
 ---
 apiVersion: kfg.dev/v1alpha1
 kind: CmdWorkflow
@@ -562,7 +565,8 @@ spec:
   cmds:
     - cmd2
   before:
-    - step: shared-setup
+    - name: shared-setup-ref
+      step: shared-setup
 WFEOF
     
     cat > /tmp/test_multi_wf_dedup/cmds.yaml << 'CMDEOF'

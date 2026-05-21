@@ -167,11 +167,30 @@ The Cmd resource MUST follow a defined schema.
 - AND `metadata.name` SHALL be present
 - AND `spec.run` SHALL be present
 
-#### Scenario: Optional before field
-- GIVEN a Cmd resource
+#### Scenario: Named step references in before and after
+- GIVEN a CmdWorkflow resource
+- WHEN `spec.before` or `spec.after` is specified
+- THEN each entry SHALL be a step reference with `name` and `step` fields
+- AND `name` SHALL be unique within that CmdWorkflow
+- AND `name` SHALL be a valid namespace identifier
+- AND `step` SHALL reference an existing Step resource
+- AND `name` SHALL serve as the runtime output identity for conditions and env expansion
+
+#### Scenario: Optional before field with named references
+- GIVEN a CmdWorkflow resource
 - WHEN `spec.before` is specified
-- THEN it SHALL be a list of Step names
-- AND each name SHALL reference an existing Step resource
+- THEN it SHALL be a list of named step references
+- AND each reference SHALL declare a `name` field
+- AND each reference SHALL declare a `step` field
+- AND each `step` SHALL reference an existing Step resource
+
+#### Scenario: Optional after field with named references
+- GIVEN a CmdWorkflow resource
+- WHEN `spec.after` is specified
+- THEN it SHALL be a list of named step references
+- AND each reference SHALL declare a `name` field
+- AND each reference SHALL declare a `step` field
+- AND each `step` SHALL reference an existing Step resource
 
 #### Scenario: Optional after field
 - GIVEN a Cmd resource

@@ -7,4 +7,5 @@ spec:
   cmds:
     - test-cmd
   before:
-    - step: test-setup
+    - name: test-setup-ref
+      step: test-setup
