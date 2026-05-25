@@ -87,9 +87,8 @@ spec:
   run: echo 'hello'
   cache:
     enabled: true
-    key: stable-key
 `,
-			expected: &CacheConfig{Enabled: boolPtr(true), Key: "stable-key"},
+			expected: &CacheConfig{Enabled: boolPtr(true)},
 		},
 		{
 			name: "step with cache disabled",
@@ -102,20 +101,7 @@ spec:
   cache:
     enabled: false
 `,
-			expected: &CacheConfig{Enabled: boolPtr(false), Key: ""},
-		},
-		{
-			name: "step with cache key only",
-			yaml: `apiVersion: kfg.dev/v1alpha1
-kind: Step
-metadata:
-  name: key-only-step
-spec:
-  run: echo 'hello'
-  cache:
-    key: my-cache-key
-`,
-			expected: &CacheConfig{Enabled: nil, Key: "my-cache-key"},
+			expected: &CacheConfig{Enabled: boolPtr(false)},
 		},
 		{
 			name: "step without cache",
@@ -149,7 +135,7 @@ spec:
 				} else {
 					assert.Nil(t, resources[0].Step.Spec.Cache.Enabled)
 				}
-				assert.Equal(t, tt.expected.Key, resources[0].Step.Spec.Cache.Key)
+
 			}
 		})
 	}
@@ -169,7 +155,6 @@ spec:
       step: setup-step
       cache:
         enabled: true
-        key: override-key
 `
 
 	parser := NewParser()
@@ -187,7 +172,7 @@ spec:
 	assert.NotNil(t, ref.Cache)
 	assert.NotNil(t, ref.Cache.Enabled)
 	assert.True(t, *ref.Cache.Enabled)
-	assert.Equal(t, "override-key", ref.Cache.Key)
+
 }
 
 // Helper function to create bool pointer

@@ -4,48 +4,53 @@ metadata:
   name: openspec.steps.install
 spec:
   run: |
-    __kfg_log_info "Installing openspec skills..."
+    __kfg_log_info "Installing OpenSpec skills..."
 
     # Validate required env vars
     if [ -z "$TOOLS_FLAG" ]; then
-      __kfg_log_error "missing required env var: TOOLS_FLAG"
-      exit 1
-    fi
-
-    if [ -z "$AGENT_HOME" ]; then
-      __kfg_log_error "missing required env var: AGENT_HOME"
+      __kfg_log_error "Missing required environment variable: TOOLS_FLAG"
       exit 1
     fi
 
     if [ -z "$OUTPUT_DIR" ]; then
-      __kfg_log_error "missing required env var: OUTPUT_DIR"
+      __kfg_log_error "Missing required environment variable: OUTPUT_DIR"
       exit 1
     fi
 
-    __kfg_log_debug "step:openspec.install" "TOOLS_FLAG=$TOOLS_FLAG"
-    __kfg_log_debug "step:openspec.install" "AGENT_HOME=$AGENT_HOME"
-    __kfg_log_debug "step:openspec.install" "OUTPUT_DIR=$OUTPUT_DIR"
+    __kfg_log_debug "TOOLS_FLAG=$TOOLS_FLAG"
+    __kfg_log_debug "OUTPUT_DIR=$OUTPUT_DIR"
 
     # Ensure output directory exists
     mkdir -p "$OUTPUT_DIR"
 
+    # Snapshot OUTPUT_DIR before installation (baseline)
+    local before_snapshot_skills=$(mktemp)
+    __kfg_fs_snapshot "$OUTPUT_DIR" 1 > "$before_snapshot_skills"
+
+    cat "$before_snapshot_skills"
+
     # Execute openspec init command
     command openspec init "$TOOLS_FLAG" --force > /dev/null 2>&1
 
-    rm -Rf openspec
+    # Snapshot OUTPUT_DIR after installation
+    local after_snapshot_skills=$(mktemp)
+    __kfg_fs_snapshot "$OUTPUT_DIR" 1 > "$after_snapshot_skills"
+
+    cat "$after_snapshot_skills"
+
+    # Register newly created children as artifacts using the diff-based helper
+    __kfg_add_diff_artifacts "$OUTPUT_DIR" "$before_snapshot_skills" "$after_snapshot_skills"
+
+    # Cleanup temporary snapshots
+    rm -f "$before_snapshot_skills" "$after_snapshot_skills" openspec
     
-    # Track the created agent home directory
-    __kfg_add_artifact "$AGENT_HOME"
-    
-    __kfg_log_info "step:openspec.install" "installed"
+    __kfg_log_info "Installed OpenSpec skills"
 
   env:
     TOOLS_FLAG: "--tools=claude"
-    AGENT_HOME: ".claude"
     OUTPUT_DIR: ".claude/skills/"
   output:
     name: installed
     type: string
   cache:
     enabled: true
-    key: openspec-install

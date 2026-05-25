@@ -72,7 +72,7 @@
             inputsFrom = [ nixai.devShells.${system}.default ];
             shellHook = ''
               export PATH="./bin:$PATH"
-              export OPENSPEC_ROOT_DIR=docs/context
+              export OPENSPEC_ROOT_DIR=docs/context/openspec
               source <(go run ./src/cmd/kfg apply -k packages/domains/ai-agents/overlays/dev)
             '';
           };

@@ -20,17 +20,14 @@ __kfg_output_get() {
 # Cache helpers
 
 # Compute cache identity for a step invocation
-# Args: step_ref_name, cache_key, script_hash
+# Args: step_ref_name
 # Returns: cache entry path (printed to stdout)
 __kfg_cache_identity() {
     local step_ref_name="$1"
-    local cache_key="$2"
-    local script_hash="$3"
     
-    # Compute unique cache key from inputs
-    local identity_key="${step_ref_name}:${cache_key}:${script_hash}"
+    # Compute unique cache key from step reference name
     local identity_hash
-    identity_hash=$(printf '%s' "$identity_key" | sha256sum | cut -d' ' -f1)
+    identity_hash=$(printf '%s' "$step_ref_name" | sha256sum | cut -d' ' -f1)
     
     # Return cache entry path under KFG_STORE_DIR/cache/
     local store_dir="${KFG_STORE_DIR:-${HOME}/.kfg/store}"
@@ -48,6 +45,7 @@ __kfg_cache_exists() {
 # Store artifacts and outputs for a cacheable step
 # Args: cache_path, step_ref_name, output_name (optional), step_artifacts_array_name, decl_artifacts_array_name
 # The array names are passed by reference and expanded within this function
+# Uses atomic write: writes to .tmp directory then renames to final path
 __kfg_cache_store() {
     local cache_path="$1"
     local step_ref_name="$2"
@@ -55,8 +53,11 @@ __kfg_cache_store() {
     local step_artifacts_array_name="$4"  # Name of the array variable (passed as string)
     local decl_artifacts_array_name="$5"   # Name of the array variable (passed as string)
     
-    # Create cache directory
-    mkdir -p "$cache_path/artifacts"
+    # Remove any stale temp directory from previous interrupted write
+    rm -rf "$cache_path.tmp"
+    
+    # Create temp directory for atomic write
+    mkdir -p "$cache_path.tmp/artifacts"
     
     # Expand the arrays by name
     local -a step_artifacts=()
@@ -88,34 +89,46 @@ __kfg_cache_store() {
             local artifact_dir
             artifact_dir=$(dirname "$artifact")
             if [ "$artifact_dir" != "." ] && [ -n "$artifact_dir" ]; then
-                mkdir -p "$cache_path/artifacts/$artifact_dir"
+                mkdir -p "$cache_path.tmp/artifacts/$artifact_dir"
             fi
             
             # Copy artifact preserving its relative path structure
             __kfg_log_debug "cache" "Storing artifact: $artifact"
-            cp -r "$artifact" "$cache_path/artifacts/$artifact" 2>/dev/null || true
+            cp -r "$artifact" "$cache_path.tmp/artifacts/$artifact" 2>/dev/null || true
         fi
     done
     
-    # Store metadata
-    local metadata_content="stepRefName: ${step_ref_name}\ntimestamp: $(date -u +%Y-%m-%dT%H:%M:%SZ)\n"
-    if [ -n "$output_name" ]; then
-        # Serialize output value using base64 for multiline safety
-        local output_value
-        output_value=$(__kfg_output_get "$step_ref_name" "$output_name")
-        local output_encoded
-        output_encoded=$(printf '%s' "$output_value" | base64)
-        metadata_content+="output:\n  name: ${output_name}\n  valueEncoded: ${output_encoded}\n"
-    fi
-    printf '%b' "$metadata_content" > "$cache_path/metadata.yaml"
+    # Store metadata using echo-based line-by-line construction (no printf '%b' to avoid backslash interpretation)
+    {
+        echo "stepRefName: ${step_ref_name}"
+        echo "timestamp: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+        if [ -n "$output_name" ]; then
+            # Serialize output value using base64 for multiline safety
+            local output_value
+            output_value=$(__kfg_output_get "$step_ref_name" "$output_name")
+            local output_encoded
+            output_encoded=$(printf '%s' "$output_value" | base64)
+            echo "output:"
+            echo "  name: ${output_name}"
+            echo "  valueEncoded: ${output_encoded}"
+        fi
+        # Write artifacts as YAML list
+        if [ ${#unique_artifacts[@]} -gt 0 ]; then
+            echo "artifacts:"
+            for artifact in "${unique_artifacts[@]}"; do
+                echo "  - ${artifact}"
+            done
+        fi
+    } > "$cache_path.tmp/metadata.yaml"
     
-    # Store artifact paths list (for restore)
-    printf '%s\n' "${unique_artifacts[@]}" > "$cache_path/artifact_paths.txt"
+    # Atomically rename temp directory to final cache path
+    mv "$cache_path.tmp" "$cache_path"
 }
 
 # Restore artifacts and outputs from cache
 # Args: cache_path, step_ref_name, output_name (optional), decl_artifacts_array_name
 # decl_artifacts_array_name is the name of the declarative artifacts array to register after restore
+# Reads artifacts from metadata.yaml with artifact_paths.txt fallback for legacy entries
 __kfg_cache_restore() {
     local cache_path="$1"
     local step_ref_name="$2"
@@ -126,34 +139,45 @@ __kfg_cache_restore() {
     local -a decl_artifacts=()
     eval "decl_artifacts=(\"\${${decl_artifacts_array_name}[@]}\")"
     
-    # Restore artifacts to their original relative paths
-    if [ -f "$cache_path/artifact_paths.txt" ]; then
-        # Read stored artifact paths
-        local -a stored_artifacts=()
+    # Read stored artifact paths from metadata.yaml or fallback to artifact_paths.txt
+    local -a stored_artifacts=()
+    
+    # Try reading from metadata.yaml first (new format)
+    if [ -f "$cache_path/metadata.yaml" ] && grep -q "^artifacts:" "$cache_path/metadata.yaml"; then
+        # Parse YAML artifacts list
+        while IFS= read -r line; do
+            # Extract artifact path from YAML list item "  - path"
+            if [[ "$line" =~ ^\s+-\s+(.+)$ ]]; then
+                local artifact_path="${BASH_REMATCH[1]}"
+                [ -n "$artifact_path" ] && stored_artifacts+=("$artifact_path")
+            fi
+        done < "$cache_path/metadata.yaml"
+    elif [ -f "$cache_path/artifact_paths.txt" ]; then
+        # Fallback: read from legacy artifact_paths.txt
         while IFS= read -r artifact_path; do
             [ -n "$artifact_path" ] && stored_artifacts+=("$artifact_path")
         done < "$cache_path/artifact_paths.txt"
-        
-        # Restore each artifact to its original relative path
-        local artifact_path
-        for artifact_path in "${stored_artifacts[@]}"; do
-            if [ -e "$cache_path/artifacts/$artifact_path" ]; then
-                # Recreate parent directories if needed
-                local artifact_dir
-                artifact_dir=$(dirname "$artifact_path")
-                if [ "$artifact_dir" != "." ] && [ -n "$artifact_dir" ]; then
-                    mkdir -p "$artifact_dir"
-                fi
-                
-                # Copy artifact to its original relative path
-                __kfg_log_debug "cache" "Restoring artifact: $artifact_path"
-                cp -r "$cache_path/artifacts/$artifact_path" "$artifact_path" 2>/dev/null || true
-                
-                # Register artifact in KFG_ARTIFACTS
-                __kfg_add_artifact "$artifact_path"
-            fi
-        done
     fi
+    
+    # Restore each artifact to its original relative path
+    local artifact_path
+    for artifact_path in "${stored_artifacts[@]}"; do
+        if [ -e "$cache_path/artifacts/$artifact_path" ]; then
+            # Recreate parent directories if needed
+            local artifact_dir
+            artifact_dir=$(dirname "$artifact_path")
+            if [ "$artifact_dir" != "." ] && [ -n "$artifact_dir" ]; then
+                mkdir -p "$artifact_dir"
+            fi
+            
+            # Copy artifact to its original relative path
+            __kfg_log_debug "cache" "Restoring artifact: $artifact_path"
+            cp -r "$cache_path/artifacts/$artifact_path" "$artifact_path" 2>/dev/null || true
+            
+            # Register artifact in KFG_ARTIFACTS
+            __kfg_add_artifact "$artifact_path"
+        fi
+    done
     
     # Register declarative artifacts that weren't stored in cache
     # These are artifacts that were declared but not actually produced
@@ -250,54 +274,155 @@ __kfg_when_not() {
 
 # Logging helpers - delegate to kfg sys log subcommand
 # These helpers produce identical output to the Go logger.
+# Usage: __kfg_log_<level> [component] <message>
+#   - If 1 argument: treat as message, use component="step"
+#   - If 2+ arguments: first is component, rest is message
 # Usage errors are written directly to stderr to avoid recursion.
 
 __kfg_log_error() {
-    local component="${1:-}"
-    local message="${2:-}"
-    if [ -z "$component" ]; then
-        echo "Usage: __kfg_log_error <component> [message]" >&2
+    local component message
+    if [ $# -eq 1 ]; then
+        component="step"
+        message="$1"
+    elif [ $# -ge 2 ]; then
+        component="$1"
+        message="$2"
+    else
+        echo "Usage: __kfg_log_error [component] <message>" >&2
         return 1
     fi
     kfg sys log error "$component" "$message"
 }
 
 __kfg_log_warn() {
-    local component="${1:-}"
-    local message="${2:-}"
-    if [ -z "$component" ]; then
-        echo "Usage: __kfg_log_warn <component> [message]" >&2
+    local component message
+    if [ $# -eq 1 ]; then
+        component="step"
+        message="$1"
+    elif [ $# -ge 2 ]; then
+        component="$1"
+        message="$2"
+    else
+        echo "Usage: __kfg_log_warn [component] <message>" >&2
         return 1
     fi
     kfg sys log warn "$component" "$message"
 }
 
 __kfg_log_info() {
-    local component="${1:-}"
-    local message="${2:-}"
-    if [ -z "$component" ]; then
-        echo "Usage: __kfg_log_info <component> [message]" >&2
+    local component message
+    if [ $# -eq 1 ]; then
+        component="step"
+        message="$1"
+    elif [ $# -ge 2 ]; then
+        component="$1"
+        message="$2"
+    else
+        echo "Usage: __kfg_log_info [component] <message>" >&2
         return 1
     fi
     kfg sys log info "$component" "$message"
 }
 
 __kfg_log_detail() {
-    local component="${1:-}"
-    local message="${2:-}"
-    if [ -z "$component" ]; then
-        echo "Usage: __kfg_log_detail <component> [message]" >&2
+    local component message
+    if [ $# -eq 1 ]; then
+        component="step"
+        message="$1"
+    elif [ $# -ge 2 ]; then
+        component="$1"
+        message="$2"
+    else
+        echo "Usage: __kfg_log_detail [component] <message>" >&2
         return 1
     fi
     kfg sys log detail "$component" "$message"
 }
 
 __kfg_log_debug() {
-    local component="${1:-}"
-    local message="${2:-}"
-    if [ -z "$component" ]; then
-        echo "Usage: __kfg_log_debug <component> [message]" >&2
+    local component message
+    if [ $# -eq 1 ]; then
+        component="step"
+        message="$1"
+    elif [ $# -ge 2 ]; then
+        component="$1"
+        message="$2"
+    else
+        echo "Usage: __kfg_log_debug [component] <message>" >&2
         return 1
     fi
     kfg sys log debug "$component" "$message"
+}
+
+# Filesystem helpers - delegate to kfg sys fs subcommands
+# These helpers provide portable filesystem inspection for Steps.
+
+# Internal kfg execution helper - executes kfg subprocesses with quiet logging
+# This helper forces KFG_VERBOSE=0 for the child process without mutating parent environment
+# Usage: __kfg_internal <kfg-args...>
+# Example:
+#   output=$(__kfg_internal sys fs snapshot "$dir")
+#   __kfg_internal apply -k "$overlay"
+__kfg_internal() {
+    KFG_VERBOSE=0 kfg "$@"
+}
+
+# Snapshot filesystem paths under a directory
+# Args: path [maxdepth]
+# Returns: normalized relative paths (one per line) to stdout
+# Usage: __kfg_fs_snapshot <path> [<maxdepth>]
+#   - path: directory to snapshot
+#   - maxdepth: optional depth limit (0 = unlimited, default 0)
+# Example:
+#   paths=$(__kfg_fs_snapshot "$OUTPUT_DIR" 1)
+__kfg_fs_snapshot() {
+    local path="$1"
+    local maxdepth="${2:-0}"  # Default to unlimited depth
+    
+    __kfg_internal sys fs snapshot "$path" --maxdepth "$maxdepth"
+}
+
+# Diff two filesystem snapshots
+# Args: before_snapshot_file after_snapshot_file
+# Returns: paths newly present in after (one per line) to stdout
+# Usage: __kfg_fs_diff <before_file> <after_file>
+# Example:
+#   new_paths=$(__kfg_fs_diff before.txt after.txt)
+__kfg_fs_diff() {
+    local before_file="$1"
+    local after_file="$2"
+    
+    __kfg_internal sys fs diff --before "$before_file" --after "$after_file"
+}
+# Register artifacts from snapshot diff under a root directory
+# Args: root before_snapshot_file after_snapshot_file
+# Returns: registers each diff path prefixed with root via __kfg_add_artifact
+# Usage: __kfg_add_diff_artifacts <root> <before_file> <after_file>
+#   - root: the snapshot root directory to prefix onto relative diff paths
+#   - before_file: snapshot file from before state
+#   - after_file: snapshot file from after state
+# Example:
+#   __kfg_add_diff_artifacts "$OUTPUT_DIR" before.txt after.txt
+__kfg_add_diff_artifacts() {
+    local root="$1"
+    local before_file="$2"
+    local after_file="$3"
+    
+    # Get diff paths (relative to snapshot root)
+    local diff_paths
+    diff_paths=$(__kfg_fs_diff "$before_file" "$after_file")
+    
+    # Process each diff path
+    local rel_path
+    while IFS= read -r rel_path; do
+        [ -z "$rel_path" ] && continue
+        
+        # Construct full path by prefixing root
+        local full_path="${root}/${rel_path}"
+        
+        # Verify existence before registering
+        if [ -e "$full_path" ]; then
+            __kfg_add_artifact "$full_path"
+        fi
+    done <<< "$diff_paths"
 }

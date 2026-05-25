@@ -90,7 +90,7 @@ Use `kfg apply -k` instead.
 |----------|---------|-------------|
 | `KFG_MANIFEST_PATH` | `~/.config/kfg/manifests:.kfg/manifests` | Colon-separated manifest paths (rightmost wins) |
 | `KFG_KPATH` | (empty) | Default kustomization source path or GitHub URL |
-| `KFG_REFRESH` | (empty) | Set to "1" to force refresh of cached Steps (bypasses cache) |
+| `KFG_REFRESH` | (empty) | Set to "1" to invalidate and rebuild cache entries for cacheable Steps |
 | `KFG_VERBOSE` | `0` | `0`=quiet, `1`=error/warn/info, `2`=+detail, `3`=+debug |
 | `KFG_STORE_DIR` | `~/.config/kfg/store` | Store directory for cache entries |
 | `KFG_LOG_FILE` | `$XDG_STATE_HOME/kfg/logs/kfg.jsonl` | Override JSONL log file path |

@@ -1,9 +1,7 @@
 package generate
 
 import (
-	"crypto/sha256"
 	"encoding/base64"
-	"encoding/hex"
 	"regexp"
 	"sort"
 	"strings"
@@ -424,9 +422,7 @@ func (g *Generator) convertWorkflowCmdToTemplateData(rw *resolve.ResolvedCmdWork
 				IgnoreFailure: step.FailurePolicy == "Ignore",
 				WhenCondition: whenCondition,
 				Env:           formatEnvWithKfgOutput(resolver.ResolveMap(step.Env), stepOutputLookup), // Resolve env placeholders
-							CacheEnabled: step.Cache != nil && (step.Cache.Enabled == nil || *step.Cache.Enabled),
-				CacheKey:     getCacheKey(step.Cache),
-				ScriptHash:   computeScriptHash(step.Step.Spec.Run),
+				CacheEnabled: isCacheEnabled(step.Cache),
 				HasOutput:    step.Step.Spec.Output != nil,
 				OutputName:   getOutputName(step.Step.Spec.Output),
 				// Declarative artifacts
@@ -451,9 +447,7 @@ func (g *Generator) convertWorkflowCmdToTemplateData(rw *resolve.ResolvedCmdWork
 				IgnoreFailure: step.FailurePolicy == "Ignore",
 				WhenCondition: whenCondition,
 				Env:           formatEnvWithKfgOutput(resolver.ResolveMap(step.Env), stepOutputLookup), // Resolve env placeholders
-							CacheEnabled: step.Cache != nil && (step.Cache.Enabled == nil || *step.Cache.Enabled),
-				CacheKey:     getCacheKey(step.Cache),
-				ScriptHash:   computeScriptHash(step.Step.Spec.Run),
+				CacheEnabled: isCacheEnabled(step.Cache),
 				HasOutput:    step.Step.Spec.Output != nil,
 				OutputName:   getOutputName(step.Step.Spec.Output),
 				// Declarative artifacts
@@ -478,9 +472,7 @@ func (g *Generator) convertWorkflowCmdToTemplateData(rw *resolve.ResolvedCmdWork
 				IgnoreFailure: step.FailurePolicy == "Ignore",
 				WhenCondition: whenCondition,
 				Env:           formatEnvWithKfgOutput(resolver.ResolveMap(step.Env), stepOutputLookup), // Resolve env placeholders
-							CacheEnabled: step.Cache != nil && (step.Cache.Enabled == nil || *step.Cache.Enabled),
-				CacheKey:     getCacheKey(step.Cache),
-				ScriptHash:   computeScriptHash(step.Step.Spec.Run),
+				CacheEnabled: isCacheEnabled(step.Cache),
 				HasOutput:    step.Step.Spec.Output != nil,
 				OutputName:   getOutputName(step.Step.Spec.Output),
 				// Declarative artifacts
@@ -505,9 +497,7 @@ func (g *Generator) convertWorkflowCmdToTemplateData(rw *resolve.ResolvedCmdWork
 				IgnoreFailure: step.FailurePolicy == "Ignore",
 				WhenCondition: whenCondition,
 				Env:           formatEnvWithKfgOutput(resolver.ResolveMap(step.Env), stepOutputLookup), // Resolve env placeholders
-							CacheEnabled: step.Cache != nil && (step.Cache.Enabled == nil || *step.Cache.Enabled),
-				CacheKey:     getCacheKey(step.Cache),
-				ScriptHash:   computeScriptHash(step.Step.Spec.Run),
+				CacheEnabled: isCacheEnabled(step.Cache),
 				HasOutput:    step.Step.Spec.Output != nil,
 				OutputName:   getOutputName(step.Step.Spec.Output),
 				// Declarative artifacts
@@ -638,7 +628,7 @@ func (g *Generator) generateStepCall(code *strings.Builder, step templates.Workf
 				uniqueDecl = append(uniqueDecl, art)
 			}
 		}
-		declArtifacts = strings.Join(uniqueDecl, " ")
+		declArtifacts = strings.Join(uniqueDecl, "\n")
 	}
 
 	// Generate the step call with declarative artifacts as second argument
@@ -693,7 +683,7 @@ func (g *Generator) generateAfterStepCall(code *strings.Builder, step templates.
 				uniqueDecl = append(uniqueDecl, art)
 			}
 		}
-		declArtifacts = strings.Join(uniqueDecl, " ")
+		declArtifacts = strings.Join(uniqueDecl, "\n")
 	}
 
 	// Generate the step call with declarative artifacts as second argument
@@ -798,17 +788,9 @@ func (g *Generator) convertStepToTemplateData(step *manifest.Step) templates.Ste
 		IgnoreFailure: false,
 
 		// Cache configuration from Step default
-		CacheEnabled: step.Spec.Cache != nil && (step.Spec.Cache.Enabled == nil || *step.Spec.Cache.Enabled),
-		CacheKey:     "",
-		ScriptHash:   computeScriptHash(step.Spec.Run),
+		CacheEnabled: isCacheEnabled(step.Spec.Cache),
 		Env:           formatEnvDefaults(resolver.ResolveMap(step.Spec.Env)), // Resolve env placeholders
 	}
-	// Set cache key from Step spec if present
-	if step.Spec.Cache != nil {
-		data.CacheKey = step.Spec.Cache.Key
-	}
-
-
 
 	if step.Spec.Output != nil {
 		data.OutputName = step.Spec.Output.Name
@@ -875,24 +857,6 @@ func (g *Generator) generateOutputCondition(output *manifest.OutputCondition) st
 	}
 	if output.Matches != "" {
 		return "__kfg_when_matches \"" + step + "\" \"" + name + "\" \"" + output.Matches + "\""
-	}
-	return ""
-}
-
-// computeScriptHash computes a SHA256 hash of the script content for cache identity.
-func computeScriptHash(script string) string {
-	script = strings.TrimSpace(script)
-	if script == "" {
-		return ""
-	}
-	hash := sha256.Sum256([]byte(script))
-	return hex.EncodeToString(hash[:])[:16] // Use first 16 characters for brevity
-}
-
-// getCacheKey returns the cache key from a CacheConfig, or empty string if nil.
-func getCacheKey(cache *manifest.CacheConfig) string {
-	if cache != nil {
-		return cache.Key
 	}
 	return ""
 }

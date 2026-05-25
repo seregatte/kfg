@@ -156,7 +156,7 @@ GitHub URLs are supported and will be cloned automatically:
 
 Environment variables:
   KFG_KPATH      Default kustomization path if -k or -f not specified
-  KFG_REFRESH    Set to "1" to force refresh of cached Steps (bypasses cache)
+  KFG_REFRESH    Set to "1" to invalidate and rebuild cache entries for cacheable Steps
   KFG_STORE_DIR  Custom store directory for cache entries (defaults to ~/.kfg/store)
 
 Examples:
@@ -169,7 +169,7 @@ Examples:
   kfg apply -k .nixai/overlay/dev --cmds claude
   kfg apply -f manifest.yaml
   kfg apply -f - (read from stdin)
-  kfg apply -k .nixai/overlay/dev --refresh  (bypass cache)
+  kfg apply -k .nixai/overlay/dev --refresh  (invalidate and rebuild cache entries)
   KFG_KPATH=./manifests kfg apply
   KFG_KPATH=https://github.com/owner/repo//manifests kfg apply
 
@@ -379,7 +379,7 @@ func init() {
 	applyCmd.Flags().StringVarP(&applyCmds, "cmds", "c", "", "Comma-separated list of cmds to generate")
 	applyCmd.Flags().StringVar(&applyConvert, "convert", "", "Asset name for conversion mode")
 
-	applyCmd.Flags().BoolVarP(&applyRefresh, "refresh", "r", false, "Force refresh of cached steps (adds KFG_REFRESH=1 to generated shell code)")
+	applyCmd.Flags().BoolVarP(&applyRefresh, "refresh", "r", false, "Invalidate and rebuild cache entries for cacheable Steps")
 	applyCmd.Flags().StringVar(&applyUse, "use", "", "Converter name for conversion mode")
 	applyCmd.Flags().StringVar(&applyWith, "with", "", "Inline yq expression for conversion mode (bypasses Converter lookup)")
 }

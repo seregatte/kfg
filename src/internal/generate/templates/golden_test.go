@@ -108,18 +108,23 @@ func TestGoldenStepWithOutput(t *testing.T) {
 	output, err := tm.ExecuteStep(data)
 	assert.NoError(t, err)
 
-	// Expected output capture structure
+	// Expected output capture structure (temp file based, runs in parent shell)
 	expectedContent := []string{
 		"__kfg_run_step_output-step()",
-		"# Execute and capture output",
-		"local __output",
-		"__output=\"$( cat config.json )\"",
+		"# Execute and capture output via temporary file (runs in parent shell)",
+		"local __output_file",
+		"__output_file=$(mktemp)",
+		"{ cat config.json; } > \"$__output_file\"",
+		"__output=$(<\"$__output_file\")",
 		"__kfg_output_set",
 	}
 
 	for _, content := range expectedContent {
 		assert.Contains(t, output, content, "step with output should contain: %s", content)
 	}
+
+	// Should NOT use command substitution (which runs in subshell)
+	assert.NotContains(t, output, "__output=\"$( ", "step with output should NOT use command substitution")
 }
 
 func TestGoldenStepWithWhen(t *testing.T) {
@@ -356,8 +361,6 @@ func TestGoldenStepWithCache(t *testing.T) {
 		StepName:    "cached-step",
 		RunScript:   "echo hello world",
 		CacheEnabled: true,
-		CacheKey:     "test-cache-key",
-		ScriptHash:   "abcd1234",
 		HasOutput:    true,
 		OutputName:   "result",
 	}
@@ -380,11 +383,7 @@ func TestGoldenStepWithCache(t *testing.T) {
 	// Verify KFG_REFRESH check is present
 	assert.Contains(t, output, "KFG_REFRESH", "step should check KFG_REFRESH environment variable")
 	
-	// Verify cache key is used
-	assert.Contains(t, output, "test-cache-key", "step should use the provided cache key")
-	
-	// Verify script hash is used
-	assert.Contains(t, output, "abcd1234", "step should use the provided script hash")
+
 }
 
 // TestGoldenStepWithCacheDisabled validates that a Step without cache
@@ -422,8 +421,6 @@ func TestGoldenCacheOutputRestoration(t *testing.T) {
 		StepName:     "ctx7-install",
 		RunScript:    "ctx7 setup --cli --project $FLAGS",
 		CacheEnabled: true,
-		CacheKey:     "ctx7-install",
-		ScriptHash:   "abc123def456",
 		HasOutput:    true,
 		OutputName:   "ctx7_context",
 	}
@@ -442,4 +439,146 @@ func TestGoldenCacheOutputRestoration(t *testing.T) {
 	helperOutput, err := tm.ExecuteHelper()
 	assert.NoError(t, err)
 	assert.Contains(t, helperOutput, "__kfg_output_set()", "helper should define __kfg_output_set for output restoration")
+}
+
+// TestGoldenStepWithOutputCleanupTrap validates that output-producing steps
+// have trap-based cleanup for temporary output capture files.
+// This test is part of task 2.1 from the fix-output-step-subshell-cache-loss change.
+func TestGoldenStepWithOutputCleanupTrap(t *testing.T) {
+	tm, err := NewTemplateManager()
+	assert.NoError(t, err)
+
+	data := StepData{
+		StepName:   "output-cleanup-step",
+		HasOutput:  true,
+		RunScript:  "echo 'test output'",
+		OutputName: "result",
+	}
+
+	output, err := tm.ExecuteStep(data)
+	assert.NoError(t, err)
+
+	// Verify trap-based cleanup is set up after creating temp file
+	assert.Contains(t, output, "__output_file=$(mktemp)", "temp file should be created with mktemp")
+	assert.Contains(t, output, "__cleanup_trap", "cleanup trap variable should be defined")
+	assert.Contains(t, output, "rm -f", "cleanup trap should include rm command")
+	assert.Contains(t, output, "trap", "trap should be set for cleanup")
+	
+	// Verify temp file cleanup happens on success path
+	assert.Contains(t, output, "rm -f \"$__output_file\"", "temp file should be cleaned up explicitly on success")
+	
+	// Verify the output capture uses group command redirection (not subshell)
+	assert.Contains(t, output, "{ echo 'test output'; } > \"$__output_file\"", 
+		"output capture should use group command redirection to parent shell")
+}
+
+// TestGoldenStepWithOutputPreservesSideEffects validates that the generated
+// output capture code runs in the parent shell (not a subshell), which
+// preserves runtime side effects like __kfg_add_artifact calls.
+// This test is part of task 2.1 from the fix-output-step-subshell-cache-loss change.
+func TestGoldenStepWithOutputPreservesSideEffects(t *testing.T) {
+	tm, err := NewTemplateManager()
+	assert.NoError(t, err)
+
+	// This test verifies the STRUCTURE of the generated code,
+	// not the runtime behavior (which is tested in Bats tests)
+	data := StepData{
+		StepName:   "artifact-output-step",
+		HasOutput:  true,
+		RunScript:  "echo 'result' && __kfg_add_artifact 'output.txt'",
+		OutputName: "artifact_result",
+	}
+
+	output, err := tm.ExecuteStep(data)
+	assert.NoError(t, err)
+
+	// Verify the run script is included in a group command (runs in parent shell)
+	assert.Contains(t, output, "{ echo 'result' && __kfg_add_artifact 'output.txt'; } > \"$__output_file\"",
+		"run script should be in a group command that redirects to temp file")
+	
+	// Verify no command substitution is used for output capture
+	assert.NotContains(t, output, "__output=\"$( ", 
+		"should NOT use command substitution which runs in subshell")
+}
+
+// TestGoldenStepRefreshInvalidation validates that when KFG_REFRESH is set,
+// the generated step wrapper invalidates (removes) the existing cache entry
+// before execution and logs invalidation/rebuild semantics.
+// This test is part of task 1.3 from the fix-refresh-step-cache-invalidation change.
+func TestGoldenStepRefreshInvalidation(t *testing.T) {
+	tm, err := NewTemplateManager()
+	assert.NoError(t, err)
+
+	data := StepData{
+		StepName:     "refresh-invalidation-step",
+		RunScript:    "echo hello world",
+		CacheEnabled: true,
+	}
+
+	output, err := tm.ExecuteStep(data)
+	assert.NoError(t, err)
+
+	// Verify refresh invalidation logic is present
+	assert.Contains(t, output, "# Cache check (invalidate and rebuild when refresh is enabled)", 
+		"step should have refresh invalidation comment")
+	
+	// Verify KFG_REFRESH check is present
+	assert.Contains(t, output, "if [ -z \"${KFG_REFRESH:-}\" ]; then", 
+		"step should check KFG_REFRESH")
+	
+	// Verify invalidation log when KFG_REFRESH is set
+	assert.Contains(t, output, "__kfg_log_detail \"cache\" \"Invalidating cache for step", 
+		"step should log invalidation when refresh is enabled")
+	
+	// Verify cache entry is removed when refresh is enabled
+	assert.Contains(t, output, "rm -rf \"$__cache_path", 
+		"step should remove cache entry when refresh is enabled")
+	
+	// Verify rebuild log is present in cache store section
+	assert.Contains(t, output, "__kfg_log_detail \"cache\" \"Rebuilding cache for step", 
+		"step should log rebuild when refresh is enabled")
+	
+	// Verify the invalidation is scoped to current step (not workflow-wide)
+	// This is implicit in the __cache_path computation which is step-specific
+	assert.Contains(t, output, "__kfg_cache_identity \"$__step_ref_name", 
+		"cache identity should be step-specific")
+}
+
+// TestGoldenDiffArtifactsHelper validates that the runtime helper
+// for registering artifacts from snapshot diffs is present.
+// This test is part of task 2.3 from the fix-refresh-step-cache-invalidation change.
+func TestGoldenDiffArtifactsHelper(t *testing.T) {
+	tm, err := NewTemplateManager()
+	assert.NoError(t, err)
+
+	output, err := tm.ExecuteHelper()
+	assert.NoError(t, err)
+
+	// Verify __kfg_add_diff_artifacts helper is defined
+	assert.Contains(t, output, "__kfg_add_diff_artifacts()", 
+		"helper should define __kfg_add_diff_artifacts function")
+	
+	// Verify helper accepts root, before_snapshot, after_snapshot parameters
+	assert.Contains(t, output, "local root=\"$1\"", 
+		"helper should accept root as first parameter")
+	assert.Contains(t, output, "local before_file=\"$2\"", 
+		"helper should accept before_snapshot as second parameter")
+	assert.Contains(t, output, "local after_file=\"$3\"", 
+		"helper should accept after_snapshot as third parameter")
+	
+	// Verify helper calls __kfg_fs_diff
+	assert.Contains(t, output, "__kfg_fs_diff", 
+		"helper should call __kfg_fs_diff")
+	
+	// Verify helper prefixes paths with root
+	assert.Contains(t, output, "full_path=\"${root}/${rel_path}\"", 
+		"helper should prefix relative paths with root")
+	
+	// Verify helper verifies existence before registration
+	assert.Contains(t, output, "if [ -e \"$full_path\" ]; then", 
+		"helper should verify existence before calling __kfg_add_artifact")
+	
+	// Verify helper calls __kfg_add_artifact
+	assert.Contains(t, output, "__kfg_add_artifact \"$full_path\"", 
+		"helper should call __kfg_add_artifact for existing paths")
 }

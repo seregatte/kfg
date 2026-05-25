@@ -4,15 +4,15 @@ metadata:
   name: playwright.steps.install
 spec:
   run: |
-    __kfg_log_info "Installing playwright skills..."
+    __kfg_log_info "Installing Playwright skills..."
 
     # Validate required env vars
     if [ -z "$OUTPUT_DIR" ]; then
-      __kfg_log_error "missing required env var: OUTPUT_DIR"
+      __kfg_log_error "Missing required environment variable: OUTPUT_DIR"
       exit 1
     fi
 
-    __kfg_log_debug "step:playwright.install" "OUTPUT_DIR=$OUTPUT_DIR"
+    __kfg_log_debug "OUTPUT_DIR=$OUTPUT_DIR"
 
     # Ensure output directory exists
     mkdir -p "$OUTPUT_DIR"
@@ -23,14 +23,14 @@ spec:
     # Copy generated skills to output directory
     if [ -d ".claude/skills/playwright-cli" ]; then
       cp -R ".claude/skills/playwright-cli" "$OUTPUT_DIR/" 2>/dev/null || true
-      __kfg_log_info "step:playwright.install" "Copied playwright-cli skills to $OUTPUT_DIR"
+      __kfg_log_info "Copied Playwright CLI skills to $OUTPUT_DIR"
     fi
 
     # Cleanup temporary .claude directory if it was created by this install
     # (only cleanup the playwright-cli subdirectory to avoid affecting other skills)
     rm -rf ".claude" 2>/dev/null || true
 
-    __kfg_log_info "step:playwright.install" "installed"
+    __kfg_log_info "Installed Playwright skills"
 
   env:
     OUTPUT_DIR: ".claude/skills/"
@@ -39,4 +39,3 @@ spec:
     type: string
   cache:
     enabled: true
-    key: playwright-cli

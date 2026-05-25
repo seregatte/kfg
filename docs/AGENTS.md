@@ -67,52 +67,48 @@ Key test roots:
 ## Canonical Specs
 
 For detailed design and authoritative behavior, refer to
-the OpenSpec roots corresponding to the layer you are
-changing, not just `docs/context/kfg/openspec/specs/`.
+the OpenSpec specs for the layer you are changing:
 
-### OpenSpec Roots & Syncing
+- `../context/openspec/specs/kfg/` - engine/core kfg specs
+- `../context/openspec/specs/framework/` - framework package specs
+- `../context/openspec/specs/domain-ai-agents/` - AI agents domain specs
 
-When working on changes or proposals, always sync specs
-across all relevant OpenSpec roots:
+All specs are consolidated in a single OpenSpec root: `../context/openspec/`
 
-- `docs/context/kfg/openspec/` - engine/core kfg specs and
-  changes
-- `docs/context/framework/openspec/` - framework package
-  specs and changes
-- `docs/context/domains/ai-agents/openspec/` - AI agents
-  domain specs and changes
+### OpenSpec Root Structure
 
-**Sync behavior:**
+The single consolidated root at `../context/openspec/` organizes specs by layer:
 
-- Read `specs/` and `changes/` from every affected root
-- Keep sibling changes with the same slug aligned across
-  engine, framework, and domain roots when a change spans
-  multiple layers
-- Treat `docs/context/kfg/openspec/specs/` as canonical for
-  engine behavior
-- Treat `docs/context/framework/openspec/specs/` as canonical
-  for shared manifest/framework capabilities
-- Treat `docs/context/domains/ai-agents/openspec/specs/` as
-  canonical for AI agents domain capabilities
-- Check `config.yaml` and `changes/` even when `specs/` is
-  still empty, as they define scope and context
+- `specs/kfg/` - engine layer specifications and implementation details
+- `specs/framework/` - framework package specifications
+- `specs/domain-ai-agents/` - AI agents domain specifications
+- `changes/kfg-*` - engine layer changes (prefixed with `kfg-`)
+- `changes/framework-*` - framework layer changes (prefixed with `framework-`)
+- `changes/domain-ai-agents-*` - domain layer changes (prefixed with `domain-ai-agents-`)
+
+**When working on changes or proposals, refer to the appropriate layer specs:**
+
+- Engine changes: Update specs in `../context/openspec/specs/kfg/`
+- Framework changes: Update specs in `../context/openspec/specs/framework/`
+- Domain changes: Update specs in `../context/openspec/specs/domain-ai-agents/`
+- Cross-layer changes: Create sibling changes with matching slugs across relevant layers (e.g., `kfg-improve-cache` and `framework-improve-cache`)
 
 ### Especially Relevant Engine Specs
 
-- `project-structure/spec.md`
-- `manifest-model/spec.md`
-- `manifest-placeholder/spec.md`
-- `cli-conventions/spec.md`
-- `bats-test-layout/spec.md`
-- `run-command/spec.md`
-- `store-imagefile/spec.md`
-- `store-workspace/spec.md`
-- `session-system/spec.md`
+- `../context/openspec/specs/kfg/project-structure/spec.md`
+- `../context/openspec/specs/kfg/manifest-model/spec.md`
+- `../context/openspec/specs/kfg/manifest-placeholder/spec.md`
+- `../context/openspec/specs/kfg/cli-conventions/spec.md`
+- `../context/openspec/specs/kfg/bats-test-layout/spec.md`
+- `../context/openspec/specs/kfg/run-command/spec.md`
+- `../context/openspec/specs/kfg/store-imagefile/spec.md`
+- `../context/openspec/specs/kfg/store-workspace/spec.md`
+- `../context/openspec/specs/kfg/session-system/spec.md`
 
-### Package/Domain Spec Roots
+### Framework & Domain Spec Roots
 
-- `docs/context/framework/openspec/specs/`
-- `docs/context/domains/ai-agents/openspec/specs/`
+- `../context/openspec/specs/framework/`
+- `../context/openspec/specs/domain-ai-agents/`
 
 ## Language Policy
 
@@ -121,9 +117,7 @@ All repository-facing written content MUST be in en-US.
 This applies to:
 
 - All files under `docs/`, including `docs/context/`
-- All OpenSpec content in `docs/context/kfg/openspec/`,
-  `docs/context/framework/openspec/`, and
-  `docs/context/domains/ai-agents/openspec/`
+- All OpenSpec content in `../context/openspec/`
 - Code comments in all source files
 - User-facing strings in source files
 - Examples, guides, and agent instructions

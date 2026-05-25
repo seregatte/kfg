@@ -46,7 +46,7 @@ GitHub URLs are supported and will be cloned automatically:
 
 Environment variables:
   KFG_KPATH      Default kustomization path if -k or -f not specified
-  KFG_REFRESH    Set to "1" to force refresh of cached Steps (bypasses cache)
+  KFG_REFRESH    Set to "1" to invalidate and rebuild cache entries for cacheable Steps
   KFG_STORE_DIR  Custom store directory for cache entries (defaults to ~/.kfg/store)
 
 Arguments after '--' are passed directly to the command.
@@ -58,7 +58,7 @@ Examples:
   kfg run -k packages/domains/ai-agents/overlays/dev -w openspec my-cmd
   kfg run -f manifest.yaml my-cmd
   kfg run -k packages/domains/ai-agents/overlays/dev (lists available commands)
-  kfg run -k packages/domains/ai-agents/overlays/dev my-cmd --refresh  (bypass cache)
+  kfg run -k packages/domains/ai-agents/overlays/dev my-cmd --refresh  (invalidate and rebuild cache entries)
   KFG_KPATH=./packages/framework kfg run my-cmd
   KFG_KPATH=https://github.com/owner/repo//packages/framework kfg run my-cmd`,
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -136,7 +136,7 @@ func init() {
 	runCmd.Flags().StringVarP(&runFile, "file", "f", "", "Manifest file path (use '-' for stdin)")
 	runCmd.Flags().StringVarP(&runWorkflow, "workflow", "w", "", "CmdWorkflow name (auto-detected if not specified)")
 	runCmd.Flags().StringVarP(&runCmds, "cmds", "c", "", "Comma-separated list of cmds to run")
-	runCmd.Flags().BoolVarP(&runRefresh, "refresh", "r", false, "Force refresh of cached steps (sets KFG_REFRESH=1)")
+	runCmd.Flags().BoolVarP(&runRefresh, "refresh", "r", false, "Invalidate and rebuild cache entries for cacheable Steps")
 }
 
 // parseLaunchArgs splits args using Cobra's dash boundary into command name and extra args.

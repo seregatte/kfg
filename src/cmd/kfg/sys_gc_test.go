@@ -353,52 +353,6 @@ func TestCalculateDirSize(t *testing.T) {
 	}
 }
 
-func TestListArtifacts(t *testing.T) {
-	// Create a temporary artifacts directory
-	tmpDir := t.TempDir()
-	artifactsDir := filepath.Join(tmpDir, "artifacts")
-	err := os.MkdirAll(artifactsDir, 0755)
-	if err != nil {
-		t.Fatalf("Failed to create artifacts directory: %v", err)
-	}
-
-	// Create test artifacts
-	err = os.WriteFile(filepath.Join(artifactsDir, "artifact1.txt"), []byte("content1"), 0644)
-	if err != nil {
-		t.Fatalf("Failed to create artifact1.txt: %v", err)
-	}
-
-	err = os.WriteFile(filepath.Join(artifactsDir, "artifact2.txt"), []byte("content2"), 0644)
-	if err != nil {
-		t.Fatalf("Failed to create artifact2.txt: %v", err)
-	}
-
-	// List artifacts
-	artifacts, err := listArtifacts(artifactsDir)
-	if err != nil {
-		t.Errorf("listArtifacts() error: %v", err)
-	}
-
-	if len(artifacts) != 2 {
-		t.Errorf("listArtifacts() returned %d artifacts, want 2", len(artifacts))
-	}
-
-	// Check that artifacts contain expected names
-	expected := []string{"artifact1.txt", "artifact2.txt"}
-	for _, exp := range expected {
-		found := false
-		for _, artifact := range artifacts {
-			if artifact == exp {
-				found = true
-				break
-			}
-		}
-		if !found {
-			t.Errorf("listArtifacts() missing artifact %s", exp)
-		}
-	}
-}
-
 // Integration tests for sys gc commands
 
 func TestGcLsCommand(t *testing.T) {

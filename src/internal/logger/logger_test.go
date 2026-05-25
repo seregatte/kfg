@@ -280,6 +280,143 @@ func TestContextEnrichment(t *testing.T) {
 	assert.Equal(t, "test-kustomization", event["kustomization_name"])
 }
 
+func TestStepNameEnrichment(t *testing.T) {
+	t.Run("step_name is enriched when KFG_STEP_NAME is set", func(t *testing.T) {
+		resetLogger()
+
+		// Set step name
+		os.Setenv("KFG_STEP_NAME", "test-step")
+		defer os.Unsetenv("KFG_STEP_NAME")
+
+		// Create temp log file
+		tmpDir := t.TempDir()
+		logFile := filepath.Join(tmpDir, "test.log")
+		os.Setenv("KFG_LOG_FILE", logFile)
+		defer os.Unsetenv("KFG_LOG_FILE")
+
+		err := Initialize()
+		require.NoError(t, err)
+
+		// Log a message
+		Info("test:component", "test message")
+
+		Sync()
+		Close()
+
+		// Read and parse JSONL
+		content, err := os.ReadFile(logFile)
+		require.NoError(t, err)
+
+		var event map[string]interface{}
+		err = json.Unmarshal([]byte(strings.TrimSpace(string(content))), &event)
+		require.NoError(t, err)
+
+		// Check step_name field
+		assert.Equal(t, "test-step", event["step_name"])
+	})
+
+	t.Run("step_name is absent when KFG_STEP_NAME is not set", func(t *testing.T) {
+		resetLogger()
+
+		// Ensure step name is not set
+		os.Unsetenv("KFG_STEP_NAME")
+
+		// Create temp log file
+		tmpDir := t.TempDir()
+		logFile := filepath.Join(tmpDir, "test.log")
+		os.Setenv("KFG_LOG_FILE", logFile)
+		defer os.Unsetenv("KFG_LOG_FILE")
+
+		err := Initialize()
+		require.NoError(t, err)
+
+		// Log a message
+		Info("test:component", "test message")
+
+		Sync()
+		Close()
+
+		// Read and parse JSONL
+		content, err := os.ReadFile(logFile)
+		require.NoError(t, err)
+
+		var event map[string]interface{}
+		err = json.Unmarshal([]byte(strings.TrimSpace(string(content))), &event)
+		require.NoError(t, err)
+
+		// Check step_name field is absent
+		assert.NotContains(t, event, "step_name", "step_name should not be present when KFG_STEP_NAME is not set")
+	})
+}
+
+func TestLegacyStepComponentNormalization(t *testing.T) {
+	t.Run("legacy step:<name> component is normalized", func(t *testing.T) {
+		resetLogger()
+
+		// Create temp log file
+		tmpDir := t.TempDir()
+		logFile := filepath.Join(tmpDir, "test.log")
+		os.Setenv("KFG_LOG_FILE", logFile)
+		defer os.Unsetenv("KFG_LOG_FILE")
+
+		err := Initialize()
+		require.NoError(t, err)
+
+		// Log with legacy step:<name> component
+		LogWithSource("info", "shell", "step:install-deps", "installing dependencies", nil)
+
+		Sync()
+		Close()
+
+		// Read and parse JSONL
+		content, err := os.ReadFile(logFile)
+		require.NoError(t, err)
+
+		var event map[string]interface{}
+		err = json.Unmarshal([]byte(strings.TrimSpace(string(content))), &event)
+		require.NoError(t, err)
+
+		// Check that component is normalized to "step"
+		assert.Equal(t, "step", event["component"], "legacy step:<name> should be normalized to component='step'")
+
+		// Check that step_name is extracted from the legacy component
+		assert.Equal(t, "install-deps", event["step_name"], "step name should be extracted from legacy component")
+	})
+
+	t.Run("normal component is unchanged", func(t *testing.T) {
+		resetLogger()
+
+		// Create temp log file
+		tmpDir := t.TempDir()
+		logFile := filepath.Join(tmpDir, "test.log")
+		os.Setenv("KFG_LOG_FILE", logFile)
+		defer os.Unsetenv("KFG_LOG_FILE")
+
+		err := Initialize()
+		require.NoError(t, err)
+
+		// Log with normal component (no step: prefix)
+		LogWithSource("info", "shell", "feature:mcps", "mcps feature message", nil)
+
+		Sync()
+		Close()
+
+		// Read and parse JSONL
+		content, err := os.ReadFile(logFile)
+		require.NoError(t, err)
+
+		var event map[string]interface{}
+		err = json.Unmarshal([]byte(strings.TrimSpace(string(content))), &event)
+		require.NoError(t, err)
+
+		// Check that component is unchanged
+		assert.Equal(t, "feature:mcps", event["component"], "normal component should remain unchanged")
+
+		// Check that step_name is not present for non-Step logs
+		assert.NotContains(t, event, "step_name", "step_name should not be present for non-Step logs")
+	})
+}
+
 func TestSessionIDEnrichment(t *testing.T) {
 	t.Run("session ID is enriched when set", func(t *testing.T) {
 		resetLogger()

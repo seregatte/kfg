@@ -23,6 +23,12 @@ spec:
 
     set -euo pipefail
 
+    # Ensure __kfg_internal helper is available
+    # (defined in bash_helper.tmpl for runtime context, fallback for standalone execution)
+    if ! type __kfg_internal &>/dev/null; then
+      __kfg_internal() { kfg "$@"; }
+    fi
+
     local mode="${MODE:-}"
     local assets_str="${ASSETS:-}"
     local converter="${CONVERTER:-}"
@@ -91,7 +97,7 @@ spec:
         mkdir -p "$(dirname "$output")"
         
         # Convert asset -> output
-        kfg apply --convert "$asset" --use "$converter" -o "$output" -f "$KFG_BUILD_RESULT_FILE"
+        __kfg_internal apply --convert "$asset" --use "$converter" -o "$output" -f "$KFG_BUILD_RESULT_FILE"
         
         # Register artifact
         __kfg_add_artifact "$output"
@@ -110,7 +116,7 @@ spec:
       local multi_doc=""
       for asset in "${assets[@]}"; do
         local converted
-        converted=$(kfg apply -f "$KFG_BUILD_RESULT_FILE" --convert "$asset" --use "$converter")
+        converted=$(__kfg_internal apply -f "$KFG_BUILD_RESULT_FILE" --convert "$asset" --use "$converter")
         if [ -n "$multi_doc" ]; then
           multi_doc="${multi_doc}"$'\n---\n'"${converted}"
         else
@@ -120,12 +126,12 @@ spec:
       
       # Phase 2: Merge all documents into single object
       local merged
-      merged=$(printf '%s\n' "$multi_doc" | kfg apply -f - --with '. as $item ireduce ({}; . * $item)')
+      merged=$(printf '%s\n' "$multi_doc" | __kfg_internal apply -f - --with '. as $item ireduce ({}; . * $item)')
       
       # Phase 3: Wrap in key if specified
       local result
       if [ -n "$wrap_key" ]; then
-        result=$(printf '%s\n' "$merged" | kfg apply -f - --with "{\"${wrap_key}\": .}")
+        result=$(printf '%s\n' "$merged" | __kfg_internal apply -f - --with "{\"${wrap_key}\": .}")
       else
         result="$merged"
       fi
@@ -135,7 +141,7 @@ spec:
         # Read-modify-write: deep merge existing with new content
         local tmp="${target}.tmp"
         printf '%s\n---\n%s\n' "$(cat "$target")" "$result" \
-          | kfg apply -f - --with '. as $item ireduce ({}; . * $item)' > "$tmp" \
+          | __kfg_internal apply -f - --with '. as $item ireduce ({}; . * $item)' > "$tmp" \
           && mv "$tmp" "$target"
         __kfg_log_info "kfg.materialize: merged $asset_count asset(s) into $target (with existing content)"
       else

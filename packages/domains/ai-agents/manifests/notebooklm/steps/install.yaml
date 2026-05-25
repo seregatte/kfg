@@ -4,15 +4,15 @@ metadata:
   name: notebooklm.steps.install
 spec:
   run: |
-    __kfg_log_info "Installing notebooklm skills..."
+    __kfg_log_info "Installing NotebookLM skills..."
 
     # Validate required env vars
     if [ -z "$OUTPUT_DIR" ]; then
-      __kfg_log_error "missing required env var: OUTPUT_DIR"
+      __kfg_log_error "Missing required environment variable: OUTPUT_DIR"
       exit 1
     fi
 
-    __kfg_log_debug "step:notebooklm.install" "OUTPUT_DIR=$OUTPUT_DIR"
+    __kfg_log_debug "OUTPUT_DIR=$OUTPUT_DIR"
 
     # Ensure output directory exists
     mkdir -p "$OUTPUT_DIR"
@@ -24,10 +24,10 @@ spec:
     if [ -d "$HOME/.claude/skills/notebooklm" ]; then
       cp -r "$HOME/.claude/skills/notebooklm"/* "$OUTPUT_DIR/" 2>/dev/null || rm -Rf "$HOME/.claude/skills/notebooklm" || true
       rm -Rf "$HOME/.agents/skills/notebooklm" || true
-      __kfg_log_info "step:notebooklm.install" "Copied skills from ~/.claude/skills/notebooklm to $OUTPUT_DIR"
+      __kfg_log_info "Copied NotebookLM skills from ~/.claude/skills/notebooklm to $OUTPUT_DIR"
     fi
 
-    __kfg_log_info "step:notebooklm.install" "installed"
+    __kfg_log_info "Installed NotebookLM skills"
 
   env:
     OUTPUT_DIR: ".claude/skills/"
@@ -36,4 +36,3 @@ spec:
     type: string
   cache:
     enabled: true
-    key: notebooklm-install

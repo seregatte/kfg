@@ -66,6 +66,7 @@ var contextFields = []string{
 	"KFG_WORKFLOW_NAME",
 	"KFG_KUSTOMIZATION_NAME",
 	"KFG_SESSION_ID",
+	"KFG_STEP_NAME",
 }
 
 // Initialize sets up the global logger with JSONL file and stderr output.
@@ -520,31 +521,97 @@ func Debug(component string, msg string) {
 	log(zerolog.DebugLevel, "debug", component, msg)
 }
 
+// normalizeStepComponent checks if component matches the legacy step:<name> pattern.
+// If it does, it returns ("step", "name", true).
+// Otherwise, it returns (component, "", false).
+func normalizeStepComponent(component string) (string, string, bool) {
+	if strings.HasPrefix(component, "step:") {
+		stepName := strings.TrimPrefix(component, "step:")
+		return "step", stepName, true
+	}
+	return component, "", false
+}
+
+// logWithExplicitFields logs with explicit control over session_id and step_name.
+// When sessionID is nil, session_id is omitted entirely.
+// When sessionID is non-nil, it's used as the session_id value.
+// When stepName is non-empty, it's explicitly set as step_name (overriding env var).
+func logWithExplicitFields(baseLogger *zerolog.Logger, level string, source string, component string, msg string, sessionID *string, stepName string) {
+	mu.Lock()
+	writer := newMultiWriter(jsonlFile, newHumanWriter())
+	mu.Unlock()
+
+	// Build a fresh context with the fields we want
+	ctx := zerolog.New(writer).With().
+		Timestamp().
+		Int("pid", os.Getpid()).
+		Str("source", source)
+
+	// Add other context fields from environment
+	for _, envVar := range []string{"KFG_WORKFLOW_NAME", "KFG_KUSTOMIZATION_NAME", "KFG_STEP_NAME"} {
+		val := os.Getenv(envVar)
+		if val != "" && stepName == "" {
+			// Only add from environment if we're not explicitly setting step_name
+			if envVar != "KFG_STEP_NAME" {
+				fieldName := strings.ToLower(strings.TrimPrefix(envVar, "KFG_"))
+				ctx = ctx.Str(fieldName, val)
+			}
+		} else if val != "" {
+			// Add from environment
+			fieldName := strings.ToLower(strings.TrimPrefix(envVar, "KFG_"))
+			ctx = ctx.Str(fieldName, val)
+		}
+	}
+
+	// Add session_id only if provided (non-nil and non-empty)
+	if sessionID != nil && *sessionID != "" {
+		ctx = ctx.Str("session_id", *sessionID)
+	}
+
+	// Add step_name explicitly if provided (overrides environment)
+	if stepName != "" {
+		ctx = ctx.Str("step_name", stepName)
+	}
+
+	newLogger := ctx.Logger()
+
+	// Log based on level
+	switch level {
+	case "error":
+		newLogger.Error().Str("component", component).Msg(msg)
+	case "warn":
+		newLogger.Warn().Str("component", component).Msg(msg)
+	case "info":
+		newLogger.Info().Str("component", component).Msg(msg)
+	case "detail":
+		newLogger.Debug().Str("component", component).Str("level", "detail").Msg(msg)
+	case "debug":
+		newLogger.Debug().Str("component", component).Msg(msg)
+	}
+}
+
 // LogWithSource logs a message with a custom source field.
 // This is used by the `kfg sys log` CLI command to set source="shell".
 // If sessionID is provided (non-nil), it overrides the KFG_SESSION_ID environment variable.
 // If sessionID is an empty string, it explicitly omits the session_id field.
+// Supports legacy step:<name> component format and normalizes it to component="step" with step_name="<name>".
 func LogWithSource(level string, source string, component string, msg string, sessionID *string) {
 	logger := Get()
 
-	// Handle session ID:
-	// - nil: use enriched value from environment variable (no override needed)
-	// - non-nil: use explicit session_id control (override or omit)
+	// Normalize legacy step:<name> component format
+	normalizedComponent, stepName, isLegacyStep := normalizeStepComponent(component)
 
-	if sessionID != nil {
-		// Flag was provided - use explicit session_id control
-		// This ensures the flag value takes precedence over any env var
+	// If this was a legacy step component or sessionID flag was provided, use explicit field control
+	if isLegacyStep || sessionID != nil {
 		var explicitSessionID *string
-		if *sessionID != "" {
+		if sessionID != nil && *sessionID != "" {
 			explicitSessionID = sessionID
 		}
-		// If sessionID is empty, explicitSessionID is nil -> omit session_id
-		// If sessionID is non-empty, explicitSessionID has the value -> use it
-		logWithExplicitSessionID(logger, level, source, component, msg, explicitSessionID)
+		logWithExplicitFields(logger, level, source, normalizedComponent, msg, explicitSessionID, stepName)
 		return
 	}
 
-	// Normal case (flag not provided): build context with source, inherit enriched session_id
+	// Normal case (no flag provided, not legacy step): build context with source, inherit enriched session_id and step_name
 	ctx := logger.With().Str("source", source)
 	newLogger := ctx.Logger()
 
@@ -578,7 +645,7 @@ func logWithExplicitSessionID(baseLogger *zerolog.Logger, level string, source s
 		Str("source", source)
 
 	// Add other context fields from environment (excluding session_id)
-	for _, envVar := range []string{"KFG_WORKFLOW_NAME", "KFG_KUSTOMIZATION_NAME"} {
+	for _, envVar := range []string{"KFG_WORKFLOW_NAME", "KFG_KUSTOMIZATION_NAME", "KFG_STEP_NAME"} {
 		val := os.Getenv(envVar)
 		if val != "" {
 			fieldName := strings.ToLower(strings.TrimPrefix(envVar, "KFG_"))

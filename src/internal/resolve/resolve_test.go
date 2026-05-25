@@ -441,20 +441,19 @@ func TestMergeEnv_OverrideWins(t *testing.T) {
 
 func TestMergeCache_RefOverride(t *testing.T) {
 	// StepReference cache takes precedence
-	stepCache := &manifest.CacheConfig{Enabled: boolPtr(true), Key: "step-key"}
-	refCache := &manifest.CacheConfig{Enabled: boolPtr(false), Key: "ref-key"}
+	stepCache := &manifest.CacheConfig{Enabled: boolPtr(true)}
+	refCache := &manifest.CacheConfig{Enabled: boolPtr(false)}
 
 	result := MergeCache(stepCache, refCache)
 
 	assert.NotNil(t, result)
 	assert.NotNil(t, result.Enabled)
 	assert.False(t, *result.Enabled) // ref takes precedence
-	assert.Equal(t, "ref-key", result.Key) // ref takes precedence
 }
 
 func TestMergeCache_OnlyStepCache(t *testing.T) {
 	// Use Step default when no ref override
-	stepCache := &manifest.CacheConfig{Enabled: boolPtr(true), Key: "step-key"}
+	stepCache := &manifest.CacheConfig{Enabled: boolPtr(true)}
 	var refCache *manifest.CacheConfig // nil
 
 	result := MergeCache(stepCache, refCache)
@@ -462,20 +461,18 @@ func TestMergeCache_OnlyStepCache(t *testing.T) {
 	assert.NotNil(t, result)
 	assert.NotNil(t, result.Enabled)
 	assert.True(t, *result.Enabled)
-	assert.Equal(t, "step-key", result.Key)
 }
 
 func TestMergeCache_OnlyRefCache(t *testing.T) {
 	// Use ref cache when step has no cache
 	var stepCache *manifest.CacheConfig // nil
-	refCache := &manifest.CacheConfig{Enabled: boolPtr(true), Key: "ref-key"}
+	refCache := &manifest.CacheConfig{Enabled: boolPtr(true)}
 
 	result := MergeCache(stepCache, refCache)
 
 	assert.NotNil(t, result)
 	assert.NotNil(t, result.Enabled)
 	assert.True(t, *result.Enabled)
-	assert.Equal(t, "ref-key", result.Key)
 }
 
 func TestMergeCache_BothNil(t *testing.T) {
@@ -486,14 +483,13 @@ func TestMergeCache_BothNil(t *testing.T) {
 
 func TestMergeCache_RefEnabledNil(t *testing.T) {
 	// Ref cache with nil Enabled should still be used entirely
-	stepCache := &manifest.CacheConfig{Enabled: boolPtr(true), Key: "step-key"}
-	refCache := &manifest.CacheConfig{Enabled: nil, Key: "ref-key"}
+	stepCache := &manifest.CacheConfig{Enabled: boolPtr(true)}
+	refCache := &manifest.CacheConfig{Enabled: nil}
 
 	result := MergeCache(stepCache, refCache)
 
 	assert.NotNil(t, result)
 	assert.Nil(t, result.Enabled) // ref's nil Enabled is used
-	assert.Equal(t, "ref-key", result.Key)
 }
 
 // Helper function to create bool pointer
@@ -1093,7 +1089,7 @@ func TestResolveStepReferences_CachePopulation(t *testing.T) {
 		Metadata:   manifest.Metadata{Name: "cached-step"},
 		Spec: manifest.StepSpec{
 			Run:   "echo cached",
-			Cache: &manifest.CacheConfig{Enabled: boolPtr(true), Key: "step-key"},
+			Cache: &manifest.CacheConfig{Enabled: boolPtr(true)},
 		},
 	}
 
@@ -1107,7 +1103,7 @@ func TestResolveStepReferences_CachePopulation(t *testing.T) {
 				{
 					Name:  "cached-ref",
 					Step:  "cached-step",
-					Cache: &manifest.CacheConfig{Enabled: boolPtr(false), Key: "ref-key"},
+					Cache: &manifest.CacheConfig{Enabled: boolPtr(false)},
 				},
 			},
 		},
@@ -1129,7 +1125,6 @@ func TestResolveStepReferences_CachePopulation(t *testing.T) {
 	assert.NotNil(t, resolvedStep.Cache)
 	assert.NotNil(t, resolvedStep.Cache.Enabled)
 	assert.False(t, *resolvedStep.Cache.Enabled) // ref overrides step
-	assert.Equal(t, "ref-key", resolvedStep.Cache.Key) // ref overrides step
 }
 
 func TestResolveStepReferences_CacheNoOverride(t *testing.T) {
@@ -1139,7 +1134,7 @@ func TestResolveStepReferences_CacheNoOverride(t *testing.T) {
 		Metadata:   manifest.Metadata{Name: "cached-step"},
 		Spec: manifest.StepSpec{
 			Run:   "echo cached",
-			Cache: &manifest.CacheConfig{Enabled: boolPtr(true), Key: "step-key"},
+			Cache: &manifest.CacheConfig{Enabled: boolPtr(true)},
 		},
 	}
 
@@ -1175,7 +1170,6 @@ func TestResolveStepReferences_CacheNoOverride(t *testing.T) {
 	assert.NotNil(t, resolvedStep.Cache)
 	assert.NotNil(t, resolvedStep.Cache.Enabled)
 	assert.True(t, *resolvedStep.Cache.Enabled)
-	assert.Equal(t, "step-key", resolvedStep.Cache.Key)
 }
 
 func TestResolveStepReferences_NoCache(t *testing.T) {
@@ -1236,7 +1230,7 @@ func TestResolveStepReferences_RefCacheOnly(t *testing.T) {
 					{
 						Name:  "ref-cached",
 						Step:  "nocache-step",
-						Cache: &manifest.CacheConfig{Enabled: boolPtr(true), Key: "ref-only-key"},
+						Cache: &manifest.CacheConfig{Enabled: boolPtr(true)},
 						},
 					},
 				},
@@ -1258,5 +1252,4 @@ func TestResolveStepReferences_RefCacheOnly(t *testing.T) {
 	assert.NotNil(t, resolvedStep.Cache)
 	assert.NotNil(t, resolvedStep.Cache.Enabled)
 	assert.True(t, *resolvedStep.Cache.Enabled)
-	assert.Equal(t, "ref-only-key", resolvedStep.Cache.Key)
 }

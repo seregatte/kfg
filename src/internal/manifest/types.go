@@ -59,8 +59,7 @@ type Output struct {
 
 // CacheConfig defines cache behavior for a Step or StepReference.
 type CacheConfig struct {
-	Enabled *bool  `yaml:"enabled"` // Optional: whether caching is enabled (default: true if cache is declared)
-	Key     string `yaml:"key"`     // Optional: cache key for this step invocation
+	Enabled *bool `yaml:"enabled"` // Optional: whether caching is enabled (default: true if cache is declared)
 }
 
 // StepSpec is the spec for Step resources.

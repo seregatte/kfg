@@ -23,6 +23,7 @@ type CacheMetadata struct {
 		Name        string `yaml:"name"`
 		ValueEncoded string `yaml:"valueEncoded"`
 	} `yaml:"output,omitempty"`
+	Artifacts   []string `yaml:"artifacts,omitempty"` // Artifact paths stored in metadata
 }
 
 // CacheEntry represents a cache entry with its metadata and path
@@ -36,6 +37,7 @@ type CacheEntry struct {
 	HasOutput    bool          // Whether the entry has an output
 	OutputName   string        // Output name if present
 	OutputValue  string        // Decoded output value if present
+	Artifacts    []string      // Artifact paths from metadata
 }
 
 // gcCmd represents the gc command group for cache garbage collection
@@ -151,18 +153,11 @@ Examples:
 		fmt.Printf("Size: %s\n", formatSize(entry.Size))
 		fmt.Println()
 
-		// Print artifacts
-		if entry.ArtifactsDir != "" {
-			artifacts, err := listArtifacts(entry.ArtifactsDir)
-			if err != nil {
-				fmt.Printf("Artifacts: (error reading artifacts: %v)\n", err)
-			} else if len(artifacts) > 0 {
-				fmt.Printf("Artifacts (%d):\n", len(artifacts))
-				for _, artifact := range artifacts {
-					fmt.Printf("  - %s\n", artifact)
-				}
-			} else {
-				fmt.Println("Artifacts: (none)")
+		// Print artifacts from metadata
+		if len(entry.Artifacts) > 0 {
+			fmt.Printf("Artifacts (%d):\n", len(entry.Artifacts))
+			for _, artifact := range entry.Artifacts {
+				fmt.Printf("  - %s\n", artifact)
 			}
 		} else {
 			fmt.Println("Artifacts: (none)")
@@ -420,6 +415,25 @@ func readCacheEntry(entryPath string) (CacheEntry, error) {
 		}
 	}
 
+	// Read artifacts from metadata or fallback to artifact_paths.txt (legacy)
+	var artifacts []string
+	if len(metadata.Artifacts) > 0 {
+		// New format: read from metadata.yaml Artifacts field
+		artifacts = metadata.Artifacts
+	} else {
+		// Legacy fallback: read from artifact_paths.txt
+		artifactPathsFile := filepath.Join(entryPath, "artifact_paths.txt")
+		if data, err := os.ReadFile(artifactPathsFile); err == nil {
+			// Split by newline and filter empty lines
+			lines := strings.Split(string(data), "\n")
+			for _, line := range lines {
+				if line != "" {
+					artifacts = append(artifacts, line)
+				}
+			}
+		}
+	}
+
 	return CacheEntry{
 		ID:           entryID,
 		Path:         entryPath,
@@ -427,6 +441,7 @@ func readCacheEntry(entryPath string) (CacheEntry, error) {
 		Timestamp:    timestamp,
 		Size:         size,
 		ArtifactsDir: artifactsDir,
+		Artifacts:    artifacts,
 		HasOutput:    hasOutput,
 		OutputName:   outputName,
 		OutputValue:  outputValue,
@@ -479,19 +494,7 @@ func calculateDirSize(dirPath string) (int64, error) {
 	return size, err
 }
 
-// listArtifacts lists artifact names in the artifacts directory
-func listArtifacts(artifactsDir string) ([]string, error) {
-	entries, err := os.ReadDir(artifactsDir)
-	if err != nil {
-		return nil, err
-	}
 
-	var artifacts []string
-	for _, entry := range entries {
-		artifacts = append(artifacts, entry.Name())
-	}
-	return artifacts, nil
-}
 
 // formatSize formats a size in bytes to a human-readable string
 func formatSize(bytes int64) string {

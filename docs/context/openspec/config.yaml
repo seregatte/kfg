@@ -1,0 +1,201 @@
+schema: spec-driven
+context: |
+  Project: kfg, a standalone CLI for processing YAML manifests into shell functions.
+  
+  ## Engine Layer (kfg)
+  
+  Project: kfg, a standalone CLI for processing YAML manifests into shell functions.
+  Backward compatibility is NOT a project requirement.
+  
+  Source of truth:
+  - flake.nix defines Nix packaging and development shells
+  - docs/AGENTS.md provides agent operating context
+  - docs/context/openspec/ is the consolidated OpenSpec root with layer-scoped specs
+  - docs/context/openspec/specs/kfg/ contains engine-level specs
+  - docs/context/openspec/specs/framework/ contains framework specs
+  - docs/context/openspec/specs/domain-ai-agents/ contains AI agents domain specs
+  
+  Engine project structure:
+  - Manifests are loaded from KFG_MANIFEST_PATH (configured manifest sources)
+  - Engine implementation lives in src/
+  - Framework package (shared primitives) lives in packages/framework/
+  - Domain packages (content layers) live in packages/domains/*/
+  - Public kustomization entrypoints: packages/framework/kustomization.yaml and packages/domains/*/kustomization.yaml
+  - Engine and integration tests live in tests/bats/
+  - Package-specific tests live in packages/*/tests/
+  - See docs/context/openspec/specs/kfg/project-structure/spec.md for full specification
+  
+  Engine architecture:
+  - Manifests define Steps, Cmds, and CmdWorkflows
+  - Steps are reusable units of work that can produce outputs
+  - Cmds are shell function definitions with before/after steps
+  - CmdWorkflows are named collections of commands
+  - CmdWorkflow is the required entry point for shell generation
+  - Sessions provide per-invocation correlation (KFG_SESSION_ID)
+  - Store operations use session-scoped backups for safe materialization
+  - Step caching enables persistence of outputs and artifacts across invocations
+  
+  Engine tech stack:
+  - Go for CLI implementation (src/cmd, src/internal)
+  - Cobra for CLI framework and command parsing
+  - Viper for configuration management (env vars, flags, defaults)
+  - Zap for structured logging (console and JSON formats)
+  - sigs.k8s.io/kustomize/api for kustomization loading and merging
+  - sigs.k8s.io/kustomize/kyaml for YAML parsing and manipulation
+  - text/template for shell code generation
+  - Nix for packaging and dev shells
+  - Bash for generated shell integration
+  - YAML for manifest definitions
+  - Environment variables for configuration
+  
+  Engine configuration conventions:
+  - Use KFG_ prefixed environment variables
+  - CLI flags override environment defaults
+  
+  Shell generation:
+  - Generates bash functions from manifests
+  - Internal helpers prefixed with __kfg_
+  - Outputs are ephemeral (scoped to single invocation)
+  - Sessions auto-generated per command wrapper (KFG_SESSION_ID)
+  - Steps can have when conditions based on outputs
+  - Support for before/after steps with dependency resolution
+  - Exports stable runtime API (shell-runtime-api spec) for framework and domain packages
+  - Framework packages consume the runtime API to implement shared steps
+  - Step caching controlled by spec.cache and StepReference cache overrides
+  
+  Testing requirements (all layers):
+  - Unit tests for parsing, validation, and resolution logic
+  - Integration tests for end-to-end manifest to shell
+  - Shell tests (Bats) for generated code validation in tests/bats/
+  - Framework-specific Bats tests in packages/framework/tests/
+  - Domain-specific Bats tests in packages/domains/*/tests/
+  - Canonical test target `make test-bats` discovers and runs all Bats roots
+  - All tests must be deterministic and reproducible
+  
+  ## Framework Layer (kfg framework)
+  
+  Package: kfg framework - shared manifest primitives and reusable steps.
+  
+  Framework responsibilities:
+  - Export reusable manifest steps (materialize, cleanup, ensure-gitignore, etc.)
+  - Provide stable public kustomization entrypoint at packages/framework/kustomization.yaml
+  - Maintain shell-runtime-api contract with the kfg engine
+  - Document exported primitives and capabilities
+  
+  Framework structure:
+  - packages/framework/kustomization.yaml - public entrypoint
+  - packages/framework/manifests/steps/ - reusable steps
+  - docs/context/openspec/specs/framework/ - framework-specific specs
+  - packages/framework/tests/ - framework validation tests
+  
+  Framework development:
+  - Framework changes are tracked in docs/context/openspec/changes/ with `framework-` prefix
+  - Framework specs document exported capabilities in docs/context/openspec/specs/framework/
+  - Cross-layer changes (affecting engine and framework) use sibling changes with the same slug
+  
+  Framework backward compatibility:
+  - Framework API (exported steps, kustomization entrypoint) is stable
+  - Shell-runtime-api contract must remain backward compatible
+  - Breaking changes require advance notice and migration path
+  
+  ## Domain Layer (kfg ai-agents)
+  
+  Package: kfg ai-agents domain - AI-specific manifests, steps, and capabilities.
+  
+  Domain responsibilities:
+  - Provide AI agent manifest resources (Claude, Gemini, Pi, etc.)
+  - Support development and production overlays
+  - Maintain domain-specific capabilities and extensions
+  - Document domain-specific behavior
+  
+  Domain structure:
+  - packages/domains/ai-agents/kustomization.yaml - public domain entrypoint
+  - packages/domains/ai-agents/manifests/ - domain-specific manifests
+  - packages/domains/ai-agents/overlays/dev/ - development overlay
+  - docs/context/openspec/specs/domain-ai-agents/ - domain-specific specs
+  - packages/domains/ai-agents/tests/ - domain validation tests
+  
+  Domain composition:
+  - Domain kustomization bases on packages/framework/ (framework package)
+  - Domain manifests layer on top of framework exports
+  - Development overlay (overlays/dev/) adds dev-specific configuration
+  
+  Domain development:
+  - Domain changes are tracked in docs/context/openspec/changes/ with `domain-ai-agents-` prefix
+  - Domain specs document domain-specific capabilities in docs/context/openspec/specs/domain-ai-agents/
+  - Cross-layer changes use sibling changes with the same slug across engine, framework, and domain roots
+  
+  Domain backward compatibility:
+  - Domain API (public kustomization, overlay entrypoints) is stable
+  - Framework API (imported via base) must remain backward compatible
+  - Breaking changes require advance notice and migration path
+
+rules:
+  proposal:
+    engine:
+      - Include motivation, scope, and non-goals
+      - Call out user-facing CLI and shell UX impact
+      - Avoid overcommitting to implementation details before specs are clear
+      - Document manifest model changes explicitly
+    framework:
+      - Describe which framework steps or primitives are affected
+      - Call out impact on domain packages or dependent systems
+      - Include stability/backward compatibility assessment
+    domain-ai-agents:
+      - Describe which domain resources or overlays are affected
+      - Call out any framework dependencies or requirements
+      - Include backward compatibility assessment
+  specs:
+    engine:
+      - Use normative language such as MUST or SHALL
+      - Use Given/When/Then scenarios
+      - Keep capabilities focused and durable
+      - Provide complete examples for manifest resources
+      - Document validation rules for cross-resource references
+      - Document session-scoped behavior where applicable
+    framework:
+      - Document exported step behavior and contract
+      - Use normative language (MUST, SHALL)
+      - Include examples of step usage
+      - Document any dependencies on shell-runtime-api
+    domain-ai-agents:
+      - Document domain-specific capabilities and their contract
+      - Use normative language (MUST, SHALL)
+      - Include examples of domain resource usage
+      - Document any overlay-specific behavior
+  design:
+    engine:
+      - Document manifest loading and merge semantics
+      - Document dependency resolution algorithm
+      - Document shell generation templates
+      - Include data structure definitions
+      - Document error handling and messages
+      - Describe when condition evaluation
+    framework:
+      - Document step implementation approach
+      - Document manifest composition and merge semantics
+      - Include kustomization structure details
+    domain-ai-agents:
+      - Document domain manifest structure and organization
+      - Document overlay composition and override semantics
+      - Include domain entrypoint and public API details
+  tasks:
+    engine:
+      - Break work into concrete implementation steps
+      - Include validation for CLI UX and shell output
+      - Include documentation updates
+      - MUST include unit test tasks
+      - MUST include integration test tasks
+      - MUST include shell validation tasks (Bats)
+      - MUST include session-related test scenarios when specs define session behavior
+    framework:
+      - Break work into concrete implementation steps
+      - Include validation for step functionality
+      - Include Bats test tasks for framework-specific tests
+      - Include documentation updates
+    domain-ai-agents:
+      - Break work into concrete implementation steps
+      - Include validation for domain functionality
+      - Include Bats test tasks for domain-specific tests
+      - Include overlay testing
+      - Include documentation updates

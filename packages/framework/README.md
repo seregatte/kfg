@@ -71,18 +71,18 @@ Framework steps depend on the stable shell runtime API exported by the engine:
 - `KFG_ARTIFACTS` - Colon-separated artifact list
 - `__kfg_add_artifact()` - Register artifacts
 - `__kfg_build_result()` - Record build results
-- `_kfg.log.*()` - Structured logging functions
+- `__kfg_log_*()` - Structured logging functions
 
 Framework steps MUST NOT hardcode engine-specific paths or make assumptions about the engine's internal structure. They MUST use only the documented runtime API.
 
 ## Framework Specifications
 
-Framework-specific capabilities are documented in `docs/context/framework/openspec/specs/`:
+Framework-specific capabilities are documented in `docs/context/openspec/specs/framework/`:
 
 - **reusable-framework-steps** - Contract and behavior of exported steps
 - **framework-package-contract** - Public API and stability guarantees
 
-See `docs/context/framework/openspec/README.md` for the framework OpenSpec root.
+See `docs/context/openspec/config.yaml` for the consolidated OpenSpec root.
 
 ## Framework Tests
 
@@ -111,15 +111,15 @@ make test-bats  # Runs all tests including framework
 
 1. Create the step manifest in `packages/framework/manifests/steps/<name>.yaml`
 2. Add it to `packages/framework/manifests/steps/kustomization.yaml`
-3. Create a spec in `docs/context/framework/openspec/specs/` documenting the step
+3. Create a spec in `docs/context/openspec/specs/framework/` documenting the step
 4. Add Bats tests in `packages/framework/tests/`
 5. Update this documentation
 
 ### Updating Framework Behavior
 
-Framework changes are tracked in `docs/context/framework/openspec/changes/`. When making changes that affect framework behavior:
+Framework changes are tracked in `docs/context/openspec/changes/` with `framework-` prefix. When making changes that affect framework behavior:
 
-1. Create a change proposal in `docs/context/framework/openspec/changes/`
+1. Create a change proposal in `docs/context/openspec/changes/` with `framework-` prefix
 2. Update relevant specs
 3. Update this documentation
 4. Add or update Bats tests
@@ -147,6 +147,6 @@ See `packages/domains/ai-agents/kustomization.yaml` for an example.
 
 ## Further Reading
 
-- **Shell Runtime API:** `docs/context/kfg/openspec/specs/shell-runtime-api/spec.md`
-- **Framework Package Contract:** `docs/context/kfg/openspec/specs/framework-package-contract/spec.md`
-- **Reusable Steps:** `docs/context/framework/openspec/specs/reusable-framework-steps/spec.md`
+- **Shell Runtime API:** `docs/context/openspec/specs/kfg/shell-runtime-api/spec.md`
+- **Framework Package Contract:** `docs/context/openspec/specs/kfg/framework-package-contract/spec.md`
+- **Reusable Steps:** `docs/context/openspec/specs/framework/reusable-framework-steps/spec.md`
