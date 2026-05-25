@@ -69,46 +69,53 @@ Key test roots:
 For detailed design and authoritative behavior, refer to
 the OpenSpec specs for the layer you are changing:
 
-- `../context/openspec/specs/kfg/` - engine/core kfg specs
-- `../context/openspec/specs/framework/` - framework package specs
-- `../context/openspec/specs/domain-ai-agents/` - AI agents domain specs
+- Engine specs with prefix: `../context/openspec/specs/kfg-*`
+- Framework specs with prefix: `../context/openspec/specs/framework-*`
+- Domain specs with prefix: `../context/openspec/specs/domain-ai-agents-*`
 
 All specs are consolidated in a single OpenSpec root: `../context/openspec/`
 
 ### OpenSpec Root Structure
 
-The single consolidated root at `../context/openspec/` organizes specs by layer:
+The single consolidated root at `../context/openspec/` organizes specs by layer prefix:
 
-- `specs/kfg/` - engine layer specifications and implementation details
-- `specs/framework/` - framework package specifications
-- `specs/domain-ai-agents/` - AI agents domain specifications
+- `specs/kfg-*` - engine layer specifications (cross-cutting and core)
+- `specs/kfg-shellgen-*` - shell generation feature specs
+- `specs/kfg-transform-*` - data transformation feature specs
+- `specs/kfg-kustomize-*` - kustomization processing feature specs
+- `specs/kfg-cache-*` - step cache feature specs
+- `specs/kfg-logging-*` - logging infrastructure feature specs
+- `specs/kfg-runtime-*` - workflow runtime feature specs
+- `specs/kfg-cli-*` - CLI framework feature specs
+- `specs/kfg-build-*` - build and release feature specs
+- `specs/framework-*` - framework package specifications
+- `specs/domain-ai-agents-*` - AI agents domain specifications
 - `changes/kfg-*` - engine layer changes (prefixed with `kfg-`)
 - `changes/framework-*` - framework layer changes (prefixed with `framework-`)
 - `changes/domain-ai-agents-*` - domain layer changes (prefixed with `domain-ai-agents-`)
 
 **When working on changes or proposals, refer to the appropriate layer specs:**
 
-- Engine changes: Update specs in `../context/openspec/specs/kfg/`
-- Framework changes: Update specs in `../context/openspec/specs/framework/`
-- Domain changes: Update specs in `../context/openspec/specs/domain-ai-agents/`
+- Engine changes: Update specs with `kfg-` prefix in `../context/openspec/specs/`
+- Framework changes: Update specs with `framework-` prefix in `../context/openspec/specs/`
+- Domain changes: Update specs with `domain-ai-agents-` prefix in `../context/openspec/specs/`
 - Cross-layer changes: Create sibling changes with matching slugs across relevant layers (e.g., `kfg-improve-cache` and `framework-improve-cache`)
 
 ### Especially Relevant Engine Specs
 
-- `../context/openspec/specs/kfg/project-structure/spec.md`
-- `../context/openspec/specs/kfg/manifest-model/spec.md`
-- `../context/openspec/specs/kfg/manifest-placeholder/spec.md`
-- `../context/openspec/specs/kfg/cli-conventions/spec.md`
-- `../context/openspec/specs/kfg/bats-test-layout/spec.md`
-- `../context/openspec/specs/kfg/run-command/spec.md`
-- `../context/openspec/specs/kfg/store-imagefile/spec.md`
-- `../context/openspec/specs/kfg/store-workspace/spec.md`
-- `../context/openspec/specs/kfg/session-system/spec.md`
+- `../context/openspec/specs/kfg-project-structure/spec.md`
+- `../context/openspec/specs/kfg-manifest-model/spec.md`
+- `../context/openspec/specs/kfg-manifest-placeholder/spec.md`
+- `../context/openspec/specs/kfg-cli-conventions/spec.md`
+- `../context/openspec/specs/kfg-bats-test-layout/spec.md`
+- `../context/openspec/specs/kfg-shellgen-run-command/spec.md`
+- `../context/openspec/specs/kfg-logging-session-system/spec.md`
+- `../context/openspec/specs/kfg-cache-step/spec.md`
 
-### Framework & Domain Spec Roots
+### Framework & Domain Spec Prefixes
 
-- `../context/openspec/specs/framework/`
-- `../context/openspec/specs/domain-ai-agents/`
+- Framework specs: `../context/openspec/specs/framework-*`
+- Domain specs: `../context/openspec/specs/domain-ai-agents-*`
 
 ## Language Policy
 

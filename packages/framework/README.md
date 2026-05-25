@@ -77,7 +77,7 @@ Framework steps MUST NOT hardcode engine-specific paths or make assumptions abou
 
 ## Framework Specifications
 
-Framework-specific capabilities are documented in `docs/context/openspec/specs/framework/`:
+Framework-specific capabilities are documented in `docs/context/openspec/specs/framework-*`:
 
 - **reusable-framework-steps** - Contract and behavior of exported steps
 - **framework-package-contract** - Public API and stability guarantees
@@ -111,7 +111,7 @@ make test-bats  # Runs all tests including framework
 
 1. Create the step manifest in `packages/framework/manifests/steps/<name>.yaml`
 2. Add it to `packages/framework/manifests/steps/kustomization.yaml`
-3. Create a spec in `docs/context/openspec/specs/framework/` documenting the step
+3. Create a spec with `framework-` prefix in `docs/context/openspec/specs/` documenting the step
 4. Add Bats tests in `packages/framework/tests/`
 5. Update this documentation
 
@@ -147,6 +147,6 @@ See `packages/domains/ai-agents/kustomization.yaml` for an example.
 
 ## Further Reading
 
-- **Shell Runtime API:** `docs/context/openspec/specs/kfg/shell-runtime-api/spec.md`
-- **Framework Package Contract:** `docs/context/openspec/specs/kfg/framework-package-contract/spec.md`
-- **Reusable Steps:** `docs/context/openspec/specs/framework/reusable-framework-steps/spec.md`
+- **Shell Runtime API:** `docs/context/openspec/specs/kfg-shell-runtime-api/spec.md`
+- **Framework Package Contract:** `docs/context/openspec/specs/kfg-framework-package-contract/spec.md`
+- **Reusable Steps:** `docs/context/openspec/specs/framework-reusable-framework-steps/spec.md`
