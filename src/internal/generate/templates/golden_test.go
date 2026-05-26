@@ -368,21 +368,17 @@ func TestGoldenStepWithCache(t *testing.T) {
 	output, err := tm.ExecuteStep(data)
 	assert.NoError(t, err)
 
-	// Verify cache identity computation is present
-	assert.Contains(t, output, "__kfg_cache_identity", "step should compute cache identity")
-	
 	// Verify cache check logic is present
 	assert.Contains(t, output, "__kfg_cache_exists", "step should check if cache exists")
-	
+
 	// Verify cache restore logic is present
 	assert.Contains(t, output, "__kfg_cache_restore", "step should restore from cache on hit")
-	
+
 	// Verify cache store logic is present
 	assert.Contains(t, output, "__kfg_cache_store", "step should store to cache after execution")
-	
+
 	// Verify KFG_REFRESH check is present
 	assert.Contains(t, output, "KFG_REFRESH", "step should check KFG_REFRESH environment variable")
-	
 
 }
 
@@ -403,7 +399,6 @@ func TestGoldenStepWithCacheDisabled(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Verify cache logic is NOT present when cache is disabled
-	assert.NotContains(t, output, "__kfg_cache_identity", "step should NOT compute cache identity when disabled")
 	assert.NotContains(t, output, "__kfg_cache_exists", "step should NOT check cache when disabled")
 	assert.NotContains(t, output, "__kfg_cache_restore", "step should NOT restore from cache when disabled")
 	assert.NotContains(t, output, "__kfg_cache_store", "step should NOT store to cache when disabled")
@@ -540,45 +535,36 @@ func TestGoldenStepRefreshInvalidation(t *testing.T) {
 	
 	// Verify the invalidation is scoped to current step (not workflow-wide)
 	// This is implicit in the __cache_path computation which is step-specific
-	assert.Contains(t, output, "__kfg_cache_identity \"$__step_ref_name", 
-		"cache identity should be step-specific")
+	assert.Contains(t, output, "__kfg_cache_exists \"$__step_ref_name",
+		"cache exists should use step ref name")
 }
 
-// TestGoldenDiffArtifactsHelper validates that the runtime helper
-// for registering artifacts from snapshot diffs is present.
-// This test is part of task 2.3 from the fix-refresh-step-cache-invalidation change.
-func TestGoldenDiffArtifactsHelper(t *testing.T) {
+// TestGoldenCacheDelegation validates that cache helpers delegate to Go subcommands.
+// This test verifies the new architecture where shell helpers are thin wrappers.
+func TestGoldenCacheDelegation(t *testing.T) {
 	tm, err := NewTemplateManager()
 	assert.NoError(t, err)
 
 	output, err := tm.ExecuteHelper()
 	assert.NoError(t, err)
 
-	// Verify __kfg_add_diff_artifacts helper is defined
-	assert.Contains(t, output, "__kfg_add_diff_artifacts()", 
-		"helper should define __kfg_add_diff_artifacts function")
-	
-	// Verify helper accepts root, before_snapshot, after_snapshot parameters
-	assert.Contains(t, output, "local root=\"$1\"", 
-		"helper should accept root as first parameter")
-	assert.Contains(t, output, "local before_file=\"$2\"", 
-		"helper should accept before_snapshot as second parameter")
-	assert.Contains(t, output, "local after_file=\"$3\"", 
-		"helper should accept after_snapshot as third parameter")
-	
-	// Verify helper calls __kfg_fs_diff
-	assert.Contains(t, output, "__kfg_fs_diff", 
-		"helper should call __kfg_fs_diff")
-	
-	// Verify helper prefixes paths with root
-	assert.Contains(t, output, "full_path=\"${root}/${rel_path}\"", 
-		"helper should prefix relative paths with root")
-	
-	// Verify helper verifies existence before registration
-	assert.Contains(t, output, "if [ -e \"$full_path\" ]; then", 
-		"helper should verify existence before calling __kfg_add_artifact")
-	
-	// Verify helper calls __kfg_add_artifact
-	assert.Contains(t, output, "__kfg_add_artifact \"$full_path\"", 
-		"helper should call __kfg_add_artifact for existing paths")
+	// Verify __kfg_cache_exists delegates to kfg sys cache exists
+	assert.Contains(t, output, "__kfg_internal sys cache exists",
+		"cache exists should delegate to kfg sys cache exists")
+
+	// Verify __kfg_cache_store delegates to kfg sys cache store
+	assert.Contains(t, output, "__kfg_internal sys cache store",
+		"cache store should delegate to kfg sys cache store")
+
+	// Verify __kfg_cache_restore delegates to kfg sys cache restore
+	assert.Contains(t, output, "__kfg_internal sys cache restore",
+		"cache restore should delegate to kfg sys cache restore")
+
+	// Verify __kfg_serialize_cache_input exists for JSON serialization
+	assert.Contains(t, output, "__kfg_serialize_cache_input()",
+		"helper should define __kfg_serialize_cache_input function")
+
+	// Verify __kfg_internal helper exists
+	assert.Contains(t, output, "__kfg_internal()",
+		"helper should define __kfg_internal function")
 }

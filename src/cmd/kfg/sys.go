@@ -14,15 +14,14 @@ These commands are intended for internal use and are not typically
 needed for normal operation.
 
 Subcommands:
-  log  Write structured log entries
-  gc   Garbage collection for Step cache
-  fs   Internal filesystem inspection
+  log    Write structured log entries
+  cache  Cache operations for Step results
 
 Examples:
   kfg sys log info "component" "message"
   kfg sys log error "cmd:build" "failed to parse manifest"
-  kfg sys gc ls
-  kfg sys fs snapshot /path/to/dir --maxdepth 1`,
+  kfg sys cache ls
+  kfg sys cache exists ctx7.steps.install`,
 	Run: func(cmd *cobra.Command, args []string) {
 		cmd.Help()
 	},

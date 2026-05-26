@@ -23,27 +23,12 @@ spec:
     # Ensure output directory exists
     mkdir -p "$OUTPUT_DIR"
 
-    # Snapshot OUTPUT_DIR before installation (baseline)
-    local before_snapshot_skills=$(mktemp)
-    __kfg_fs_snapshot "$OUTPUT_DIR" 1 > "$before_snapshot_skills"
-
-    cat "$before_snapshot_skills"
-
     # Execute openspec init command
     command openspec init "$TOOLS_FLAG" --force > /dev/null 2>&1
 
-    # Snapshot OUTPUT_DIR after installation
-    local after_snapshot_skills=$(mktemp)
-    __kfg_fs_snapshot "$OUTPUT_DIR" 1 > "$after_snapshot_skills"
+    # Cleanup
+    rm -f openspec
 
-    cat "$after_snapshot_skills"
-
-    # Register newly created children as artifacts using the diff-based helper
-    __kfg_add_diff_artifacts "$OUTPUT_DIR" "$before_snapshot_skills" "$after_snapshot_skills"
-
-    # Cleanup temporary snapshots
-    rm -f "$before_snapshot_skills" "$after_snapshot_skills" openspec
-    
     __kfg_log_info "Installed OpenSpec skills"
 
   env:

@@ -38,10 +38,6 @@ spec:
     # Ensure output directory exists
     mkdir -p "$OUTPUT_DIR"
 
-    # Snapshot OUTPUT_DIR before installation (baseline)
-    local before_snapshot=$(mktemp)
-    __kfg_fs_snapshot "$OUTPUT_DIR" 1 > "$before_snapshot"
-
     # Execute install command
     ctx7 setup --cli --project $FLAGS > /dev/null 2>&1
 
@@ -53,16 +49,6 @@ spec:
     else
       __kfg_log_debug "No ctx7 skills directory found at $SKILL_SRC"
     fi
-
-    # Snapshot OUTPUT_DIR after installation
-    local after_snapshot=$(mktemp)
-    __kfg_fs_snapshot "$OUTPUT_DIR" 1 > "$after_snapshot"
-
-    # Register newly created children as artifacts using the diff-based helper
-    __kfg_add_diff_artifacts "$OUTPUT_DIR" "$before_snapshot" "$after_snapshot"
-
-    # Cleanup temporary snapshots
-    rm -f "$before_snapshot" "$after_snapshot"
 
     # Extract ctx7 context for output
     CONTEXT_FILE=".${AGENT}/ctx7-agents.md"
