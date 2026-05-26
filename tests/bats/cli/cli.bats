@@ -29,8 +29,8 @@ load '../test_helper'
 @test "kfg --version output contains commit hash" {
     run "${KFG_BIN}" --version
     [ "$status" -eq 0 ]
-    # Commit should be 7-char short hash or "unknown"
-    [[ "$output" =~ \([a-f0-9]{7}, ]] || [[ "$output" =~ \(unknown, ]]
+    # Commit should be short hash (typically 7-12 chars) or "unknown"
+    [[ "$output" =~ \([a-f0-9]{7,12}, ]] || [[ "$output" =~ \(unknown, ]]
 }
 
 @test "kfg --version output contains build date" {

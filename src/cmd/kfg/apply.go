@@ -27,6 +27,7 @@ var (
 	applyUse           string
 	applyWith          string
 	applyRefresh       bool
+	applyStoreDir      string
 )
 
 // ApplyResult holds the result of the apply pipeline (load → validate → index → resolve).
@@ -309,6 +310,9 @@ Examples:
 			if applyRefresh {
 				shellCode = "export KFG_REFRESH=1\n\n" + shellCode
 			}
+			if applyStoreDir != "" {
+				shellCode = fmt.Sprintf("export KFG_STORE_DIR=%s\n\n", applyStoreDir) + shellCode
+			}
 
 			// Output to file or stdout
 			if applyOutput != "" {
@@ -354,6 +358,9 @@ Examples:
 			if applyRefresh {
 				shellCode = "export KFG_REFRESH=1\n\n" + shellCode
 			}
+			if applyStoreDir != "" {
+				shellCode = fmt.Sprintf("export KFG_STORE_DIR=%s\n\n", applyStoreDir) + shellCode
+			}
 			if applyOutput != "" {
 				err = os.WriteFile(applyOutput, []byte(shellCode), 0644)
 				if err != nil {
@@ -382,6 +389,7 @@ func init() {
 	applyCmd.Flags().BoolVarP(&applyRefresh, "refresh", "r", false, "Invalidate and rebuild cache entries for cacheable Steps")
 	applyCmd.Flags().StringVar(&applyUse, "use", "", "Converter name for conversion mode")
 	applyCmd.Flags().StringVar(&applyWith, "with", "", "Inline yq expression for conversion mode (bypasses Converter lookup)")
+	applyCmd.Flags().StringVar(&applyStoreDir, "store", "", "Custom store directory for cache entries (overrides KFG_STORE_DIR)")
 }
 
 // validateWithFlag checks --with flag mutual exclusivity and requirements.

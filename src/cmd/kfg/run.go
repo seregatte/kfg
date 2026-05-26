@@ -23,6 +23,7 @@ var (
 	runWorkflow      string
 	runCmds          string
 	runRefresh       bool
+	runStoreDir      string
 )
 
 // runCmd represents the run command
@@ -123,7 +124,7 @@ Examples:
 		}
 
 		// Execute the command
-		executeCmd(shellCode, shellType, cmdName, extraArgs, runRefresh)
+		executeCmd(shellCode, shellType, cmdName, extraArgs, runRefresh, runStoreDir)
 		return nil
 	},
 }
@@ -137,6 +138,7 @@ func init() {
 	runCmd.Flags().StringVarP(&runWorkflow, "workflow", "w", "", "CmdWorkflow name (auto-detected if not specified)")
 	runCmd.Flags().StringVarP(&runCmds, "cmds", "c", "", "Comma-separated list of cmds to run")
 	runCmd.Flags().BoolVarP(&runRefresh, "refresh", "r", false, "Invalidate and rebuild cache entries for cacheable Steps")
+	runCmd.Flags().StringVar(&runStoreDir, "store", "", "Custom store directory for cache entries (overrides KFG_STORE_DIR)")
 }
 
 // parseLaunchArgs splits args using Cobra's dash boundary into command name and extra args.
@@ -256,7 +258,7 @@ func generateForCmd(result *ApplyResult, workflowName string, cmdMetadataName st
 }
 
 // executeCmd writes a temp script, runs bash, and propagates exit code.
-func executeCmd(shellCode string, shellType string, cmdName string, extraArgs []string, refresh bool) {
+func executeCmd(shellCode string, shellType string, cmdName string, extraArgs []string, refresh bool, storeDir string) {
 	// Generate unique temp file name
 	hash := sha256.Sum256([]byte(shellCode))
 	tempFileName := fmt.Sprintf("kfg-run-%s.%s", hex.EncodeToString(hash[:8]), shellType)
@@ -266,6 +268,9 @@ func executeCmd(shellCode string, shellType string, cmdName string, extraArgs []
 	script := shellCode + "\n\n"
 	if refresh {
 		script += "export KFG_REFRESH=1\n\n"
+	}
+	if storeDir != "" {
+		script += fmt.Sprintf("export KFG_STORE_DIR=%s\n\n", storeDir)
 	}
 	script += fmt.Sprintf("trap 'rm -f %s' EXIT\n", tempFile)
 	script += fmt.Sprintf("%s \"$@\"\n", cmdName)

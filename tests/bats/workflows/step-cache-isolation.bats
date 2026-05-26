@@ -37,7 +37,6 @@ spec:
     echo 'nested content' > .pi/skills/test/file.txt
   cache:
     enabled: true
-    key: "nested-test"
   artifacts:
     - .pi/skills/test/file.txt
 ---
@@ -52,7 +51,6 @@ spec:
     echo 'content2' > dir2/file.txt
   cache:
     enabled: true
-    key: "duplicate-test"
   artifacts:
     - dir1/file.txt
     - dir2/file.txt
@@ -65,7 +63,6 @@ spec:
   run: echo "output-value"
   cache:
     enabled: true
-    key: "output-test"
   output:
     name: test-output
 ---
@@ -81,7 +78,6 @@ spec:
     echo "captured-output-value"
   cache:
     enabled: true
-    key: "output-artifact-test"
   output:
     name: runtime-output
 ---

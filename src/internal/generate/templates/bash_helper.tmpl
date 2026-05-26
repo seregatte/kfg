@@ -110,7 +110,11 @@ __kfg_cache_store() {
             output_encoded=$(printf '%s' "$output_value" | base64)
             echo "output:"
             echo "  name: ${output_name}"
-            echo "  valueEncoded: ${output_encoded}"
+            # Use YAML literal block scalar for multi-line base64
+            # This ensures YAML parsers can read multi-line values correctly
+            echo '  valueEncoded: |'
+            # Indent each line of base64 output by 4 spaces for block scalar
+            echo "$output_encoded" | sed 's/^/    /'
         fi
         # Write artifacts as YAML list
         if [ ${#unique_artifacts[@]} -gt 0 ]; then
@@ -203,8 +207,20 @@ __kfg_cache_restore() {
     # Restore output if metadata contains it
     if [ -f "$cache_path/metadata.yaml" ] && [ -n "$output_name" ]; then
         # Parse encoded output value from metadata
+        # Support both block scalar format (new) and inline format (legacy)
         local output_encoded
-        output_encoded=$(grep 'valueEncoded:' "$cache_path/metadata.yaml" | cut -d' ' -f2 || true)
+        if grep -q 'valueEncoded: |' "$cache_path/metadata.yaml"; then
+            # Block scalar format: extract indented lines after 'valueEncoded: |'
+            # Use awk for portability across BSD (macOS) and GNU (Linux) systems
+            output_encoded=$(awk '
+/^  valueEncoded: \|/ { found=1; next }
+found && /^    / { print substr($0, 5) }
+found && !/^    / { exit }
+' "$cache_path/metadata.yaml")
+        else
+            # Legacy inline format: grep and cut
+            output_encoded=$(grep 'valueEncoded:' "$cache_path/metadata.yaml" | cut -d' ' -f2 || true)
+        fi
         if [ -n "$output_encoded" ]; then
             local output_value
             output_value=$(printf '%s' "$output_encoded" | base64 -d)
@@ -418,7 +434,8 @@ __kfg_add_diff_artifacts() {
         [ -z "$rel_path" ] && continue
         
         # Construct full path by prefixing root
-        local full_path="${root}/${rel_path}"
+        # Normalize to avoid double slashes (remove trailing slash from root, leading slash from rel_path)
+        local full_path="${root%%/}/${rel_path#/}"
         
         # Verify existence before registering
         if [ -e "$full_path" ]; then
