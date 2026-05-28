@@ -24,18 +24,13 @@ __kfg_run_step_{{ .StepName }}() {
 
 {{- end }}
 {{- if .CacheEnabled }}
-    # Compute cache identity for this step invocation
-    local __cache_path
-    __cache_path=$(__kfg_cache_identity "$__step_ref_name")
-    __kfg_log_debug "cache" "Cache path: $__cache_path"
-    
     # Cache check (invalidate and rebuild when refresh is enabled)
     if [ -z "${KFG_REFRESH:-}" ]; then
         __kfg_log_detail "cache" "Checking cache for step: $__step_ref_name"
-        
-        if __kfg_cache_exists "$__cache_path"; then
+
+        if __kfg_cache_exists "$__step_ref_name"; then
             __kfg_log_detail "cache" "Cache hit for step: $__step_ref_name"
-            __kfg_cache_restore "$__cache_path" "$__step_ref_name" "{{ .OutputName }}" __decl_artifacts
+            __kfg_cache_restore "$__step_ref_name" "{{ .OutputName }}" __decl_artifacts
             return 0  # Cache hit, skip execution
         else
             __kfg_log_detail "cache" "Cache miss for step: $__step_ref_name"
@@ -43,7 +38,7 @@ __kfg_run_step_{{ .StepName }}() {
     else
         # Refresh mode: invalidate existing cache entry, then rebuild after execution
         __kfg_log_detail "cache" "Invalidating cache for step: $__step_ref_name"
-        rm -rf "$__cache_path"
+        __kfg_internal sys cache rm "$__step_ref_name" 2>/dev/null || true
     fi
 
 {{- end }}
@@ -55,12 +50,10 @@ __kfg_run_step_{{ .StepName }}() {
 
 {{- end }}
 {{- if .CacheEnabled }}
-    # Snapshot artifacts before step execution
-    local -a __artifacts_before=()
-    local __artifact
-    for __artifact in "${KFG_ARTIFACTS[@]}"; do
-        __artifacts_before+=("$__artifact")
-    done
+    # Snapshot filesystem before step execution (for fs diff in Go store)
+    local __fs_before_file
+    __fs_before_file=$(mktemp)
+    (find . -not -path . -print 2>/dev/null | sed 's|^\./||' | sort) > "$__fs_before_file" || true
 
 {{- end }}
 {{- if .HasOutput }}
@@ -133,7 +126,7 @@ __kfg_run_step_{{ .StepName }}() {
             __kfg_log_debug "cache" "Step-local artifact: $__artifact"
         fi
     done
-    __kfg_cache_store "$__cache_path" "$__step_ref_name" "{{ .OutputName }}" __step_artifacts __decl_artifacts
+    __kfg_cache_store "$__step_ref_name" "{{ .OutputName }}" __step_artifacts __decl_artifacts "$__fs_before_file"
     __kfg_log_detail "cache" "Cache stored for step: $__step_ref_name"
 {{- end }}
 }
