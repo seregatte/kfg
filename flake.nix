@@ -236,14 +236,23 @@
 
           # Minimal devShell for CI — no kfg-bundle (avoids broken gws-bin on Linux).
           ci = pkgs.mkShell {
-            buildInputs = devInputs ++ [ pkgs.go pkgs.gnumake pkgs.bats-support pkgs.bats-assert ];
+            buildInputs = devInputs ++ [ pkgs.go pkgs.gnumake pkgs.git pkgs.curl ];
             shellHook = ''
               export PATH="./bin:$PATH"
               export OPENSPEC_ROOT_DIR=docs/context
               # Set up vendor directory for bats test helpers
-              mkdir -p tests/bats/helpers/vendor
-              ln -sfn ${pkgs.bats-support} tests/bats/helpers/vendor/bats-support
-              ln -sfn ${pkgs.bats-assert} tests/bats/helpers/vendor/bats-assert
+              VENDOR_DIR=tests/bats/helpers/vendor
+              if [ ! -f "$VENDOR_DIR/bats-support/load.bash" ]; then
+                mkdir -p "$VENDOR_DIR/bats-support"
+                curl -sL https://raw.githubusercontent.com/bats-core/bats-support/v0.3.0/src/load.bash -o "$VENDOR_DIR/bats-support/load.bash"
+                curl -sL https://raw.githubusercontent.com/bats-core/bats-support/v0.3.0/src/error.bash -o "$VENDOR_DIR/bats-support/error.bash"
+                curl -sL https://raw.githubusercontent.com/bats-core/bats-support/v0.3.0/src/output.bash -o "$VENDOR_DIR/bats-support/output.bash"
+              fi
+              if [ ! -f "$VENDOR_DIR/bats-assert/load.bash" ]; then
+                mkdir -p "$VENDOR_DIR/bats-assert"
+                curl -sL https://raw.githubusercontent.com/bats-core/bats-assert/v2.1.0/src/load.bash -o "$VENDOR_DIR/bats-assert/load.bash"
+                curl -sL https://raw.githubusercontent.com/bats-core/bats-assert/v2.1.0/src/assert.bash -o "$VENDOR_DIR/bats-assert/assert.bash"
+              fi
             '';
           };
         });
