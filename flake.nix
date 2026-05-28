@@ -80,6 +80,19 @@
         {
           default = shell;
           dev = shell;
+          # Minimal devShell for CI — no nixai dependency.
+          # Provides only go, bats, and make for build/test.
+          ci = pkgs.mkShell {
+            packages = with pkgs; [
+              go
+              bats
+              gnumake
+            ];
+            shellHook = ''
+              export PATH="./bin:$PATH"
+              export OPENSPEC_ROOT_DIR=docs/context
+            '';
+          };
         });
       
       lib.version = version;

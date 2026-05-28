@@ -27,13 +27,13 @@ jobs:
         uses: DeterminateSystems/magic-nix-cache-action@v2
 
       - name: Build
-        run: nix develop --command make build
+        run: nix develop .#ci --command make build
 
       - name: Unit tests
-        run: nix develop --command make test
+        run: nix develop .#ci --command make test
 
       - name: Vet
-        run: nix develop --command make vet
+        run: nix develop .#ci --command make vet
 
       - name: Bats integration tests
-        run: nix develop --command make test-bats
+        run: nix develop .#ci --command make test-bats
