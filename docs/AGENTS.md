@@ -27,6 +27,11 @@ nix develop --command make vet
 
 ## Git Worktree Workflow
 
+**CRITICAL RULE: No files outside a worktree may be modified. All code changes,
+edits, and file modifications must occur exclusively within a Git worktree.
+Before performing ANY task, the agent MUST create or switch to the appropriate
+worktree. This is the first action, always.**
+
 All code changes must be developed in a Git worktree. This ensures
 isolation between branches and prevents conflicts with the main
 repository state.
@@ -62,6 +67,16 @@ Examples:
 - `release/1.2.0` → `release/1.2.0` (passthrough)
 
 ### Agent Workflow
+
+**STEP 0 (MANDATORY — Always first):**
+Before ANY code modification, read operation on project files, or task execution:
+1. Determine the target branch name
+2. Normalize it according to the rules below
+3. Create the worktree or switch to an existing one
+4. Change working directory into the worktree
+5. Only then proceed with the actual task
+
+**Steps 1–9:**
 
 1. **Determine the branch name**  
    From OpenSpec change slug, user instruction, or task context.
@@ -106,8 +121,11 @@ Examples:
 
 ### Important Notes
 
-- Never work in the main repository root when developing features;
-  always use the worktree.
+- **NEVER modify any files outside a worktree.** The main repository root
+  must remain untouched. Every edit, creation, or change must happen inside
+  `../wkt/kfg/<branch>`.
+- **Worktree first, always.** Before starting any task, ensure you are inside
+  the correct worktree. This is the first mandatory step, not an afterthought.
 - If a worktree already exists and you are not inside it, switch into
   it rather than creating a new one.
 - The draft PR serves as early visibility; it can be marked ready for
