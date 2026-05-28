@@ -233,18 +233,10 @@
               source <(go run ./src/cmd/kfg apply -k packages/domains/ai-agents/overlays/dev)
             '';
           };
-        in
-        {
-          default = shell;
-          dev = shell;
-          # Minimal devShell for CI — no nixai dependency.
-          # Provides only go, bats, and make for build/test.
+
+          # Minimal devShell for CI — no kfg-bundle (avoids broken gws-bin on Linux).
           ci = pkgs.mkShell {
-            packages = with pkgs; [
-              go
-              bats
-              gnumake
-            ];
+            buildInputs = devInputs ++ [ pkgs.go pkgs.gnumake ];
             shellHook = ''
               export PATH="./bin:$PATH"
               export OPENSPEC_ROOT_DIR=docs/context
