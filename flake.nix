@@ -236,10 +236,14 @@
 
           # Minimal devShell for CI — no kfg-bundle (avoids broken gws-bin on Linux).
           ci = pkgs.mkShell {
-            buildInputs = devInputs ++ [ pkgs.go pkgs.gnumake ];
+            buildInputs = devInputs ++ [ pkgs.go pkgs.gnumake pkgs.bats-support pkgs.bats-assert ];
             shellHook = ''
               export PATH="./bin:$PATH"
               export OPENSPEC_ROOT_DIR=docs/context
+              # Set up vendor directory for bats test helpers
+              mkdir -p tests/bats/helpers/vendor
+              ln -sfn ${pkgs.bats-support} tests/bats/helpers/vendor/bats-support
+              ln -sfn ${pkgs.bats-assert} tests/bats/helpers/vendor/bats-assert
             '';
           };
         });
