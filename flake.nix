@@ -236,23 +236,27 @@
 
           # Minimal devShell for CI — no kfg-bundle (avoids broken gws-bin on Linux).
           ci = pkgs.mkShell {
-            buildInputs = devInputs ++ [ pkgs.go pkgs.gnumake pkgs.git pkgs.curl ];
+            buildInputs = devInputs ++ [ pkgs.go pkgs.gnumake ];
             shellHook = ''
               export PATH="./bin:$PATH"
               export OPENSPEC_ROOT_DIR=docs/context
               # Set up vendor directory for bats test helpers
               VENDOR_DIR=tests/bats/helpers/vendor
-              if [ ! -f "$VENDOR_DIR/bats-support/load.bash" ]; then
-                mkdir -p "$VENDOR_DIR/bats-support" "$VENDOR_DIR/bats-support/src"
-                curl -sL https://raw.githubusercontent.com/bats-core/bats-support/master/load.bash -o "$VENDOR_DIR/bats-support/load.bash"
-                curl -sL https://raw.githubusercontent.com/bats-core/bats-support/master/src/error.bash -o "$VENDOR_DIR/bats-support/src/error.bash"
-                curl -sL https://raw.githubusercontent.com/bats-core/bats-support/master/src/output.bash -o "$VENDOR_DIR/bats-support/src/output.bash"
-              fi
-              if [ ! -f "$VENDOR_DIR/bats-assert/load.bash" ]; then
-                mkdir -p "$VENDOR_DIR/bats-assert" "$VENDOR_DIR/bats-assert/src"
-                curl -sL https://raw.githubusercontent.com/bats-core/bats-assert/master/load.bash -o "$VENDOR_DIR/bats-assert/load.bash"
-                curl -sL https://raw.githubusercontent.com/bats-core/bats-assert/master/src/assert.bash -o "$VENDOR_DIR/bats-assert/src/assert.bash"
-              fi
+              mkdir -p "$VENDOR_DIR"
+              # Fetch entire bats-support repo
+              cp -r ${pkgs.fetchFromGitHub {
+                owner = "bats-core";
+                repo = "bats-support";
+                rev = "v0.3.0";
+                hash = "sha256-opgyrkqTwtnn/lUjMebbLfS/3sbI2axSusWd5i/5wm4=";
+              }} "$VENDOR_DIR/bats-support"
+              # Fetch entire bats-assert repo
+              cp -r ${pkgs.fetchFromGitHub {
+                owner = "bats-core";
+                repo = "bats-assert";
+                rev = "v2.1.0";
+                hash = "sha256-opgyrkqTwtnn/lUjMebbLfS/3sbI2axSusWd5i/5wm4=";
+              }} "$VENDOR_DIR/bats-assert"
             '';
           };
         });
