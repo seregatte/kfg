@@ -65,32 +65,6 @@ kfg run -k path/to/kustomization
 kfg run -k path/to/kustomization myagent -- --option value
 ```
 
-### Build an Image
-
-```bash
-# Build an image
-kfg image build --name myconfig:latest
-
-# Build and push
-kfg image build --name myconfig:latest --push
-
-# List images (alias: kfg img ls)
-kfg image ls
-```
-
-### Manage Workspaces
-
-```bash
-# Start a workspace
-kfg workspace start myconfig:latest
-
-# Stop a workspace
-kfg workspace stop --name myinstance
-
-# List workspaces (alias: kfg ws ls)
-kfg workspace ls
-```
-
 ## Command Reference
 
 | Command | Alias | Description |
@@ -98,17 +72,16 @@ kfg workspace ls
 | `kfg apply` | | Apply a kustomization or manifest file |
 | `kfg run` | | Run an agent one-shot |
 | `kfg build` | | Build kustomization to YAML |
-| `kfg image` | `img` | Image management commands |
-| `kfg workspace` | `ws` | Workspace management commands |
 | `kfg sys log` | | System logging (internal) |
+| `kfg sys cache` | | Step cache management |
 | `kfg version` | | Show version information |
 
 ## Environment Variables
 
 | Variable | Description |
 |----------|-------------|
-| `KFG_VERBOSE` | Verbosity level (0-3) |
-| `KFG_STORE_DIR` | Store directory (default: ~/.config/kfg/store) |
+| `KFG_VERBOSE` | Verbosity level (0-5) |
+| `KFG_STORE_DIR` | Store directory (default: ~/.kfg/store) |
 | `KFG_LOG_FILE` | Log file path |
 | `KFG_LOG_DIR` | Log directory |
 | `KFG_LOG_COLOR` | Log color mode (auto/always/never) |
@@ -128,18 +101,17 @@ spec:
 
 ## Development
 
+Enter the Nix dev shell as your development entrypoint. It provides Go, Node.js, bats, and all AI agent tools:
+
 ```bash
-# Run tests
-make test
+nix develop
 
-# Run tests with coverage
-make test-coverage
-
-# Format code
-make fmt
-
-# Run linter
-make lint
+# Once inside the dev shell:
+make build        # Build the binary → ./bin/kfg
+make test         # Go unit tests
+make test-bats    # Bats integration tests
+make fmt          # Format code
+make lint         # Run linter
 ```
 
 ## Repository Structure
@@ -162,9 +134,7 @@ KFG uses a package-oriented architecture:
 ├── docs/
 │   ├── AGENTS.md                 # AI agent operating context
 │   └── context/
-│       ├── kfg/openspec/         # Engine-level specifications
-│       ├── framework/openspec/   # Framework specifications
-│       └── domains/ai-agents/openspec/  # Domain specifications
+│       └── openspec/             # Unified OpenSpec root
 ├── tests/
 │   └── bats/                     # Engine and integration tests
 │       ├── cli/                  # CLI command tests

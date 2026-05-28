@@ -342,8 +342,8 @@ func TestGoldenStepWithLogging(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Verify the helper function definitions are present
-	
-	
+
+
 
 	// Verify the Step's run script is included (using the new helper names)
 	assert.Contains(t, output, "__kfg_log_info \"step:logging\" \"Starting\"", "step should call __kfg_log_info")
@@ -427,7 +427,7 @@ func TestGoldenCacheOutputRestoration(t *testing.T) {
 	// The generated code should pass the output name to __kfg_cache_restore
 	assert.Contains(t, output, "__kfg_cache_restore", "cache restore should be called")
 	assert.Contains(t, output, "ctx7_context", "output name should be passed to cache restore")
-	
+
 	// Verify the cache restore includes output restoration mechanism
 	// __kfg_output_set is called inside __kfg_cache_restore when output is present
 	// (This is validated by checking the helper template defines __kfg_output_set)
@@ -458,12 +458,12 @@ func TestGoldenStepWithOutputCleanupTrap(t *testing.T) {
 	assert.Contains(t, output, "__cleanup_trap", "cleanup trap variable should be defined")
 	assert.Contains(t, output, "rm -f", "cleanup trap should include rm command")
 	assert.Contains(t, output, "trap", "trap should be set for cleanup")
-	
+
 	// Verify temp file cleanup happens on success path
 	assert.Contains(t, output, "rm -f \"$__output_file\"", "temp file should be cleaned up explicitly on success")
-	
+
 	// Verify the output capture uses group command redirection (not subshell)
-	assert.Contains(t, output, "{ echo 'test output'; } > \"$__output_file\"", 
+	assert.Contains(t, output, "{ echo 'test output'; } > \"$__output_file\"",
 		"output capture should use group command redirection to parent shell")
 }
 
@@ -490,9 +490,9 @@ func TestGoldenStepWithOutputPreservesSideEffects(t *testing.T) {
 	// Verify the run script is included in a group command (runs in parent shell)
 	assert.Contains(t, output, "{ echo 'result' && __kfg_add_artifact 'output.txt'; } > \"$__output_file\"",
 		"run script should be in a group command that redirects to temp file")
-	
+
 	// Verify no command substitution is used for output capture
-	assert.NotContains(t, output, "__output=\"$( ", 
+	assert.NotContains(t, output, "__output=\"$( ",
 		"should NOT use command substitution which runs in subshell")
 }
 
@@ -514,25 +514,25 @@ func TestGoldenStepRefreshInvalidation(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Verify refresh invalidation logic is present
-	assert.Contains(t, output, "# Cache check (invalidate and rebuild when refresh is enabled)", 
+	assert.Contains(t, output, "# Cache check (invalidate and rebuild when refresh is enabled)",
 		"step should have refresh invalidation comment")
-	
+
 	// Verify KFG_REFRESH check is present
-	assert.Contains(t, output, "if [ -z \"${KFG_REFRESH:-}\" ]; then", 
+	assert.Contains(t, output, "if [ -z \"${KFG_REFRESH:-}\" ]; then",
 		"step should check KFG_REFRESH")
-	
+
 	// Verify invalidation log when KFG_REFRESH is set
-	assert.Contains(t, output, "__kfg_log_detail \"cache\" \"Invalidating cache for step", 
+	assert.Contains(t, output, "__kfg_log_detail \"cache\" \"Invalidating cache for step",
 		"step should log invalidation when refresh is enabled")
-	
+
 	// Verify cache entry is removed when refresh is enabled
-	assert.Contains(t, output, "rm -rf \"$__cache_path", 
+	assert.Contains(t, output, "__kfg_internal sys cache rm \"$__step_ref_name\"",
 		"step should remove cache entry when refresh is enabled")
-	
+
 	// Verify rebuild log is present in cache store section
-	assert.Contains(t, output, "__kfg_log_detail \"cache\" \"Rebuilding cache for step", 
+	assert.Contains(t, output, "__kfg_log_detail \"cache\" \"Rebuilding cache for step",
 		"step should log rebuild when refresh is enabled")
-	
+
 	// Verify the invalidation is scoped to current step (not workflow-wide)
 	// This is implicit in the __cache_path computation which is step-specific
 	assert.Contains(t, output, "__kfg_cache_exists \"$__step_ref_name",

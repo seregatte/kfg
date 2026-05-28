@@ -162,15 +162,15 @@ Environment variables:
 
 Examples:
   # Shell generation
-  kfg apply .nixai/overlay/dev
-  kfg apply -k .nixai/overlay/dev
+  kfg apply packages/domains/ai-agents/overlays/dev
+  kfg apply -k packages/domains/ai-agents/overlays/dev
   kfg apply -k https://github.com/owner/repo//manifests
-  kfg apply .nixai/overlay/dev --workflow dev,openspec
-  kfg apply -k .nixai/overlay/dev --workflow ai-agents
-  kfg apply -k .nixai/overlay/dev --cmds claude
+  kfg apply packages/domains/ai-agents/overlays/dev --workflow dev,openspec
+  kfg apply -k packages/domains/ai-agents/overlays/dev --workflow ai-agents
+  kfg apply -k packages/domains/ai-agents/overlays/dev --cmds claude
   kfg apply -f manifest.yaml
   kfg apply -f - (read from stdin)
-  kfg apply -k .nixai/overlay/dev --refresh  (invalidate and rebuild cache entries)
+  kfg apply -k packages/domains/ai-agents/overlays/dev --refresh  (invalidate and rebuild cache entries)
   KFG_KPATH=./manifests kfg apply
   KFG_KPATH=https://github.com/owner/repo//manifests kfg apply
 
