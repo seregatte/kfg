@@ -13,12 +13,12 @@ func TestStoreDirEnvVar(t *testing.T) {
 	viper.Reset()
 
 	// Test that KFG_STORE_DIR is bound correctly
-	viper.SetEnvPrefix("NIXAI")
+	viper.SetEnvPrefix("KFG")
 	viper.BindEnv("store_dir", "KFG_STORE_DIR")
 	viper.AutomaticEnv()
 
 	// Set env var
-	testDir := "/tmp/test-nixai-store"
+	testDir := "/tmp/test-kfg-store"
 	os.Setenv("KFG_STORE_DIR", testDir)
 	defer os.Unsetenv("KFG_STORE_DIR")
 
@@ -60,12 +60,12 @@ func TestGetStoreWithEnvVar(t *testing.T) {
 
 	// Reset viper
 	viper.Reset()
-	viper.SetEnvPrefix("NIXAI")
+	viper.SetEnvPrefix("KFG")
 	viper.BindEnv("store_dir", "KFG_STORE_DIR")
 	viper.AutomaticEnv()
 
 	// Set test env var
-	testDir := filepath.Join(os.TempDir(), "test-nixai-store")
+	testDir := filepath.Join(os.TempDir(), "test-kfg-store")
 	os.Setenv("KFG_STORE_DIR", testDir)
 	defer os.Unsetenv("KFG_STORE_DIR")
 
@@ -76,7 +76,7 @@ func TestGetStoreWithEnvVar(t *testing.T) {
 
 func TestGetStoreWithDefault(t *testing.T) {
 	// Test that when KFG_STORE_DIR is not set, the default is used
-	// The default is computed in getStore() as ~/.config/nixai/store
+	// The default is computed in getStore() as ~/.kfg/store
 
 	// Clear env var if set
 	os.Unsetenv("KFG_STORE_DIR")
@@ -91,7 +91,7 @@ func TestGetStoreWithDefault(t *testing.T) {
 		t.Skip("Could not get home directory")
 	}
 
-	expectedDefault := filepath.Join(homeDir, ".config", "nixai", "store")
+	expectedDefault := filepath.Join(homeDir, ".kfg", "store")
 	_ = expectedDefault // Used for verification in actual implementation
 }
 
@@ -135,7 +135,7 @@ func TestStorePathResolution(t *testing.T) {
 			name:      "default when neither set",
 			envValue:  "",
 			flagValue: "",
-			expected:  "", // Will be computed as ~/.config/nixai/store
+			expected:  "", // Will be computed as ~/.kfg/store
 		},
 	}
 

@@ -37,8 +37,8 @@ Environment variables:
   KFG_KPATH      Default kustomization path if positional arg not specified
 
 Examples:
-  kfg build .nixai/overlay/dev
-  kfg build .nixai/base -o output.yaml
+  kfg build packages/domains/ai-agents/overlays/dev
+  kfg build packages/framework -o output.yaml
   kfg build https://github.com/owner/repo//manifests
   kfg build https://github.com/owner/repo//manifests?ref=v1.0.0
   KFG_KPATH=./manifests kfg build
