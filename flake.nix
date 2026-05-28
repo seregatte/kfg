@@ -242,13 +242,14 @@
               export OPENSPEC_ROOT_DIR=docs/context
               # Set up vendor directory for bats test helpers
               VENDOR_DIR=tests/bats/helpers/vendor
+              rm -rf "$VENDOR_DIR/bats-support" "$VENDOR_DIR/bats-assert"
               mkdir -p "$VENDOR_DIR/bats-support" "$VENDOR_DIR/bats-assert"
               # Fetch bats-support and copy only needed files (avoid repo's own tests)
               BATS_SUPPORT=${pkgs.fetchFromGitHub {
                 owner = "bats-core";
                 repo = "bats-support";
                 rev = "v0.3.0";
-                hash = "sha256-opgyrkqTwtnn/lUjMebbLfS/3sbI2axSusWd5i/5wm4=";
+                hash = "sha256-4N7XJS5XOKxMCXNC7ef9halhRpg79kUqDuRnKcrxoeo=";
               }}
               cp "$BATS_SUPPORT/load.bash" "$VENDOR_DIR/bats-support/"
               cp -r "$BATS_SUPPORT/src" "$VENDOR_DIR/bats-support/"
