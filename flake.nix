@@ -243,15 +243,15 @@
               # Set up vendor directory for bats test helpers
               VENDOR_DIR=tests/bats/helpers/vendor
               if [ ! -f "$VENDOR_DIR/bats-support/load.bash" ]; then
-                mkdir -p "$VENDOR_DIR/bats-support"
-                curl -sL https://raw.githubusercontent.com/bats-core/bats-support/v0.3.0/src/load.bash -o "$VENDOR_DIR/bats-support/load.bash"
-                curl -sL https://raw.githubusercontent.com/bats-core/bats-support/v0.3.0/src/error.bash -o "$VENDOR_DIR/bats-support/error.bash"
-                curl -sL https://raw.githubusercontent.com/bats-core/bats-support/v0.3.0/src/output.bash -o "$VENDOR_DIR/bats-support/output.bash"
+                mkdir -p "$VENDOR_DIR/bats-support" "$VENDOR_DIR/bats-support/src"
+                curl -sL https://raw.githubusercontent.com/bats-core/bats-support/master/load.bash -o "$VENDOR_DIR/bats-support/load.bash"
+                curl -sL https://raw.githubusercontent.com/bats-core/bats-support/master/src/error.bash -o "$VENDOR_DIR/bats-support/src/error.bash"
+                curl -sL https://raw.githubusercontent.com/bats-core/bats-support/master/src/output.bash -o "$VENDOR_DIR/bats-support/src/output.bash"
               fi
               if [ ! -f "$VENDOR_DIR/bats-assert/load.bash" ]; then
-                mkdir -p "$VENDOR_DIR/bats-assert"
-                curl -sL https://raw.githubusercontent.com/bats-core/bats-assert/v2.1.0/src/load.bash -o "$VENDOR_DIR/bats-assert/load.bash"
-                curl -sL https://raw.githubusercontent.com/bats-core/bats-assert/v2.1.0/src/assert.bash -o "$VENDOR_DIR/bats-assert/assert.bash"
+                mkdir -p "$VENDOR_DIR/bats-assert" "$VENDOR_DIR/bats-assert/src"
+                curl -sL https://raw.githubusercontent.com/bats-core/bats-assert/master/load.bash -o "$VENDOR_DIR/bats-assert/load.bash"
+                curl -sL https://raw.githubusercontent.com/bats-core/bats-assert/master/src/assert.bash -o "$VENDOR_DIR/bats-assert/src/assert.bash"
               fi
             '';
           };
