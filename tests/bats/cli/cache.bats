@@ -170,7 +170,7 @@ EOF
 
 # Test: kfg sys cache rm warns for nonexistent entry
 @test "kfg sys cache rm warns for nonexistent entry" {
-    run "${KFG_BIN}" sys cache rm "nonexistent.step"
+    run "${KFG_BIN}" -v 2 sys cache rm "nonexistent.step"
     [ "$status" -eq 0 ]
     [[ "$output" =~ "not found" ]]
 }
