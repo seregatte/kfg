@@ -25,6 +25,94 @@ nix develop --command make lint
 nix develop --command make vet
 ```
 
+## Git Worktree Workflow
+
+All code changes must be developed in a Git worktree. This ensures
+isolation between branches and prevents conflicts with the main
+repository state.
+
+### Worktree Path Structure
+
+Worktrees are created at:
+```
+../wkt/kfg/<branch-name>
+```
+
+The project name (`kfg`) is derived from the repository root directory name.
+
+### Branch Naming & Normalization
+
+**Recognized prefixes (passthrough without modification):**
+- `feature/` — new features
+- `fix/` — bug fixes
+- `chore/` — maintenance tasks
+- `hotfix/` — critical production fixes
+- `docs/` — documentation changes
+- `main` — primary development branch
+- `release/` — release branches (e.g., `release/1.2.0`)
+
+**Unnaming rule:** If a branch name lacks a recognized prefix, the
+agent automatically prefixes it with `feature/`.
+
+Examples:
+- `nixai-absort` → `feature/nixai-absort`
+- `feature/nixai-absort` → `feature/nixai-absort` (no duplication)
+- `fix/login-crash` → `fix/login-crash` (passthrough)
+- `main` → `main` (passthrough)
+- `release/1.2.0` → `release/1.2.0` (passthrough)
+
+### Agent Workflow
+
+1. **Determine the branch name**  
+   From OpenSpec change slug, user instruction, or task context.
+
+2. **Normalize the branch name**  
+   Apply prefix rules if needed.
+
+3. **Check if already in worktree**  
+   If CWD is already `../wkt/kfg/<branch>`, skip to step 9.
+
+4. **Check if worktree exists**  
+   If `../wkt/kfg/<branch>` exists, switch into it and skip to step 8.
+
+5. **Create the worktree**  
+   ```bash
+   # For a new branch
+   git worktree add ../wkt/kfg/<branch> -b <branch>
+   
+   # For an existing local branch
+   git worktree add ../wkt/kfg/<branch> <branch>
+   ```
+
+6. **Push the branch to remote**  
+   ```bash
+   git push -u origin <branch>
+   ```
+
+7. **Determine PR base branch**  
+   - For `feature/`, `fix/`, `chore/`, `hotfix/`, `docs/`: base is `main`
+   - For `release/*`: **ask the user** which branch is the parent before opening the PR
+
+8. **Create a draft PR**  
+   ```bash
+   gh pr create --draft --base <parent-branch> \
+     --title "<branch-name or descriptive title>" \
+     --body "<minimal context, link to OpenSpec change if applicable>"
+   ```
+
+9. **Work within the worktree**  
+   All subsequent commands (build, test, code edits) execute inside
+   `../wkt/kfg/<branch>`.
+
+### Important Notes
+
+- Never work in the main repository root when developing features;
+  always use the worktree.
+- If a worktree already exists and you are not inside it, switch into
+  it rather than creating a new one.
+- The draft PR serves as early visibility; it can be marked ready for
+  review once the work is complete.
+
 ## OpenSpec Commands
 
 Always run `openspec` through `kfg run` with the AI
