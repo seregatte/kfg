@@ -1,0 +1,8 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Framework shared manifests composition
+# This file composes shared steps and framework resources
+
+resources:
+  - steps/

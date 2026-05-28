@@ -19,7 +19,13 @@ var rootCmd = &cobra.Command{
 
 It allows you to define shell commands, their dependencies, and execution steps
 in YAML manifests, then generates shell integration code that can be sourced
-or used interactively.`,
+or used interactively.
+
+Environment variables:
+  KFG_KPATH      Default kustomization path for build, apply, and run commands
+  KFG_REFRESH    Set to "1" to invalidate and rebuild cache entries for cacheable Steps
+  KFG_STORE_DIR  Custom store directory for cache entries (defaults to ~/.kfg/store)
+  KFG_VERBOSE    Logging verbosity level (0=quiet, 1=error, 2=warn, 3=info, 4=detail, 5=debug)`,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		// Check if --verbose flag was explicitly provided
 		if cmd.Flags().Changed("verbose") {

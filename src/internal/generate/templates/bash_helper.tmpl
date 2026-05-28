@@ -17,6 +17,125 @@ __kfg_output_get() {
     printf '%s' "${__kfg_outputs["${step}.${name}"]:-}"
 }
 
+# Cache helpers - delegate to kfg sys cache subcommands
+# These are thin wrappers that call Go subcommands for all cache logic.
+
+# Check if cache entry exists
+# Args: step_ref_name
+# Returns: 0 if exists, 1 if not
+__kfg_cache_exists() {
+    local step_ref_name="$1"
+    __kfg_internal sys cache exists "$step_ref_name"
+}
+
+# Store artifacts and outputs for a cacheable step
+# Args: step_ref_name, output_name (optional), step_artifacts_array_name, decl_artifacts_array_name, fs_before_file (optional)
+# The array names are passed by reference and expanded within this function
+__kfg_cache_store() {
+    local step_ref_name="$1"
+    local output_name="$2"
+    local step_artifacts_array_name="$3"  # Name of the array variable (passed as string)
+    local decl_artifacts_array_name="$4"   # Name of the array variable (passed as string)
+    local fs_before_file="$5"   # Optional: filesystem snapshot before step
+
+    # Expand the arrays by name
+    local -a step_artifacts=()
+    local -a decl_artifacts=()
+    eval "step_artifacts=(\"\${${step_artifacts_array_name}[@]}\")"
+    eval "decl_artifacts=(\"\${${decl_artifacts_array_name}[@]}\")"
+
+    # Build JSON input for kfg sys cache store
+    local json_input
+    json_input=$(__kfg_serialize_cache_input "$step_ref_name" "$output_name" step_artifacts decl_artifacts)
+
+    # Delegate to Go subcommand
+    if [ -n "$fs_before_file" ] && [ -f "$fs_before_file" ]; then
+        printf '%s' "$json_input" | __kfg_internal sys cache store "$step_ref_name" --workdir "$PWD" --fs-before "$fs_before_file"
+    else
+        printf '%s' "$json_input" | __kfg_internal sys cache store "$step_ref_name" --workdir "$PWD"
+    fi
+
+    # Clean up filesystem snapshot file
+    if [ -n "$fs_before_file" ] && [ -f "$fs_before_file" ]; then
+        rm -f "$fs_before_file"
+    fi
+}
+
+# Restore artifacts and outputs from cache
+# Args: step_ref_name, output_name (optional), decl_artifacts_array_name
+# decl_artifacts_array_name is the name of the declarative artifacts array to register after restore
+__kfg_cache_restore() {
+    local step_ref_name="$1"
+    local output_name="$2"
+    local decl_artifacts_array_name="$3"  # Name of the array variable (passed as string)
+
+    # Delegate to Go subcommand and eval the output
+    eval "$(__kfg_internal sys cache restore "$step_ref_name" --workdir "$PWD")"
+
+    # Register declarative artifacts that weren't restored from cache
+    local -a decl_artifacts=()
+    eval "decl_artifacts=(\"\${${decl_artifacts_array_name}[@]}\")"
+
+    local decl_art
+    for decl_art in "${decl_artifacts[@]}"; do
+        # Check if it's already registered (from cache restore)
+        local already_registered=0
+        local check_art
+        for check_art in "${KFG_ARTIFACTS[@]}"; do
+            if [ "$check_art" = "$decl_art" ]; then
+                already_registered=1
+                break
+            fi
+        done
+
+        # If not already registered, register it now
+        if [ $already_registered -eq 0 ] && [ -e "$decl_art" ]; then
+            __kfg_log_debug "cache" "Registering declarative artifact: $decl_art"
+            __kfg_add_artifact "$decl_art"
+        fi
+    done
+}
+
+# Serialize cache input as JSON for kfg sys cache store
+# Args: step_ref_name, output_name, step_artifacts_array_name, decl_artifacts_array_name
+# Returns: JSON string on stdout
+__kfg_serialize_cache_input() {
+    local step_ref_name="$1"
+    local output_name="$2"
+    local step_artifacts_array_name="$3"
+    local decl_artifacts_array_name="$4"
+
+    # Expand the arrays by name
+    local -a step_artifacts=()
+    local -a decl_artifacts=()
+    eval "step_artifacts=(\"\${${step_artifacts_array_name}[@]}\")"
+    eval "decl_artifacts=(\"\${${decl_artifacts_array_name}[@]}\")"
+
+    # Build JSON arrays
+    local after_json="[]"
+    if [ ${#step_artifacts[@]} -gt 0 ]; then
+        after_json="[$(printf '\"%s\",' "${step_artifacts[@]}" | sed 's/,$//' )]"
+    fi
+
+    local decl_json="[]"
+    if [ ${#decl_artifacts[@]} -gt 0 ]; then
+        decl_json="[$(printf '\"%s\",' "${decl_artifacts[@]}" | sed 's/,$//' )]"
+    fi
+
+    # Build output
+    local output_json="null"
+    if [ -n "$output_name" ]; then
+        local output_value
+        output_value=$(__kfg_output_get "$step_ref_name" "$output_name")
+        local output_encoded
+        output_encoded=$(printf '%s' "$output_value" | base64 | tr -d '\n')
+        output_json="{\"name\":\"$output_name\",\"value\":\"$output_encoded\"}"
+    fi
+
+    # Combine
+    printf '{"before":[],"after":%s,"declarative":%s,"output":%s}' "$after_json" "$decl_json" "$output_json"
+}
+
 # When condition evaluation
 
 __kfg_when_equals() {
@@ -78,54 +197,92 @@ __kfg_when_not() {
 
 # Logging helpers - delegate to kfg sys log subcommand
 # These helpers produce identical output to the Go logger.
+# Usage: __kfg_log_<level> [component] <message>
+#   - If 1 argument: treat as message, use component="step"
+#   - If 2+ arguments: first is component, rest is message
 # Usage errors are written directly to stderr to avoid recursion.
 
-_kfg.log.error() {
-    local component="${1:-}"
-    local message="${2:-}"
-    if [ -z "$component" ]; then
-        echo "Usage: _kfg.log.error <component> [message]" >&2
+__kfg_log_error() {
+    local component message
+    if [ $# -eq 1 ]; then
+        component="step"
+        message="$1"
+    elif [ $# -ge 2 ]; then
+        component="$1"
+        message="$2"
+    else
+        echo "Usage: __kfg_log_error [component] <message>" >&2
         return 1
     fi
     kfg sys log error "$component" "$message"
 }
 
-_kfg.log.warn() {
-    local component="${1:-}"
-    local message="${2:-}"
-    if [ -z "$component" ]; then
-        echo "Usage: _kfg.log.warn <component> [message]" >&2
+__kfg_log_warn() {
+    local component message
+    if [ $# -eq 1 ]; then
+        component="step"
+        message="$1"
+    elif [ $# -ge 2 ]; then
+        component="$1"
+        message="$2"
+    else
+        echo "Usage: __kfg_log_warn [component] <message>" >&2
         return 1
     fi
     kfg sys log warn "$component" "$message"
 }
 
-_kfg.log.info() {
-    local component="${1:-}"
-    local message="${2:-}"
-    if [ -z "$component" ]; then
-        echo "Usage: _kfg.log.info <component> [message]" >&2
+__kfg_log_info() {
+    local component message
+    if [ $# -eq 1 ]; then
+        component="step"
+        message="$1"
+    elif [ $# -ge 2 ]; then
+        component="$1"
+        message="$2"
+    else
+        echo "Usage: __kfg_log_info [component] <message>" >&2
         return 1
     fi
     kfg sys log info "$component" "$message"
 }
 
-_kfg.log.detail() {
-    local component="${1:-}"
-    local message="${2:-}"
-    if [ -z "$component" ]; then
-        echo "Usage: _kfg.log.detail <component> [message]" >&2
+__kfg_log_detail() {
+    local component message
+    if [ $# -eq 1 ]; then
+        component="step"
+        message="$1"
+    elif [ $# -ge 2 ]; then
+        component="$1"
+        message="$2"
+    else
+        echo "Usage: __kfg_log_detail [component] <message>" >&2
         return 1
     fi
     kfg sys log detail "$component" "$message"
 }
 
-_kfg.log.debug() {
-    local component="${1:-}"
-    local message="${2:-}"
-    if [ -z "$component" ]; then
-        echo "Usage: _kfg.log.debug <component> [message]" >&2
+__kfg_log_debug() {
+    local component message
+    if [ $# -eq 1 ]; then
+        component="step"
+        message="$1"
+    elif [ $# -ge 2 ]; then
+        component="$1"
+        message="$2"
+    else
+        echo "Usage: __kfg_log_debug [component] <message>" >&2
         return 1
     fi
     kfg sys log debug "$component" "$message"
+}
+
+# Internal kfg execution helper - executes kfg subprocesses with quiet logging
+# This helper forces KFG_VERBOSE=0 for the child process without mutating parent environment
+# Usage: __kfg_internal <kfg-args...>
+# Example:
+#   __kfg_internal sys cache exists "$step_ref_name"
+#   __kfg_internal apply -k "$overlay"
+__kfg_internal() {
+    KFG_VERBOSE=0 kfg "$@"
 }

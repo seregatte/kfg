@@ -1,0 +1,66 @@
+apiVersion: kfg.dev/v1alpha1
+kind: Step
+metadata:
+  name: ctx7.steps.inject
+spec:
+  run: |
+    TARGET_FILE="${TARGET_FILE:-AGENTS.md}"
+    CTX7_CONTEXT="${CTX7_CONTEXT:-}"
+
+    __kfg_log_debug "step:inject-ctx7-context" "TARGET_FILE=$TARGET_FILE"
+    __kfg_log_debug "step:inject-ctx7-context" "CTX7_CONTEXT length=${#CTX7_CONTEXT}"
+
+    # Check if CTX7_CONTEXT is provided
+    if [ -z "$CTX7_CONTEXT" ]; then
+      __kfg_log_warn "step:inject-ctx7-context" "CTX7_CONTEXT is empty or unset"
+      exit 0
+    fi
+
+    # Create target file if it doesn't exist
+    if [ ! -f "$TARGET_FILE" ]; then
+      touch "$TARGET_FILE"
+      __kfg_log_debug "step:inject-ctx7-context" "Created $TARGET_FILE"
+    fi
+
+    # Check if target already has context7 section
+    start_marker="<!-- context7 -->"
+    end_marker="<!-- context7 -->"
+
+    if grep -q '<!-- context7 -->' "$TARGET_FILE"; then
+      # Replace existing section
+      temp_file=$(mktemp)
+      awk -v start="$start_marker" -v end="$end_marker" -v new_content="$CTX7_CONTEXT" '
+        BEGIN { in_section = 0; printed = 0 }
+        {
+          if ($0 ~ start && !in_section) {
+            in_section = 1
+            print start
+            print new_content
+            print end
+            printed = 1
+          } else if ($0 ~ end && in_section) {
+            in_section = 0
+          } else if (!in_section) {
+            print
+          }
+        }
+      ' "$TARGET_FILE" > "$temp_file"
+      mv "$temp_file" "$TARGET_FILE"
+      __kfg_log_info "step:inject-ctx7-context" "Replaced ctx7 section in $TARGET_FILE"
+    else
+      # Append new section
+      {
+        echo ""
+        echo "$start_marker"
+        echo "$CTX7_CONTEXT"
+        echo "$end_marker"
+      } >> "$TARGET_FILE"
+      __kfg_log_info "step:inject-ctx7-context" "Appended ctx7 section to $TARGET_FILE"
+    fi
+
+  env:
+    TARGET_FILE: "AGENTS.md"
+    CTX7_CONTEXT: ""
+  output:
+    name: injected
+    type: string

@@ -435,6 +435,68 @@ func TestMergeEnv_OverrideWins(t *testing.T) {
 	assert.Len(t, result, 1)
 }
 
+// ============================================================================
+// Cache Merge Tests
+// ============================================================================
+
+func TestMergeCache_RefOverride(t *testing.T) {
+	// StepReference cache takes precedence
+	stepCache := &manifest.CacheConfig{Enabled: boolPtr(true)}
+	refCache := &manifest.CacheConfig{Enabled: boolPtr(false)}
+
+	result := MergeCache(stepCache, refCache)
+
+	assert.NotNil(t, result)
+	assert.NotNil(t, result.Enabled)
+	assert.False(t, *result.Enabled) // ref takes precedence
+}
+
+func TestMergeCache_OnlyStepCache(t *testing.T) {
+	// Use Step default when no ref override
+	stepCache := &manifest.CacheConfig{Enabled: boolPtr(true)}
+	var refCache *manifest.CacheConfig // nil
+
+	result := MergeCache(stepCache, refCache)
+
+	assert.NotNil(t, result)
+	assert.NotNil(t, result.Enabled)
+	assert.True(t, *result.Enabled)
+}
+
+func TestMergeCache_OnlyRefCache(t *testing.T) {
+	// Use ref cache when step has no cache
+	var stepCache *manifest.CacheConfig // nil
+	refCache := &manifest.CacheConfig{Enabled: boolPtr(true)}
+
+	result := MergeCache(stepCache, refCache)
+
+	assert.NotNil(t, result)
+	assert.NotNil(t, result.Enabled)
+	assert.True(t, *result.Enabled)
+}
+
+func TestMergeCache_BothNil(t *testing.T) {
+	result := MergeCache(nil, nil)
+
+	assert.Nil(t, result)
+}
+
+func TestMergeCache_RefEnabledNil(t *testing.T) {
+	// Ref cache with nil Enabled should still be used entirely
+	stepCache := &manifest.CacheConfig{Enabled: boolPtr(true)}
+	refCache := &manifest.CacheConfig{Enabled: nil}
+
+	result := MergeCache(stepCache, refCache)
+
+	assert.NotNil(t, result)
+	assert.Nil(t, result.Enabled) // ref's nil Enabled is used
+}
+
+// Helper function to create bool pointer
+func boolPtr(b bool) *bool {
+	return &b
+}
+
 func TestResolveStepReferences_EnvPopulation(t *testing.T) {
 	step := &manifest.Step{
 		APIVersion: "kfg.dev/v1alpha1",
@@ -815,4 +877,379 @@ func TestResolveWorkflowsByName_PartialNotFound(t *testing.T) {
 
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "CmdWorkflow not found")
+}
+
+// ============================================================================
+// StepRefName Tests (StepReference.Name runtime identity)
+// ============================================================================
+
+func TestResolveStepReference_StepRefName(t *testing.T) {
+	step := &manifest.Step{
+		APIVersion: "kfg.dev/v1alpha1",
+		Kind:       "Step",
+		Metadata:   manifest.Metadata{Name: "detect-step"},
+		Spec: manifest.StepSpec{
+			Run:    "echo detect",
+			Output: &manifest.Output{Name: "AGENT"},
+		},
+	}
+
+	workflow := &manifest.CmdWorkflow{
+		APIVersion: "kfg.dev/v1alpha1",
+		Kind:       "CmdWorkflow",
+		Metadata:   manifest.Metadata{Name: "test"},
+		Spec: manifest.CmdWorkflowSpec{
+			Cmds: []string{},
+			Before: []manifest.StepReference{
+				{
+					Name: "detect-agent", // StepReference.Name (runtime identity)
+					Step: "detect-step",  // Step metadata.name
+					Env: map[string]string{
+						"MODE": "auto",
+					},
+				},
+			},
+		},
+	}
+
+	index := NewIndex([]manifest.ParsedResource{
+		{Step: step},
+		{CmdWorkflow: workflow},
+	})
+
+	resolver := NewResolver(index)
+	resolved, err := resolver.ResolveKustomization("test", nil)
+
+	assert.NoError(t, err)
+	assert.Len(t, resolved.Workflow.BeforeSteps, 1)
+
+	// Verify StepRefName is populated from StepReference.Name
+	resolvedStep := resolved.Workflow.BeforeSteps[0]
+	assert.Equal(t, "detect-agent", resolvedStep.Name, "ResolvedStep.Name should be StepReference.Name")
+	assert.Equal(t, "detect-step", resolvedStep.Step.Metadata.Name, "Step metadata name should be unchanged")
+}
+
+func TestResolveStepReference_StepRefNameWithEnvOverride(t *testing.T) {
+	step := &manifest.Step{
+		APIVersion: "kfg.dev/v1alpha1",
+		Kind:       "Step",
+		Metadata:   manifest.Metadata{Name: "setup-step"},
+		Spec: manifest.StepSpec{
+			Run: "echo setup",
+			Env: map[string]string{
+				"SRC":  "default",
+				"DEST": "default",
+			},
+		},
+	}
+
+	workflow := &manifest.CmdWorkflow{
+		APIVersion: "kfg.dev/v1alpha1",
+		Kind:       "CmdWorkflow",
+		Metadata:   manifest.Metadata{Name: "test"},
+		Spec: manifest.CmdWorkflowSpec{
+			Cmds: []string{},
+			Before: []manifest.StepReference{
+				{
+					Name: "setup-claude", // StepReference.Name
+					Step: "setup-step",
+					Env: map[string]string{
+						"DEST": "CLAUDE.md",
+					},
+				},
+			},
+		},
+	}
+
+	index := NewIndex([]manifest.ParsedResource{
+		{Step: step},
+		{CmdWorkflow: workflow},
+	})
+
+	resolver := NewResolver(index)
+	resolved, err := resolver.ResolveKustomization("test", nil)
+
+	assert.NoError(t, err)
+	assert.Len(t, resolved.Workflow.BeforeSteps, 1)
+
+	resolvedStep := resolved.Workflow.BeforeSteps[0]
+	assert.Equal(t, "setup-claude", resolvedStep.Name)
+	assert.Equal(t, "setup-step", resolvedStep.Step.Metadata.Name)
+
+	// Verify env is merged properly
+	assert.Equal(t, "default", resolvedStep.Env["SRC"])
+	assert.Equal(t, "CLAUDE.md", resolvedStep.Env["DEST"])
+}
+
+func TestResolveStepReference_MultipleSameStepDifferentNames(t *testing.T) {
+	// Test that the same Step can be used multiple times with different StepRefNames
+	step := &manifest.Step{
+		APIVersion: "kfg.dev/v1alpha1",
+		Kind:       "Step",
+		Metadata:   manifest.Metadata{Name: "copy-step"},
+		Spec: manifest.StepSpec{
+			Run: "cp $SRC $DEST",
+			Env: map[string]string{
+				"SRC":  "default",
+				"DEST": "default",
+			},
+			Output: &manifest.Output{Name: "RESULT"},
+		},
+	}
+
+	workflow := &manifest.CmdWorkflow{
+		APIVersion: "kfg.dev/v1alpha1",
+		Kind:       "CmdWorkflow",
+		Metadata:   manifest.Metadata{Name: "test"},
+		Spec: manifest.CmdWorkflowSpec{
+			Cmds: []string{},
+			Before: []manifest.StepReference{
+				{
+					Name: "copy-claude",
+					Step: "copy-step",
+					Env:  map[string]string{"DEST": "CLAUDE.md"},
+				},
+				{
+					Name: "copy-gemini",
+					Step: "copy-step",
+					Env:  map[string]string{"DEST": "GEMINI.md"},
+				},
+			},
+		},
+	}
+
+	index := NewIndex([]manifest.ParsedResource{
+		{Step: step},
+		{CmdWorkflow: workflow},
+	})
+
+	resolver := NewResolver(index)
+	resolved, err := resolver.ResolveKustomization("test", nil)
+
+	assert.NoError(t, err)
+	assert.Len(t, resolved.Workflow.BeforeSteps, 2)
+
+	// Verify both step references have different names but same step
+	assert.Equal(t, "copy-claude", resolved.Workflow.BeforeSteps[0].Name)
+	assert.Equal(t, "copy-step", resolved.Workflow.BeforeSteps[0].Step.Metadata.Name)
+	assert.Equal(t, "CLAUDE.md", resolved.Workflow.BeforeSteps[0].Env["DEST"])
+
+	assert.Equal(t, "copy-gemini", resolved.Workflow.BeforeSteps[1].Name)
+	assert.Equal(t, "copy-step", resolved.Workflow.BeforeSteps[1].Step.Metadata.Name)
+	assert.Equal(t, "GEMINI.md", resolved.Workflow.BeforeSteps[1].Env["DEST"])
+}
+
+func TestResolveStepReference_AfterStepsWithNames(t *testing.T) {
+	step := &manifest.Step{
+		APIVersion: "kfg.dev/v1alpha1",
+		Kind:       "Step",
+		Metadata:   manifest.Metadata{Name: "cleanup-step"},
+		Spec:       manifest.StepSpec{Run: "rm -rf temp"},
+	}
+
+	workflow := &manifest.CmdWorkflow{
+		APIVersion: "kfg.dev/v1alpha1",
+		Kind:       "CmdWorkflow",
+		Metadata:   manifest.Metadata{Name: "test"},
+		Spec: manifest.CmdWorkflowSpec{
+			Cmds: []string{},
+			After: []manifest.StepReference{
+				{
+					Name: "cleanup-final",
+					Step: "cleanup-step",
+				},
+			},
+		},
+	}
+
+	index := NewIndex([]manifest.ParsedResource{
+		{Step: step},
+		{CmdWorkflow: workflow},
+	})
+
+	resolver := NewResolver(index)
+	resolved, err := resolver.ResolveKustomization("test", nil)
+
+	assert.NoError(t, err)
+	assert.Len(t, resolved.Workflow.AfterSteps, 1)
+
+	// Verify StepRefName is populated in after steps too
+	assert.Equal(t, "cleanup-final", resolved.Workflow.AfterSteps[0].Name)
+	assert.Equal(t, "cleanup-step", resolved.Workflow.AfterSteps[0].Step.Metadata.Name)
+}
+
+// ============================================================================
+// Cache Resolution Tests
+// ============================================================================
+
+func TestResolveStepReferences_CachePopulation(t *testing.T) {
+	step := &manifest.Step{
+		APIVersion: "kfg.dev/v1alpha1",
+		Kind:       "Step",
+		Metadata:   manifest.Metadata{Name: "cached-step"},
+		Spec: manifest.StepSpec{
+			Run:   "echo cached",
+			Cache: &manifest.CacheConfig{Enabled: boolPtr(true)},
+		},
+	}
+
+	workflow := &manifest.CmdWorkflow{
+		APIVersion: "kfg.dev/v1alpha1",
+		Kind:       "CmdWorkflow",
+		Metadata:   manifest.Metadata{Name: "test"},
+		Spec: manifest.CmdWorkflowSpec{
+			Cmds: []string{},
+			Before: []manifest.StepReference{
+				{
+					Name:  "cached-ref",
+					Step:  "cached-step",
+					Cache: &manifest.CacheConfig{Enabled: boolPtr(false)},
+				},
+			},
+		},
+	}
+
+	index := NewIndex([]manifest.ParsedResource{
+		{Step: step},
+		{CmdWorkflow: workflow},
+		})
+
+	resolver := NewResolver(index)
+	resolved, err := resolver.ResolveKustomization("test", nil)
+
+	assert.NoError(t, err)
+	assert.Len(t, resolved.Workflow.BeforeSteps, 1)
+
+	// Verify cache is merged with StepReference precedence
+	resolvedStep := resolved.Workflow.BeforeSteps[0]
+	assert.NotNil(t, resolvedStep.Cache)
+	assert.NotNil(t, resolvedStep.Cache.Enabled)
+	assert.False(t, *resolvedStep.Cache.Enabled) // ref overrides step
+}
+
+func TestResolveStepReferences_CacheNoOverride(t *testing.T) {
+	step := &manifest.Step{
+		APIVersion: "kfg.dev/v1alpha1",
+		Kind:       "Step",
+		Metadata:   manifest.Metadata{Name: "cached-step"},
+		Spec: manifest.StepSpec{
+			Run:   "echo cached",
+			Cache: &manifest.CacheConfig{Enabled: boolPtr(true)},
+		},
+	}
+
+	workflow := &manifest.CmdWorkflow{
+		APIVersion: "kfg.dev/v1alpha1",
+		Kind:       "CmdWorkflow",
+		Metadata:   manifest.Metadata{Name: "test"},
+		Spec: manifest.CmdWorkflowSpec{
+			Cmds: []string{},
+			Before: []manifest.StepReference{
+					{
+						Name: "cached-ref",
+						Step: "cached-step",
+						// No cache override - should use step default
+						},
+					},
+				},
+			}
+
+	index := NewIndex([]manifest.ParsedResource{
+		{Step: step},
+		{CmdWorkflow: workflow},
+		})
+
+	resolver := NewResolver(index)
+	resolved, err := resolver.ResolveKustomization("test", nil)
+
+	assert.NoError(t, err)
+	assert.Len(t, resolved.Workflow.BeforeSteps, 1)
+
+	// Verify step default cache is used
+	resolvedStep := resolved.Workflow.BeforeSteps[0]
+	assert.NotNil(t, resolvedStep.Cache)
+	assert.NotNil(t, resolvedStep.Cache.Enabled)
+	assert.True(t, *resolvedStep.Cache.Enabled)
+}
+
+func TestResolveStepReferences_NoCache(t *testing.T) {
+	step := &manifest.Step{
+		APIVersion: "kfg.dev/v1alpha1",
+		Kind:       "Step",
+		Metadata:   manifest.Metadata{Name: "no-cache-step"},
+		Spec:       manifest.StepSpec{Run: "echo nocache"},
+	}
+
+	workflow := &manifest.CmdWorkflow{
+		APIVersion: "kfg.dev/v1alpha1",
+		Kind:       "CmdWorkflow",
+		Metadata:   manifest.Metadata{Name: "test"},
+		Spec: manifest.CmdWorkflowSpec{
+			Cmds: []string{},
+			Before: []manifest.StepReference{
+					{
+						Name: "no-cache-ref",
+						Step: "no-cache-step",
+						},
+					},
+				},
+			}
+
+	index := NewIndex([]manifest.ParsedResource{
+		{Step: step},
+		{CmdWorkflow: workflow},
+		})
+
+	resolver := NewResolver(index)
+	resolved, err := resolver.ResolveKustomization("test", nil)
+
+	assert.NoError(t, err)
+	assert.Len(t, resolved.Workflow.BeforeSteps, 1)
+
+	// Verify no cache
+	resolvedStep := resolved.Workflow.BeforeSteps[0]
+	assert.Nil(t, resolvedStep.Cache)
+}
+
+func TestResolveStepReferences_RefCacheOnly(t *testing.T) {
+	// Step has no cache, but ref adds cache
+	step := &manifest.Step{
+		APIVersion: "kfg.dev/v1alpha1",
+		Kind:       "Step",
+		Metadata:   manifest.Metadata{Name: "nocache-step"},
+		Spec:       manifest.StepSpec{Run: "echo nocache"},
+	}
+
+	workflow := &manifest.CmdWorkflow{
+		APIVersion: "kfg.dev/v1alpha1",
+		Kind:       "CmdWorkflow",
+		Metadata:   manifest.Metadata{Name: "test"},
+		Spec: manifest.CmdWorkflowSpec{
+			Cmds: []string{},
+			Before: []manifest.StepReference{
+					{
+						Name:  "ref-cached",
+						Step:  "nocache-step",
+						Cache: &manifest.CacheConfig{Enabled: boolPtr(true)},
+						},
+					},
+				},
+			}
+
+	index := NewIndex([]manifest.ParsedResource{
+		{Step: step},
+		{CmdWorkflow: workflow},
+		})
+
+	resolver := NewResolver(index)
+	resolved, err := resolver.ResolveKustomization("test", nil)
+
+	assert.NoError(t, err)
+	assert.Len(t, resolved.Workflow.BeforeSteps, 1)
+
+	// Verify ref cache is applied
+	resolvedStep := resolved.Workflow.BeforeSteps[0]
+	assert.NotNil(t, resolvedStep.Cache)
+	assert.NotNil(t, resolvedStep.Cache.Enabled)
+	assert.True(t, *resolvedStep.Cache.Enabled)
 }

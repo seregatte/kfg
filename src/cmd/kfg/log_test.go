@@ -7,10 +7,10 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/seregatte/kfg/src/internal/logger"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/seregatte/kfg/src/internal/logger"
 )
 
 func TestLogCommandStructure(t *testing.T) {

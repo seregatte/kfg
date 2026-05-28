@@ -39,11 +39,11 @@ type Config struct {
 // DefaultConfig returns the default configuration.
 func DefaultConfig() *Config {
 	return &Config{
-		Verbose:   1,
-		LogFile:   "",
-		LogDir:    "",
-		LogColor:  "auto",
-		StoreDir:  "",
+		Verbose:  1,
+		LogFile:  "",
+		LogDir:   "",
+		LogColor: "auto",
+		StoreDir: "",
 	}
 }
 
@@ -63,6 +63,7 @@ func Initialize() error {
 	viper.BindEnv("log_color", "KFG_LOG_COLOR")
 	viper.BindEnv("debug", "KFG_DEBUG")
 	viper.BindEnv("store_dir", "KFG_STORE_DIR")
+	viper.BindEnv("kpath", "KFG_KPATH")
 
 	// Set environment variable prefix
 	viper.SetEnvPrefix("KFG")
@@ -76,11 +77,11 @@ func Initialize() error {
 // Load returns the current configuration from viper.
 func Load() *Config {
 	return &Config{
-		Verbose:   GetVerbose(),
-		LogFile:   viper.GetString("log_file"),
-		LogDir:    viper.GetString("log_dir"),
-		LogColor:  viper.GetString("log_color"),
-		StoreDir:  viper.GetString("store_dir"),
+		Verbose:  GetVerbose(),
+		LogFile:  viper.GetString("log_file"),
+		LogDir:   viper.GetString("log_dir"),
+		LogColor: viper.GetString("log_color"),
+		StoreDir: viper.GetString("store_dir"),
 	}
 }
 
@@ -178,4 +179,14 @@ func GetStoreDir() string {
 // GetStoreDirFromEnv returns the KFG_STORE_DIR value directly from environment.
 func GetStoreDirFromEnv() string {
 	return os.Getenv("KFG_STORE_DIR")
+}
+
+// GetKPath returns the kustomization source path configuration.
+func GetKPath() string {
+	return viper.GetString("kpath")
+}
+
+// GetKPathFromEnv returns the KFG_KPATH value directly from environment.
+func GetKPathFromEnv() string {
+	return os.Getenv("KFG_KPATH")
 }

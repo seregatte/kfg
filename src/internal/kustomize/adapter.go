@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"strings"
 
-	yamlv3 "gopkg.in/yaml.v3"
 	"github.com/seregatte/kfg/src/internal/logger"
 	"github.com/seregatte/kfg/src/internal/manifest"
+	yamlv3 "gopkg.in/yaml.v3"
 	"sigs.k8s.io/kustomize/api/resmap"
 )
 
@@ -112,6 +112,37 @@ func (a *Adapter) parseYamlNode(node *yamlv3.Node) (manifest.ParsedResource, err
 			return manifest.ParsedResource{}, fmt.Errorf("CmdWorkflow validation failed for %s: %v", workflow.Metadata.Name, err)
 		}
 		return manifest.ParsedResource{CmdWorkflow: &workflow}, nil
+
+	case "Assets":
+		var assets manifest.Assets
+		if err := contentNode.Decode(&assets); err != nil {
+			return manifest.ParsedResource{}, fmt.Errorf("failed to decode Assets: %w", err)
+		}
+		if assets.Spec.Input.Format == "" {
+			assets.Spec.Input.Format = "yaml"
+		}
+		if err := assets.Validate(); err != nil {
+			return manifest.ParsedResource{}, fmt.Errorf("Assets validation failed for %s: %v", assets.Metadata.Name, err)
+		}
+		logger.Debug("adapter", fmt.Sprintf("parsed Assets resource: %s", assets.Metadata.Name))
+		return manifest.ParsedResource{Assets: &assets}, nil
+
+	case "Converter":
+		var converter manifest.Converter
+		if err := contentNode.Decode(&converter); err != nil {
+			return manifest.ParsedResource{}, fmt.Errorf("failed to decode Converter: %w", err)
+		}
+		if converter.Spec.Input.Format == "" {
+			converter.Spec.Input.Format = "yaml"
+		}
+		if converter.Spec.Output.Format == "" {
+			converter.Spec.Output.Format = "yaml"
+		}
+		if err := converter.Validate(); err != nil {
+			return manifest.ParsedResource{}, fmt.Errorf("Converter validation failed for %s: %v", converter.Metadata.Name, err)
+		}
+		logger.Debug("adapter", fmt.Sprintf("parsed Converter resource: %s", converter.Metadata.Name))
+		return manifest.ParsedResource{Converter: &converter}, nil
 
 	default:
 		return manifest.ParsedResource{}, fmt.Errorf("unsupported kind: %s (supported: %s)", kindOnly.Kind, strings.Join(manifest.SupportedKinds, ", "))

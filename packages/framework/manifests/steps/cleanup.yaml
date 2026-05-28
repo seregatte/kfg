@@ -1,0 +1,17 @@
+apiVersion: kfg.dev/v1alpha1
+kind: Step
+metadata:
+  name: kfg.cleanup
+spec:
+  run: |
+    __kfg_log_info "cleaning up artifacts..."
+    if [ ${#KFG_ARTIFACTS[@]} -eq 0 ]; then
+        __kfg_log_info "no artifacts to clean up"
+        return 0
+    fi
+    for artifact in "${KFG_ARTIFACTS[@]}"; do
+        if [ -e "$artifact" ]; then
+            __kfg_log_info "removing artifact: $artifact"
+            rm -rf "$artifact"
+        fi
+    done

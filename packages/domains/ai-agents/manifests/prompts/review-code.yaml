@@ -1,0 +1,25 @@
+apiVersion: kfg.dev/v1alpha1
+kind: Assets
+metadata:
+  name: ai.prompts.review-code
+spec:
+  input:
+    format: yaml
+  data:
+    name: review-code
+    description: Review code changes for quality, security, and best practices
+    prompt: |
+      Review the code changes for quality, security, and best practices.
+      
+      Checklist:
+      - Code readability and clarity
+      - Security vulnerabilities
+      - Performance implications
+      - Error handling completeness
+      - Test coverage adequacy
+      - Naming conventions
+      - Documentation needs
+      
+      Provide specific line-by-line feedback with suggestions.
+      
+      Run: git diff HEAD~1

@@ -3,7 +3,7 @@
 
 BINARY_NAME=kfg
 VERSION?=$(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
-COMMIT?=$(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
+COMMIT?=$(shell git rev-parse --short=12 HEAD 2>/dev/null || echo "unknown")
 BUILD_DATE=$(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
 LDFLAGS=-ldflags "-X main.version=$(VERSION) -X main.commit=$(COMMIT) -X main.date=$(BUILD_DATE)"
 
@@ -38,7 +38,27 @@ clean:
 ## test: Run tests
 test:
 	@echo "Running tests..."
-	cd src && $(GOTEST) -v ./...
+	cd src && KFG_VERBOSE= $(GOTEST) -v ./...
+
+# Bats test directories (multi-root discovery)
+BATSROOTS:=tests/bats packages/framework/tests packages/domains/ai-agents/tests
+
+## test-bats: Run Bats integration tests from engine and packages (canonical entrypoint)
+test-bats: build
+	@echo "Running Bats tests from multiple roots..."
+	@for root in $(BATSROOTS); do \
+		if [ -d "$$root" ] && [ -n "$$(find $$root -name '*.bats')" ]; then \
+			echo "Testing: $$root"; \
+			bats $$root -r || exit 1; \
+		fi; \
+	done
+
+## test-manifests: Deprecated - use test-bats instead
+test-manifests: test-bats
+
+## test-all: Run all tests (unit, bats)
+test-all: test test-bats
+	@echo "All tests complete."
 
 ## test-coverage: Run tests with coverage
 test-coverage:

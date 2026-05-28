@@ -1,0 +1,20 @@
+apiVersion: kfg.dev/v1alpha1
+kind: Assets
+metadata:
+  name: ai.prompts.review-search
+spec:
+  input:
+    format: yaml
+  data:
+    name: review-search
+    description: Search and review code using grep/ripgrep patterns
+    prompt: |
+      Search the codebase for patterns and review the findings.
+      
+      Process:
+      1. Search for the specified pattern using grep or ripgrep
+      2. Analyze each match for correctness and best practices
+      3. Report findings organized by file
+      4. Suggest improvements where applicable
+      
+      Input: Provide the search pattern and optional file filter.

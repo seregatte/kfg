@@ -118,7 +118,7 @@ func TestGlobalFlags(t *testing.T) {
 
 func TestBuildCommandStructure(t *testing.T) {
 	assert.NotNil(t, buildCmd)
-	assert.Equal(t, "build <path>", buildCmd.Use)
+	assert.Equal(t, "build [path-or-url]", buildCmd.Use)
 	assert.Equal(t, "Build kustomization and output YAML", buildCmd.Short)
 	assert.Contains(t, buildCmd.Long, "Build a kustomization directory")
 	assert.NotNil(t, buildCmd.Run)

@@ -1,0 +1,441 @@
+apiVersion: kfg.dev/v1alpha1
+kind: CmdWorkflow
+metadata:
+  name: kfg.workflow.agents
+  shell: bash
+spec:
+  cmds:
+    - ai.claude.cmd.main
+    - ai.gemini.cmd.main
+    - ai.opencode.cmd.main
+    - ai.pi.cmd.main
+    - ai.cmds.openspec
+  before:
+    # Phase 1 (-90): Ensure gitignore
+    - name: agents.ensure-gitignore
+      step: kfg.ensure-gitignore
+      weight: -90
+      env:
+        GITIGNORE_ENTRIES: "/.opencode/:/.gemini/:/.pi/:/opencode.json:/.mcp.json"
+
+    # Phase 2 (-70): Detection
+    - name: agents.detect-agent
+      step: ai.steps.detect
+      weight: -70
+
+    # Phase 3 (-65): Scaffold (per-agent)
+    - name: agents.materialize-scaffold-claude
+      step: kfg.materialize-scaffold
+      weight: -65
+      when:
+        output:
+          step: agents.detect-agent
+          name: AGENT
+          equals: "claude"
+      env:
+        DIRECTORIES: ".claude:.claude/skills:.claude/commands:.claude/subagents"
+      artifacts:
+        - .claude/
+    - name: agents.materialize-scaffold-opencode
+      step: kfg.materialize-scaffold
+      weight: -65
+      when:
+        output:
+          step: agents.detect-agent
+          name: AGENT
+          equals: "opencode"
+      env:
+        DIRECTORIES: ".opencode:.opencode/skills:.opencode/commands:.opencode/subagents"
+      artifacts:
+        - .opencode/
+    - name: agents.materialize-scaffold-gemini
+      step: kfg.materialize-scaffold
+      weight: -65
+      when:
+        output:
+          step: agents.detect-agent
+          name: AGENT
+          equals: "gemini"
+      env:
+        DIRECTORIES: ".gemini:.gemini/skills:.gemini/commands"
+      artifacts:
+        - .gemini/
+    - name: agents.materialize-scaffold-pi
+      step: kfg.materialize-scaffold
+      weight: -65
+      when:
+        output:
+          step: agents.detect-agent
+          name: AGENT
+          equals: "pi"
+      env:
+        DIRECTORIES: ".pi:.pi/skills:.pi/prompts"
+      artifacts:
+        - .pi/
+    # Phase 4 (-63): Settings (per-agent)
+    - name: agents.settings-claude
+      step: kfg.materialize
+      weight: -63
+      when:
+        output:
+          step: agents.detect-agent
+          name: AGENT
+          equals: "claude"
+      env:
+        MODE: "per-item"
+        ASSETS: "ai.claude.asset.settings"
+        CONVERTER: "ai.conv.to-json"
+        OUTPUTS: ".claude/settings.json"
+    - name: agents.settings-gemini
+      step: kfg.materialize
+      weight: -63
+      when:
+        output:
+          step: agents.detect-agent
+          name: AGENT
+          equals: "gemini"
+      env:
+        MODE: "per-item"
+        ASSETS: "ai.gemini.asset.settings"
+        CONVERTER: "ai.conv.to-json"
+        OUTPUTS: ".gemini/settings.json"
+    - name: agents.settings-pi
+      step: kfg.materialize
+      weight: -63
+      when:
+        output:
+          step: agents.detect-agent
+          name: AGENT
+          equals: "pi"
+      env:
+        MODE: "per-item"
+        ASSETS: "ai.pi.asset.settings"
+        CONVERTER: "ai.conv.to-json"
+        OUTPUTS: ".pi/settings.json"
+    - name: agents.settings-opencode
+      step: kfg.materialize
+      weight: -63
+      when:
+        output:
+          step: agents.detect-agent
+          name: AGENT
+          equals: "opencode"
+      env:
+        MODE: "per-item"
+        ASSETS: "ai.opencode.asset.settings"
+        CONVERTER: "ai.conv.to-json"
+        OUTPUTS: "opencode.json"
+      artifacts:
+        - opencode.json
+
+    # Phase 5 (-60): Context
+    - name: agents.copy-context-claude
+      step: kfg.copy-context
+      weight: -60
+      failurePolicy: Ignore
+      env:
+        SRC: "docs/AGENTS.md"
+        DEST: "CLAUDE.md"
+      when:
+        output:
+          step: agents.detect-agent
+          name: AGENT
+          equals: "claude"
+      artifacts:
+        - CLAUDE.md
+    - name: agents.copy-context-others
+      step: kfg.copy-context
+      weight: -60
+      failurePolicy: Ignore
+      env:
+        SRC: "docs/AGENTS.md"
+      artifacts:
+        - AGENTS.md
+      when:
+        output:
+          step: agents.detect-agent
+          name: AGENT
+          in: ["opencode", "gemini", "pi"]
+
+    # Phase 6 (-55): ctx7 install (per-agent)
+    - name: agents.ctx7.install.claude
+      step: ctx7.steps.install
+      weight: -55
+      when:
+        output:
+          step: agents.detect-agent
+          name: AGENT
+          equals: "claude"
+      env:
+        FLAGS: "--claude --yes"
+        OUTPUT_DIR: ".claude/skills/"
+    - name: agents.ctx7.install.gemini
+      step: ctx7.steps.install
+      weight: -55
+      when:
+        output:
+          step: agents.detect-agent
+          name: AGENT
+          equals: "gemini"
+      env:
+        FLAGS: "--gemini --yes"
+        OUTPUT_DIR: ".gemini/skills/"
+    - name: agents.ctx7.install.opencode
+      step: ctx7.steps.install
+      weight: -55
+      when:
+        output:
+          step: agents.detect-agent
+          name: AGENT
+          equals: "opencode"
+      env:
+        FLAGS: "--opencode --yes"
+        OUTPUT_DIR: ".opencode/skills/"
+    - name: agents.ctx7.install.pi
+      step: ctx7.steps.install
+      weight: -55
+      when:
+        output:
+          step: agents.detect-agent
+          name: AGENT
+          equals: "pi"
+      env:
+        FLAGS: "--opencode --yes"
+        OUTPUT_DIR: ".pi/skills"
+
+    # Phase 7 (-53): openspec install (per-agent)
+    - name: agents.openspec.install.claude
+      step: openspec.steps.install
+      weight: -53
+      failurePolicy: Ignore
+      when:
+        output:
+          step: agents.detect-agent
+          name: AGENT
+          equals: "claude"
+      env:
+        TOOLS_FLAG: "--tools=claude"
+        AGENT_HOME: ".claude"
+        OUTPUT_DIR: ".claude/skills/"
+    - name: agents.openspec.install.gemini
+      step: openspec.steps.install
+      weight: -53
+      failurePolicy: Ignore
+      when:
+        output:
+          step: agents.detect-agent
+          name: AGENT
+          equals: "gemini"
+      env:
+        TOOLS_FLAG: "--tools=gemini"
+        AGENT_HOME: ".gemini"
+        OUTPUT_DIR: ".gemini/skills/"
+    - name: agents.openspec.install.opencode
+      step: openspec.steps.install
+      weight: -53
+      failurePolicy: Ignore
+      when:
+        output:
+          step: agents.detect-agent
+          name: AGENT
+          equals: "opencode"
+      env:
+        TOOLS_FLAG: "--tools=opencode"
+        AGENT_HOME: ".opencode"
+        OUTPUT_DIR: ".opencode/skills/"
+    - name: agents.openspec.install.pi
+      step: openspec.steps.install
+      weight: -53
+      failurePolicy: Ignore
+      when:
+        output:
+          step: agents.detect-agent
+          name: AGENT
+          equals: "pi"
+      env:
+        TOOLS_FLAG: "--tools=pi"
+        AGENT_HOME: ".pi"
+        OUTPUT_DIR: ".pi/skills/"
+
+    # Phase 8 (-50): inject ctx7 context (per-agent)
+    # - name: agents.inject-ctx7-context.claude
+    #   step: ctx7.steps.inject
+    #   weight: -50
+    #   when:
+    #     output:
+    #       step: agents.detect-agent
+    #       name: AGENT
+    #       equals: "claude"
+    #   env:
+    #     TARGET_FILE: "CLAUDE.md"
+    #     CTX7_CONTEXT: "$kfg.output(agents.ctx7.install.claude)"
+    # - name: agents.inject-ctx7-context.opencode
+    #   step: ctx7.steps.inject
+    #   weight: -50
+    #   when:
+    #     output:
+    #       step: agents.detect-agent
+    #       name: AGENT
+    #       equals: "opencode"
+    #   env:
+    #     TARGET_FILE: "AGENTS.md"
+    #     CTX7_CONTEXT: "$kfg.output(agents.ctx7.install.opencode)"
+    # - name: agents.inject-ctx7-context.gemini
+    #   step: ctx7.steps.inject
+    #   weight: -50
+    #   when:
+    #     output:
+    #       step: agents.detect-agent
+    #       name: AGENT
+    #       equals: "gemini"
+    #   env:
+    #     TARGET_FILE: "AGENTS.md"
+    #     CTX7_CONTEXT: "$kfg.output(agents.ctx7.install.gemini)"
+    # - name: agents.inject-ctx7-context.pi
+    #   step: ctx7.steps.inject
+    #   weight: -50
+    #   when:
+    #     output:
+    #       step: agents.detect-agent
+    #       name: AGENT
+    #       equals: "pi"
+    #   env:
+    #     TARGET_FILE: "AGENTS.md"
+    #     CTX7_CONTEXT: "$kfg.output(agents.ctx7.install.pi)"
+
+    # Phase 9 (-45): Commands (per-agent)
+    - name: agents.commands.claude
+      step: kfg.materialize
+      weight: -45
+      env:
+        MODE: "per-item"
+        ASSETS: "ai.prompts.git-commit"
+        CONVERTER: "ai.claude.conv.command"
+        OUTPUTS: ".claude/commands/git-commit.md"
+      when:
+        output:
+          step: agents.detect-agent
+          name: AGENT
+          equals: "claude"
+    - name: agents.commands.gemini
+      step: kfg.materialize
+      weight: -45
+      env:
+        MODE: "per-item"
+        ASSETS: "ai.prompts.git-commit"
+        CONVERTER: "ai.gemini.conv.command"
+        OUTPUTS: ".gemini/commands/git-commit.toml"
+      when:
+        output:
+          step: agents.detect-agent
+          name: AGENT
+          equals: "gemini"
+    - name: agents.commands.opencode
+      step: kfg.materialize
+      weight: -45
+      env:
+        MODE: "per-item"
+        ASSETS: "ai.prompts.git-commit"
+        CONVERTER: "ai.opencode.conv.command"
+        OUTPUTS: ".opencode/commands/git-commit.md"
+      when:
+        output:
+          step: agents.detect-agent
+          name: AGENT
+          equals: "opencode"
+    - name: agents.commands.pi
+      step: kfg.materialize
+      weight: -45
+      env:
+        MODE: "per-item"
+        ASSETS: "ai.prompts.git-commit"
+        CONVERTER: "ai.pi.conv.command"
+        OUTPUTS: ".pi/prompts/git-commit.md"
+      when:
+        output:
+          step: agents.detect-agent
+          name: AGENT
+          equals: "pi"
+
+    # Phase 10 (-40): MCP (per-agent)
+    - name: agents.mcp.claude
+      step: kfg.materialize
+      weight: -40
+      env:
+        MODE: "aggregate"
+        ASSETS: "ctx7.assets.mcp:chrome.assets.mcp:playwright.assets.mcp"
+        CONVERTER: "ai.claude.conv.mcp"
+        OUTPUTS: ".mcp.json"
+        WRAP_KEY: "mcpServers"
+      when:
+        output:
+          step: agents.detect-agent
+          name: AGENT
+          equals: "claude"
+      artifacts:
+        - .mcp.json
+    - name: agents.mcp.gemini
+      step: kfg.materialize
+      weight: -40
+      env:
+        MODE: "aggregate"
+        ASSETS: "ctx7.assets.mcp:chrome.assets.mcp:playwright.assets.mcp"
+        CONVERTER: "ai.gemini.conv.mcp"
+        OUTPUTS: ".gemini/settings.json"
+        WRAP_KEY: "mcpServers"
+      when:
+        output:
+          step: agents.detect-agent
+          name: AGENT
+          equals: "gemini"
+    - name: agents.mcp.opencode
+      step: kfg.materialize
+      weight: -40
+      env:
+        MODE: "aggregate"
+        ASSETS: "ctx7.assets.mcp:chrome.assets.mcp:playwright.assets.mcp"
+        CONVERTER: "ai.opencode.conv.mcp"
+        OUTPUTS: "opencode.json"
+        WRAP_KEY: "mcp"
+      when:
+        output:
+          step: agents.detect-agent
+          name: AGENT
+          equals: "opencode"
+
+    # Phase 11 (-35): Subagent (per-agent)
+    - name: agents.subagent.claude
+      step: kfg.materialize
+      weight: -35
+      env:
+        MODE: "per-item"
+        ASSETS: "ai.subagents.review-minimal"
+        CONVERTER: "ai.claude.conv.subagent"
+        OUTPUTS: ".claude/agents/review-minimal.md"
+      when:
+        output:
+          step: agents.detect-agent
+          name: AGENT
+          equals: "claude"
+    - name: agents.subagent.opencode
+      step: kfg.materialize
+      weight: -35
+      env:
+        MODE: "per-item"
+        ASSETS: "ai.subagents.review-minimal"
+        CONVERTER: "ai.opencode.conv.subagent"
+        OUTPUTS: ".opencode/agents/review-minimal.md"
+      when:
+        output:
+          step: agents.detect-agent
+          name: AGENT
+          equals: "opencode"
+
+  after:
+    - name: agents.cleanup.final
+      step: kfg.cleanup
+      when:
+        output:
+          step: agents.detect-agent
+          name: AGENT
+          in: ["claude", "gemini", "opencode", "pi"]

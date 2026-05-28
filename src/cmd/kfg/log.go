@@ -4,8 +4,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/spf13/cobra"
 	"github.com/seregatte/kfg/src/internal/logger"
+	"github.com/spf13/cobra"
 )
 
 // logCmd represents the log command

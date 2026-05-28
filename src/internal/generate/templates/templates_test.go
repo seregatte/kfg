@@ -312,3 +312,58 @@ func TestCommandDataStructure(t *testing.T) {
 	assert.Len(t, data.BeforeSteps, 1)
 	assert.Len(t, data.AfterSteps, 1)
 }
+
+func TestHelperLoggingSupportsBothCallStyles(t *testing.T) {
+	tm, err := NewTemplateManager()
+	assert.NoError(t, err)
+
+	output, err := tm.ExecuteHelper()
+	assert.NoError(t, err)
+
+	// Verify logging helpers support message-only calls (defaulting to component="step")
+	checks := []string{
+		// Message-only form should set component="step"
+		"if [ $# -eq 1 ]; then\n        component=\"step\"\n        message=\"$1\"",
+		// Two-argument form should work as before
+		"elif [ $# -ge 2 ]; then\n        component=\"$1\"\n        message=\"$2\"",
+		// All logging helpers should be present
+		"__kfg_log_error",
+		"__kfg_log_warn",
+		"__kfg_log_info",
+		"__kfg_log_detail",
+		"__kfg_log_debug",
+	}
+
+	for _, check := range checks {
+		assert.Contains(t, output, check, "helper output should contain %s", check)
+	}
+}
+
+func TestStepWrapperExportsScopedStepName(t *testing.T) {
+	tm, err := NewTemplateManager()
+	assert.NoError(t, err)
+
+	data := StepData{
+		StepName:  "test-step",
+		RunScript: "echo hello",
+	}
+
+	output, err := tm.ExecuteStep(data)
+	assert.NoError(t, err)
+
+	// Verify step wrapper saves, exports, and restores KFG_STEP_NAME
+	checks := []string{
+		// Save prior value
+		"local __prior_step_name=\"${KFG_STEP_NAME:-}\"",
+		// Export the new value
+		"export KFG_STEP_NAME=\"$__step_ref_name\"",
+		// Restore on exit via trap with inline command
+		"trap",
+		"KFG_STEP_NAME",
+		"RETURN",
+	}
+
+	for _, check := range checks {
+		assert.Contains(t, output, check, "step wrapper should contain %s", check)
+	}
+}

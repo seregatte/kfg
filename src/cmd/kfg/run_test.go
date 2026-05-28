@@ -6,61 +6,97 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/seregatte/kfg/src/internal/manifest"
 	"github.com/seregatte/kfg/src/internal/resolve"
+	"github.com/spf13/viper"
+	"github.com/stretchr/testify/assert"
 )
 
-func TestParseLaunchArgs(t *testing.T) {
+func TestSplitArgsAtDash(t *testing.T) {
 	tests := []struct {
-		name            string
-		args            []string
-		expectedAgent   string
-		expectedExtra   []string
+		name          string
+		dashIndex     int
+		args          []string
+		expectedCmd   string
+		expectedExtra []string
 	}{
 		{
 			name:          "no args",
+			dashIndex:     -1,
 			args:          []string{},
-			expectedAgent: "",
+			expectedCmd:   "",
 			expectedExtra: []string{},
 		},
 		{
-			name:          "agent only",
+			name:          "command only",
+			dashIndex:     -1,
 			args:          []string{"claude"},
-			expectedAgent: "claude",
+			expectedCmd:   "claude",
 			expectedExtra: []string{},
 		},
 		{
-			name:          "agent with extra args",
-			args:          []string{"claude", "--", "--model", "gpt-4"},
-			expectedAgent: "claude",
+			name:          "command with forwarded args after --",
+			dashIndex:     1,
+			args:          []string{"claude", "--model", "gpt-4"},
+			expectedCmd:   "claude",
 			expectedExtra: []string{"--model", "gpt-4"},
 		},
 		{
-			name:          "separator only",
-			args:          []string{"--", "--model", "gpt-4"},
-			expectedAgent: "",
+			name:          "separator only (no command before --)",
+			dashIndex:     0,
+			args:          []string{"--model", "gpt-4"},
+			expectedCmd:   "",
 			expectedExtra: []string{"--model", "gpt-4"},
 		},
 		{
-			name:          "multiple extra args",
-			args:          []string{"opencode", "--", "--help", "--verbose"},
-			expectedAgent: "opencode",
+			name:          "multiple forwarded args",
+			dashIndex:     1,
+			args:          []string{"opencode", "--help", "--verbose"},
+			expectedCmd:   "opencode",
 			expectedExtra: []string{"--help", "--verbose"},
+		},
+		{
+			name:          "single forwarded arg",
+			dashIndex:     1,
+			args:          []string{"claude", "--model"},
+			expectedCmd:   "claude",
+			expectedExtra: []string{"--model"},
+		},
+		{
+			name:          "no separator with multiple args (all before --)",
+			dashIndex:     -1,
+			args:          []string{"claude", "extra"},
+			expectedCmd:   "claude",
+			expectedExtra: []string{},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Create a dummy command for testing
-			agentName, extraArgs := parseLaunchArgs(nil, tt.args)
-			assert.Equal(t, tt.expectedAgent, agentName)
+			cmdName, extraArgs := splitArgsAtDash(tt.dashIndex, tt.args)
+			assert.Equal(t, tt.expectedCmd, cmdName)
 			assert.Equal(t, tt.expectedExtra, extraArgs)
 		})
 	}
 }
 
-func TestFindAgent(t *testing.T) {
+func TestParseLaunchArgs(t *testing.T) {
+	// parseLaunchArgs delegates to splitArgsAtDash using cmd.ArgsLenAtDash().
+	// When cmd is nil (unit test convenience), dashIndex defaults to -1.
+	t.Run("nil cmd returns first arg as command", func(t *testing.T) {
+		cmdName, extraArgs := parseLaunchArgs(nil, []string{"claude"})
+		assert.Equal(t, "claude", cmdName)
+		assert.Empty(t, extraArgs)
+	})
+
+	t.Run("nil cmd with empty args", func(t *testing.T) {
+		cmdName, extraArgs := parseLaunchArgs(nil, []string{})
+		assert.Empty(t, cmdName)
+		assert.Empty(t, extraArgs)
+	})
+}
+
+func TestFindCmd(t *testing.T) {
 	// Create test index with Cmds and CmdWorkflows
 	cmdClaude := &manifest.Cmd{
 		Metadata: manifest.Metadata{
@@ -114,44 +150,44 @@ func TestFindAgent(t *testing.T) {
 	index := resolve.NewIndex(resources)
 
 	tests := []struct {
-		name              string
-		agentName         string
-		workflowFilter    string
-		expectError       bool
-		expectedCmdName   string
-		expectedWorkflow  string
+		name             string
+		cmdName          string
+		workflowFilter   string
+		expectError      bool
+		expectedCmdName  string
+		expectedWorkflow string
 	}{
 		{
-			name:             "agent found",
-			agentName:        "claude",
+			name:             "command found",
+			cmdName:          "claude",
 			workflowFilter:   "",
 			expectError:      false,
 			expectedCmdName:  "dev.agents.claude",
 			expectedWorkflow: "dev.workflows.dev",
 		},
 		{
-			name:             "agent not found",
-			agentName:        "nonexistent",
-			workflowFilter:   "",
-			expectError:      true,
+			name:           "command not found",
+			cmdName:        "nonexistent",
+			workflowFilter: "",
+			expectError:    true,
 		},
 		{
-			name:             "agent not in specified workflow",
-			agentName:        "claude",
-			workflowFilter:   "dev.workflows.openspec",
-			expectError:      true,
+			name:           "command not in specified workflow",
+			cmdName:        "claude",
+			workflowFilter: "dev.workflows.openspec",
+			expectError:    true,
 		},
 		{
 			name:             "workflow filter match",
-			agentName:        "claude",
+			cmdName:          "claude",
 			workflowFilter:   "dev.workflows.dev",
 			expectError:      false,
 			expectedCmdName:  "dev.agents.claude",
 			expectedWorkflow: "dev.workflows.dev",
 		},
 		{
-			name:             "openspec agent found",
-			agentName:        "openspec",
+			name:             "openspec command found",
+			cmdName:          "openspec",
 			workflowFilter:   "",
 			expectError:      false,
 			expectedCmdName:  "dev.openspec",
@@ -161,7 +197,7 @@ func TestFindAgent(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cmdName, workflowName, cmd, err := findAgent(index, tt.agentName, tt.workflowFilter)
+			cmdName, workflowName, cmd, err := findCmd(index, tt.cmdName, tt.workflowFilter)
 			if tt.expectError {
 				assert.Error(t, err)
 				assert.Empty(t, cmdName)
@@ -177,7 +213,7 @@ func TestFindAgent(t *testing.T) {
 	}
 }
 
-func TestListAvailableAgents(t *testing.T) {
+func TestListAvailableCmds(t *testing.T) {
 	// Test with empty index
 	emptyResources := []manifest.ParsedResource{}
 	emptyIndex := resolve.NewIndex(emptyResources)
@@ -187,7 +223,7 @@ func TestListAvailableAgents(t *testing.T) {
 	r, w, _ := os.Pipe()
 	os.Stdout = w
 
-	listAvailableAgents(emptyIndex)
+	listAvailableCmds(emptyIndex)
 
 	w.Close()
 	var buf bytes.Buffer
@@ -195,7 +231,7 @@ func TestListAvailableAgents(t *testing.T) {
 	os.Stdout = oldStdout
 
 	output := buf.String()
-	assert.Contains(t, output, "No agents found")
+	assert.Contains(t, output, "No commands found")
 
 	// Test with populated index
 	cmdClaude := &manifest.Cmd{
@@ -226,7 +262,7 @@ func TestListAvailableAgents(t *testing.T) {
 	r2, w2, _ := os.Pipe()
 	os.Stdout = w2
 
-	listAvailableAgents(populatedIndex)
+	listAvailableCmds(populatedIndex)
 
 	w2.Close()
 	var buf2 bytes.Buffer
@@ -234,13 +270,13 @@ func TestListAvailableAgents(t *testing.T) {
 	os.Stdout = oldStdout
 
 	output2 := buf2.String()
-	assert.Contains(t, output2, "Available agents:")
+	assert.Contains(t, output2, "Available commands:")
 	assert.Contains(t, output2, "claude")
 	assert.Contains(t, output2, "gemini")
 	assert.Contains(t, output2, "workflow:")
 }
 
-func TestListAvailableAgentsOutputFormat(t *testing.T) {
+func TestListAvailableCmdsOutputFormat(t *testing.T) {
 	cmd := &manifest.Cmd{
 		Metadata: manifest.Metadata{
 			Name:        "test.agent",
@@ -264,7 +300,7 @@ func TestListAvailableAgentsOutputFormat(t *testing.T) {
 	r, w, _ := os.Pipe()
 	os.Stdout = w
 
-	listAvailableAgents(index)
+	listAvailableCmds(index)
 
 	w.Close()
 	var buf bytes.Buffer
@@ -275,8 +311,8 @@ func TestListAvailableAgentsOutputFormat(t *testing.T) {
 	// Check output format
 	lines := strings.Split(output, "\n")
 	assert.GreaterOrEqual(t, len(lines), 2)
-	assert.Equal(t, "Available agents:", lines[0])
-	// Find the agent line
+	assert.Equal(t, "Available commands:", lines[0])
+	// Find the command line
 	for _, line := range lines {
 		if strings.Contains(line, "testagent") {
 			assert.Contains(t, line, "(workflow: test.workflow)")
@@ -307,11 +343,55 @@ func TestRunCommandFlags(t *testing.T) {
 	cmdsFlag := flags.Lookup("cmds")
 	assert.NotNil(t, cmdsFlag)
 	assert.Equal(t, "c", cmdsFlag.Shorthand)
+
+	// Check --refresh flag
+	refreshFlag := flags.Lookup("refresh")
+	assert.NotNil(t, refreshFlag)
+	assert.Equal(t, "r", refreshFlag.Shorthand)
+	assert.Equal(t, "false", refreshFlag.DefValue)
 }
 
 func TestRunCommandStructure(t *testing.T) {
 	assert.NotNil(t, runCmd)
-	assert.Equal(t, "run [agent] [-- extra-args...]", runCmd.Use)
-	assert.Contains(t, runCmd.Short, "Run an agent")
+	assert.Equal(t, "run [cmd] [-- extra-args...]", runCmd.Use)
+	assert.Contains(t, runCmd.Short, "Run a command")
 	assert.NotNil(t, runCmd.RunE)
+}
+
+func TestRunCommandKPathFallback(t *testing.T) {
+	// Reset viper for each test
+	viper.Reset()
+
+	// Test 1: KFG_KPATH is set, no -k or -f flag provided
+	os.Setenv("KFG_KPATH", "./test-manifests")
+	viper.BindEnv("kpath", "KFG_KPATH")
+
+	// The RunE function should use GetKPath() when no -k or -f is provided
+	// We can verify the config getter works
+	assert.Equal(t, "./test-manifests", viper.GetString("kpath"))
+	os.Unsetenv("KFG_KPATH")
+
+	// Test 2: KFG_KPATH is not set, -k flag provided
+	viper.Reset()
+	assert.Equal(t, "", viper.GetString("kpath"))
+
+	// Test 3: KFG_KPATH with GitHub URL
+	os.Setenv("KFG_KPATH", "https://github.com/owner/repo//manifests")
+	viper.BindEnv("kpath", "KFG_KPATH")
+	assert.Equal(t, "https://github.com/owner/repo//manifests", viper.GetString("kpath"))
+	os.Unsetenv("KFG_KPATH")
+}
+
+func TestRunCommandLongDescription(t *testing.T) {
+	// Verify the Long description mentions KFG_KPATH and GitHub URLs
+	assert.Contains(t, runCmd.Long, "KFG_KPATH")
+	assert.Contains(t, runCmd.Long, "github.com")
+	assert.Contains(t, runCmd.Long, "https://github.com/owner/repo//path")
+}
+
+func TestRunCommandExamples(t *testing.T) {
+	// Verify the examples include GitHub URL and KFG_KPATH usage
+	assert.Contains(t, runCmd.Long, "kfg run -k https://github.com/owner/repo//packages/domains/ai-agents/overlays/dev my-cmd")
+	assert.Contains(t, runCmd.Long, "KFG_KPATH=./packages/framework kfg run")
+	assert.Contains(t, runCmd.Long, "KFG_KPATH=https://github.com")
 }

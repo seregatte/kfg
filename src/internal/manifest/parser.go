@@ -25,6 +25,8 @@ type ParsedResource struct {
 	Step        *Step
 	Cmd         *Cmd
 	CmdWorkflow *CmdWorkflow
+	Assets      *Assets
+	Converter   *Converter
 }
 
 // Kind returns the resource kind.
@@ -37,6 +39,12 @@ func (r ParsedResource) Kind() string {
 	}
 	if r.CmdWorkflow != nil {
 		return "CmdWorkflow"
+	}
+	if r.Assets != nil {
+		return "Assets"
+	}
+	if r.Converter != nil {
+		return "Converter"
 	}
 	return ""
 }
@@ -52,6 +60,12 @@ func (r ParsedResource) Name() string {
 	if r.CmdWorkflow != nil {
 		return r.CmdWorkflow.Metadata.Name
 	}
+	if r.Assets != nil {
+		return r.Assets.Metadata.Name
+	}
+	if r.Converter != nil {
+		return r.Converter.Metadata.Name
+	}
 	return ""
 }
 
@@ -66,6 +80,12 @@ func (r ParsedResource) Identity() ResourceIdentity {
 	if r.CmdWorkflow != nil {
 		return r.CmdWorkflow.Identity()
 	}
+	if r.Assets != nil {
+		return r.Assets.Identity()
+	}
+	if r.Converter != nil {
+		return r.Converter.Identity()
+	}
 	return ResourceIdentity{}
 }
 
@@ -79,6 +99,12 @@ func (r ParsedResource) Validate() error {
 	}
 	if r.CmdWorkflow != nil {
 		return r.CmdWorkflow.Validate()
+	}
+	if r.Assets != nil {
+		return r.Assets.Validate()
+	}
+	if r.Converter != nil {
+		return r.Converter.Validate()
 	}
 	return fmt.Errorf("empty ParsedResource")
 }
@@ -96,6 +122,16 @@ func (r ParsedResource) GetCmd() *Cmd {
 // GetCmdWorkflow returns the CmdWorkflow if this is a CmdWorkflow resource.
 func (r ParsedResource) GetCmdWorkflow() *CmdWorkflow {
 	return r.CmdWorkflow
+}
+
+// GetAssets returns the Assets if this is an Assets resource.
+func (r ParsedResource) GetAssets() *Assets {
+	return r.Assets
+}
+
+// GetConverter returns the Converter if this is a Converter resource.
+func (r ParsedResource) GetConverter() *Converter {
+	return r.Converter
 }
 
 // ParseFile parses a single YAML file into resources.
@@ -218,6 +254,47 @@ func (p *Parser) parseNode(path string, node *yaml.Node, docIndex int) (ParsedRe
 			}
 		}
 		return ParsedResource{CmdWorkflow: &workflow}, nil
+
+	case "Assets":
+		var assets Assets
+		if err := node.Decode(&assets); err != nil {
+			line := node.Line
+			if line == 0 {
+				line = getErrorLineFromNode(node, err)
+			}
+			return ParsedResource{}, ParseError{
+				File:    path,
+				Line:    line,
+				Message: fmt.Sprintf("failed to decode Assets: %v", err),
+			}
+		}
+		// Default input format to yaml
+		if assets.Spec.Input.Format == "" {
+			assets.Spec.Input.Format = "yaml"
+		}
+		return ParsedResource{Assets: &assets}, nil
+
+	case "Converter":
+		var converter Converter
+		if err := node.Decode(&converter); err != nil {
+			line := node.Line
+			if line == 0 {
+				line = getErrorLineFromNode(node, err)
+			}
+			return ParsedResource{}, ParseError{
+				File:    path,
+				Line:    line,
+				Message: fmt.Sprintf("failed to decode Converter: %v", err),
+			}
+		}
+		// Default input and output format to yaml
+		if converter.Spec.Input.Format == "" {
+			converter.Spec.Input.Format = "yaml"
+		}
+		if converter.Spec.Output.Format == "" {
+			converter.Spec.Output.Format = "yaml"
+		}
+		return ParsedResource{Converter: &converter}, nil
 
 	default:
 		line := node.Line

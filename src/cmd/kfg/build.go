@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/spf13/cobra"
+	"github.com/seregatte/kfg/src/internal/config"
 	"github.com/seregatte/kfg/src/internal/kustomize"
 	"github.com/seregatte/kfg/src/internal/logger"
+	"github.com/spf13/cobra"
 )
 
 var (
@@ -16,7 +17,7 @@ var (
 
 // buildCmd represents the build command
 var buildCmd = &cobra.Command{
-	Use:   "build <path>",
+	Use:   "build [path-or-url]",
 	Short: "Build kustomization and output YAML",
 	Long: `Build a kustomization directory and output the resulting YAML.
 
@@ -24,15 +25,40 @@ This command uses kustomize to process a kustomization.yaml file and outputs
 the resulting YAML manifests. It supports HTTP resources, strategic merge
 patches, and overlays.
 
+The source can be provided as:
+  - A positional argument (path or GitHub URL)
+  - The KFG_KPATH environment variable (used as fallback)
+
+GitHub URLs are supported and will be cloned automatically:
+  - https://github.com/owner/repo//path
+  - https://github.com/owner/repo//path?ref=v1.0.0
+
+Environment variables:
+  KFG_KPATH      Default kustomization path if positional arg not specified
+
 Examples:
   kfg build .nixai/overlay/dev
   kfg build .nixai/base -o output.yaml
-  kfg build https://example.com/kustomization.yaml`,
-	Args: cobra.ExactArgs(1),
+  kfg build https://github.com/owner/repo//manifests
+  kfg build https://github.com/owner/repo//manifests?ref=v1.0.0
+  KFG_KPATH=./manifests kfg build
+  KFG_KPATH=https://github.com/owner/repo//manifests kfg build`,
+	Args: cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		path := args[0]
+		// Source resolution: arg[0] > GetKPath() > error
+		var path string
+		if len(args) > 0 {
+			path = args[0]
+		} else {
+			path = config.GetKPath()
+			if path == "" {
+				logger.Error("build", "kustomization source required. Provide a path, use -k flag, or set KFG_KPATH.")
+				cmd.Help()
+				os.Exit(2)
+			}
+		}
 
-		// Create kustomize loader
+		// Create kustomize loader (GitHub URLs are passed directly, kustomize handles cloning)
 		loader := kustomize.NewLoader(nil)
 
 		// Load kustomization
@@ -66,10 +92,10 @@ Examples:
 
 // kustomizeCmd is an alias for the build command
 var kustomizeCmd = &cobra.Command{
-	Use:   "kustomize <path>",
+	Use:   "kustomize [path-or-url]",
 	Short: "Alias for 'build' command",
 	Long:  `Alias for the 'build' command. See 'kfg build --help' for details.`,
-	Args:  cobra.ExactArgs(1),
+	Args:  cobra.MaximumNArgs(1),
 	Run:   buildCmd.Run,
 }
 

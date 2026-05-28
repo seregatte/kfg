@@ -1,0 +1,58 @@
+apiVersion: kfg.dev/v1alpha1
+kind: Step
+metadata:
+  name: chrome-devtools.steps.install
+spec:
+  run: |
+    __kfg_log_info "Installing Chrome DevTools skills..."
+
+    # Validate required env vars
+    if [ -z "$SKILL_NAME" ]; then
+      __kfg_log_error "Missing required environment variable: SKILL_NAME"
+      exit 1
+    fi
+
+    if [ -z "$AGENT_FLAG" ]; then
+      __kfg_log_error "Missing required environment variable: AGENT_FLAG"
+      exit 1
+    fi
+
+    if [ -z "$AGENT_HOME" ]; then
+      __kfg_log_error "Missing required environment variable: AGENT_HOME"
+      exit 1
+    fi
+
+    if [ -z "$OUTPUT_DIR" ]; then
+      __kfg_log_error "Missing required environment variable: OUTPUT_DIR"
+      exit 1
+    fi
+
+    __kfg_log_debug "SKILL_NAME=$SKILL_NAME"
+    __kfg_log_debug "AGENT_FLAG=$AGENT_FLAG"
+    __kfg_log_debug "AGENT_HOME=$AGENT_HOME"
+    __kfg_log_debug "OUTPUT_DIR=$OUTPUT_DIR"
+
+    # Ensure output directory exists
+    mkdir -p "$OUTPUT_DIR"
+
+    # Install skill via npx skills add
+    npx skills add "$SKILL_NAME" --agent "$AGENT_FLAG" --copy --yes
+
+    # Copy skills from agent home to output directory
+    if [ -d "$AGENT_HOME/skills/" ]; then
+      cp -r "$AGENT_HOME/skills/"* "$OUTPUT_DIR/" 2>/dev/null || true
+      __kfg_log_info "Copied Chrome DevTools skills from $AGENT_HOME/skills/ to $OUTPUT_DIR"
+    fi
+
+    __kfg_log_info "Installed Chrome DevTools skills"
+
+  env:
+    SKILL_NAME: "ChromeDevTools/chrome-devtools-mcp"
+    AGENT_FLAG: "claude-code"
+    AGENT_HOME: ".claude"
+    OUTPUT_DIR: ".claude/skills/"
+  output:
+    name: installed
+    type: string
+  cache:
+    enabled: true

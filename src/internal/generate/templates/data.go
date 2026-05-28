@@ -21,6 +21,8 @@ type StepData struct {
 	IgnoreFailure bool
 	Artifacts     []string          // NEW: artifacts produced by this step
 	Env           map[string]string // NEW: environment variables for this step
+	// Cache configuration
+	CacheEnabled bool   // Whether caching is enabled for this step
 }
 
 // BeforeStepData represents a before step in a command wrapper.
@@ -65,11 +67,20 @@ type CmdData struct {
 
 // WorkflowStepData represents a step in workflow context.
 // Used for global workflow before/after steps.
+// StepRefName is the StepReference.name (runtime execution identity) used for output addressing.
 type WorkflowStepData struct {
-	StepName      string
+	StepRefName   string // StepReference.name (runtime execution identity)
+	StepName      string // Step metadata.name (for function lookup)
 	IgnoreFailure bool
 	WhenCondition string
 	Env           map[string]string // NEW: merged env for this step invocation
+	// Cache configuration
+	CacheEnabled bool   // Whether caching is enabled for this step invocation
+	HasOutput    bool   // Whether this step has an output
+	OutputName   string // Output name if HasOutput is true
+	// Declarative artifacts
+	StepArtifacts []string // Artifacts declared in Step.Spec.Artifacts
+	RefArtifacts  []string // Artifacts declared in StepReference.Artifacts
 }
 
 // WorkflowCmdData represents a cmd in workflow context.

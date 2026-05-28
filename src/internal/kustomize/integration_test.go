@@ -802,14 +802,14 @@ func TestLoaderSchemaDefaultValuesLogging(t *testing.T) {
 	// Initialize logger with temp JSONL file
 	tmpDir := t.TempDir()
 	jsonlFile := tmpDir + "/test.jsonl"
-	
+
 	// Reset and initialize logger
 	logger.Reset()
 	os.Setenv("KFG_LOG_FILE", jsonlFile)
 	os.Setenv("KFG_VERBOSE", "2") // DETAIL level requires verbose=2
 	defer os.Unsetenv("KFG_LOG_FILE")
 	defer os.Unsetenv("KFG_VERBOSE")
-	
+
 	err := logger.Initialize()
 	require.NoError(t, err)
 	defer logger.Close()
@@ -905,11 +905,11 @@ spec:
 		if err := json.Unmarshal([]byte(line), &event); err != nil {
 			continue
 		}
-		
+
 		// Check for DETAIL level log about default values
 		msg, _ := event["msg"].(string)
 		component, _ := event["component"].(string)
-		
+
 		// Default values are logged by validator component at DETAIL level
 		if strings.Contains(msg, "default") && component == "validator" {
 			foundDefaults = true
@@ -928,14 +928,14 @@ func TestLoaderSchemaValidationJSONLEntries(t *testing.T) {
 	// Initialize logger with temp JSONL file
 	tmpDir := t.TempDir()
 	jsonlFile := tmpDir + "/test.jsonl"
-	
+
 	// Reset and initialize logger
 	logger.Reset()
 	os.Setenv("KFG_LOG_FILE", jsonlFile)
 	os.Setenv("KFG_VERBOSE", "0") // Only JSONL, no stderr
 	defer os.Unsetenv("KFG_LOG_FILE")
 	defer os.Unsetenv("KFG_VERBOSE")
-	
+
 	err := logger.Initialize()
 	require.NoError(t, err)
 	defer logger.Close()
@@ -1021,16 +1021,16 @@ spec:
 		if err := json.Unmarshal([]byte(line), &event); err != nil {
 			continue
 		}
-		
+
 		msg, _ := event["msg"].(string)
 		component, _ := event["component"].(string)
-		
+
 		// Check for schema found log (kustomize component)
 		if strings.Contains(msg, "found schema://") && component == "kustomize" {
 			foundSchemaFound = true
 			t.Logf("Found schema found log: %s", msg)
 		}
-		
+
 		// Check for validation passed log (validator component)
 		if strings.Contains(msg, "validation passed") && component == "validator" {
 			foundValidationPassed = true
@@ -1047,33 +1047,33 @@ spec:
 // verbose=1 shows info but not detail, verbose=2 shows detail including default values.
 func TestLoaderVerboseLevelBehavior(t *testing.T) {
 	tests := []struct {
-		name           string
-		verbose         string
-		expectDetail    bool // DETAIL level (default values) should be in JSONL
+		name               string
+		verbose            string
+		expectDetail       bool // DETAIL level (default values) should be in JSONL
 		expectDetailStderr bool // DETAIL level should be on stderr
 	}{
 		{
-			name:           "verbose=0 (JSONL only, no stderr)",
-			verbose:         "0",
-			expectDetail:    true,  // JSONL always has all levels
+			name:               "verbose=0 (JSONL only, no stderr)",
+			verbose:            "0",
+			expectDetail:       true,  // JSONL always has all levels
 			expectDetailStderr: false, // No stderr output at verbose=0
 		},
 		{
-			name:           "verbose=1 (info level, detail not on stderr)",
-			verbose:         "1",
-			expectDetail:    true,  // JSONL always has all levels
+			name:               "verbose=1 (info level, detail not on stderr)",
+			verbose:            "1",
+			expectDetail:       true,  // JSONL always has all levels
 			expectDetailStderr: false, // DETAIL requires verbose=2
 		},
 		{
-			name:           "verbose=2 (detail level on stderr)",
-			verbose:         "2",
-			expectDetail:    true,  // JSONL always has all levels
+			name:               "verbose=2 (detail level on stderr)",
+			verbose:            "2",
+			expectDetail:       true, // JSONL always has all levels
 			expectDetailStderr: true, // DETAIL shown at verbose=2
 		},
 		{
-			name:           "verbose=3 (all levels on stderr)",
-			verbose:         "3",
-			expectDetail:    true,  // JSONL always has all levels
+			name:               "verbose=3 (all levels on stderr)",
+			verbose:            "3",
+			expectDetail:       true, // JSONL always has all levels
 			expectDetailStderr: true, // DEBUG shown, DETAIL also shown
 		},
 	}
@@ -1083,14 +1083,14 @@ func TestLoaderVerboseLevelBehavior(t *testing.T) {
 			// Initialize logger with temp JSONL file
 			tmpDir := t.TempDir()
 			jsonlFile := tmpDir + "/test.jsonl"
-			
+
 			// Reset and initialize logger
 			logger.Reset()
 			os.Setenv("KFG_LOG_FILE", jsonlFile)
 			os.Setenv("KFG_VERBOSE", tt.verbose)
 			defer os.Unsetenv("KFG_LOG_FILE")
 			defer os.Unsetenv("KFG_VERBOSE")
-			
+
 			err := logger.Initialize()
 			require.NoError(t, err)
 			defer logger.Close()
@@ -1169,18 +1169,18 @@ spec:
 				if err := json.Unmarshal([]byte(line), &event); err != nil {
 					continue
 				}
-				
+
 				msg, _ := event["msg"].(string)
 				component, _ := event["component"].(string)
-				
+
 				if strings.Contains(msg, "default") && component == "validator" {
 					foundDetailInJSONL = true
 				}
 			}
 
-			assert.Equal(t, tt.expectDetail, foundDetailInJSONL, 
+			assert.Equal(t, tt.expectDetail, foundDetailInJSONL,
 				"DETAIL level entries in JSONL should always be present regardless of verbose setting")
-			
+
 			t.Logf("JSONL has DETAIL entries: %v (verbose=%s)", foundDetailInJSONL, tt.verbose)
 		})
 	}

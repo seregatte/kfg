@@ -142,16 +142,45 @@ make fmt
 make lint
 ```
 
+## Repository Structure
+
+KFG uses a package-oriented architecture:
+
+```
+├── src/                          # Engine implementation (Go)
+│   ├── cmd/kfg/                  # CLI commands
+│   └── internal/                 # Internal packages
+├── packages/
+│   ├── framework/                # Shared manifest primitives
+│   │   ├── manifests/            # Reusable steps (materialize, cleanup, etc.)
+│   │   └── tests/                # Framework test suite
+│   └── domains/
+│       └── ai-agents/            # AI agents domain package
+│           ├── manifests/        # AI agent resources
+│           ├── overlays/dev/     # Development overlay
+│           └── tests/            # Domain test suite
+├── docs/
+│   ├── AGENTS.md                 # AI agent operating context
+│   └── context/
+│       ├── kfg/openspec/         # Engine-level specifications
+│       ├── framework/openspec/   # Framework specifications
+│       └── domains/ai-agents/openspec/  # Domain specifications
+├── tests/
+│   └── bats/                     # Engine and integration tests
+│       ├── cli/                  # CLI command tests
+│       ├── workflows/            # Runtime workflow tests
+│       └── helpers/              # Shared test helpers
+└── Makefile                      # Build and test targets
+```
+
+**Public Entrypoints:**
+- Engine CLI: `./bin/kfg`
+- Framework package: `packages/framework/kustomization.yaml`
+- AI agents domain: `packages/domains/ai-agents/kustomization.yaml`
+- Domain overlay (dev): `packages/domains/ai-agents/overlays/dev/`
+
+For more details, see [AGENTS.md](AGENTS.md).
+
 ## License
 
 MIT License
-
-## Migration from NixAI
-
-For users migrating from NixAI, see the [Migration Guide](docs/migration.md).
-
-Key changes:
-- Command structure: `nixai store image build` → `kfg image build` (or `kfg img build`)
-- Environment variables: `NIXAI_*` → `KFG_*`
-- API version: `nixai.dev/v1alpha1` → `kfg.dev/v1alpha1`
-- Config paths: `~/.config/nixai/` → `~/.config/kfg/`# kfg

@@ -8,7 +8,7 @@
 
   outputs = { self, nixpkgs, nixai }:
     let
-      version = "2.1.0";
+      version = "0.0.2";
       
       # Platform-specific SHA-256 hashes (updated by release workflow)
       platformHashes = {
@@ -71,10 +71,9 @@
           shell = pkgs.mkShell {
             inputsFrom = [ nixai.devShells.${system}.default ];
             shellHook = ''
-              echo "Welcome to the kfg development environment!"
-              alias kfg="go run ./src/cmd/kfg"
-              ln -s docs/context/openspec ./ 2>/dev/null || true
-              source <(kfg apply -k $NIXAI_DIR/.nixai/overlay/dev)
+              export PATH="./bin:$PATH"
+              export OPENSPEC_ROOT_DIR=docs/context
+              source <(go run ./src/cmd/kfg apply -k packages/domains/ai-agents/overlays/dev)
             '';
           };
         in

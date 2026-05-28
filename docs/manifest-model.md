@@ -1,6 +1,6 @@
 # Manifest Model
 
-kfg uses YAML manifests to define resources. All resources use namespace-style names: `kfg.core.steps.detect-provider`.
+kfg uses YAML manifests to define resources. Resources follow a short, consistent naming convention: `<scope>.<kind>.<name>` (e.g., `myapp.cmd.deploy`, `ctx7.steps.install`, `ai.claude.asset.settings`).
 
 ## Resource Kinds
 
@@ -12,12 +12,14 @@ Pure shell function. No before/after — those belong in CmdWorkflow.
 apiVersion: kfg.dev/v1alpha1
 kind: Cmd
 metadata:
-  name: claude
-  commandName: claude   # Generated shell function name
+  name: myapp.cmd.deploy
+  commandName: deploy   # Generated shell function name
 spec:
   env:
-    ANTHROPIC_API_KEY: "{env:ANTHROPIC_API_KEY}"
-  run: command claude "$@"
+    DEPLOY_TARGET: "{env:DEPLOY_TARGET}"
+  run: |
+    echo "Deploying to $DEPLOY_TARGET..."
+    kubectl apply -f manifests/
 ```
 
 ### CmdWorkflow
@@ -28,16 +30,16 @@ Orchestration layer. Defines which cmds to include and global before/after steps
 apiVersion: kfg.dev/v1alpha1
 kind: CmdWorkflow
 metadata:
-  name: dev
+  name: myapp.workflow.main
   shell: bash
 spec:
-  cmds: [claude, gemini]
+  cmds: [myapp.cmd.deploy, myapp.cmd.test]
   before:
-    - step: kfg.core.steps.detect-provider
-    - step: kfg.core.steps.install-ctx7
+    - step: myapp.steps.validate
+    - step: ctx7.steps.install
       failurePolicy: Ignore
   after:
-    - step: kfg.core.steps.cleanup-temp
+    - step: kfg.cleanup
 ```
 
 Steps execute in **YAML order** (no weight sorting).
@@ -50,18 +52,19 @@ Reusable unit of work. Can produce outputs via stdout.
 apiVersion: kfg.dev/v1alpha1
 kind: Step
 metadata:
-  name: kfg.core.steps.detect-provider
+  name: myapp.steps.validate
 spec:
   env:
     TIMEOUT: "30"
   run: |
-    if command -v claude >/dev/null 2>&1; then
-      echo "anthropic"
+    echo "Validating configuration..."
+    if [ -f "config.yaml" ]; then
+      echo "valid"
     else
-      echo "unknown"
+      echo "missing"
     fi
   output:
-    name: provider
+    name: STATUS
     type: string
 ```
 
@@ -75,16 +78,17 @@ When referencing a Step in a workflow, you can add:
 - **`env`**: Subshell-scoped environment variable override
 
 ```yaml
-- step: kfg.core.steps.install-ctx7
-  weight: -50
+- step: ctx7.steps.install
+  weight: -55
   when:
     output:
-      step: kfg.core.steps.detect-provider
-      name: provider
-      equals: "anthropic"
+      step: myapp.steps.validate
+      name: STATUS
+      equals: "valid"
   failurePolicy: Ignore
   env:
-    TIMEOUT: "60"
+    FLAGS: "--yes"
+    OUTPUT_DIR: ".claude/skills/"
 ```
 
 **When operators**: `equals`, `in`, `contains`, `matches`, `allOf`, `anyOf`, `not`.
@@ -128,14 +132,14 @@ spec:
 ```yaml
 kind: Assets
 metadata:
-  name: providers
+  name: myapp.assets.providers
 spec:
   schemaRef: schema://providers
   data:
     servers:
       - enabled: true
-        type: anthropic
-        command: claude
+        type: production
+        command: deploy
 ```
 
 **Converter** — Transforms Assets using `template` (Go text/template) or `yq` engine.
@@ -143,7 +147,7 @@ spec:
 ```yaml
 kind: Converter
 metadata:
-  name: providers-to-claude
+  name: myapp.conv.deploy-config
 spec:
   input:
     schemaRef: schema://providers
@@ -160,6 +164,177 @@ Converters are resolved from build output only (stdin, `-f` file, or `$KFG_BUILD
 ```bash
 kfg build path/to/kustomization | kfg assets convert --use myconverter
 kfg assets list -f build.yaml
+```
+
+## Extensions
+
+Extensions provide reusable MCP servers and skill installation steps. Each extension lives under `base/extensions/<name>/` and exposes:
+
+- **MCP Assets**: `<ext>.assets.mcp` - Canonical MCP server definition (e.g., `ctx7.assets.mcp`)
+- **Install Steps**: `<ext>.steps.install` - Skill installation step (e.g., `ctx7.steps.install`)
+
+### Extension Structure
+
+```
+base/extensions/<name>/
+├── kustomization.yaml
+├── assets/
+│   ├── kustomization.yaml
+│   └── mcp.yaml         # kfg.extension.<name>.mcp
+└── steps/
+│   ├── kustomization.yaml
+│   └── install.yaml     # kfg.extension.<name>.install
+```
+
+### MCP Assets
+
+Extension MCP assets define the canonical MCP server configuration:
+
+```yaml
+apiVersion: kfg.dev/v1alpha1
+kind: Assets
+metadata:
+  name: kfg.extension.playwright.mcp
+spec:
+  input:
+    format: yaml
+  data:
+    name: playwright
+    description: Playwright MCP server for end-to-end browser testing
+    enabled: true
+    server:
+      command: npx
+      args:
+        - -y
+        - "@playwright/mcp@latest"
+        - "--extension"
+      env: {}
+```
+
+### Install Steps
+
+Extension install steps provide skill installation with explicit contracts:
+
+```yaml
+apiVersion: kfg.dev/v1alpha1
+kind: Step
+metadata:
+  name: kfg.extension.ctx7.install
+spec:
+  run: |
+    # Validate required env vars
+    if [ -z "$FLAGS" ]; then
+      _kfg.log.error "missing required env var: FLAGS"
+      exit 1
+    fi
+    if [ -z "$OUTPUT_DIR" ]; then
+      _kfg.log.error "missing required env var: OUTPUT_DIR"
+      exit 1
+    fi
+    
+    # Install and copy skills
+    ctx7 setup --cli --project $FLAGS
+    cp -Rf .claude/skills/* "$OUTPUT_DIR/"
+  env:
+    FLAGS: "--yes"
+    OUTPUT_DIR: ""
+  output:
+    name: installed
+    type: string
+```
+
+### Materialization
+
+Workflows use `kfg.materialize` as the unified primitive for asset materialization:
+
+#### Per-item Mode
+
+Convert one or more assets to individual outputs:
+
+```yaml
+- step: kfg.materialize
+  weight: -45
+  env:
+    MODE: "per-item"
+    ASSETS: "ai.prompts.git-commit"
+    CONVERTER: "ai.claude.conv.command"
+    OUTPUTS: ".claude/commands/git-commit.md"
+```
+
+#### Aggregate Mode
+
+Merge multiple assets into a single output:
+
+```yaml
+- step: kfg.materialize
+  weight: -40
+  env:
+    MODE: "aggregate"
+    ASSETS: "ctx7.assets.mcp:chrome.assets.mcp:playwright.assets.mcp"
+    CONVERTER: "ai.claude.conv.mcp"
+    OUTPUTS: ".mcp.json"
+    WRAP_KEY: "mcpServers"
+```
+
+## Overlays
+
+Overlays compose shared base manifests with project-specific resources. In the package-oriented architecture, overlays live under domain packages (e.g., `packages/domains/ai-agents/overlays/<name>/`):
+
+```
+packages/domains/<domain>/overlays/<name>/
+├── kustomization.yaml     # References domain + overlay resources
+├── agents-workflow.yaml   # Overlay-specific workflow
+└── assets/
+    ├── mcp.yaml           # Overlay-specific MCP assets
+    └── ...                 # Other overlay assets
+```
+
+### Overlay Structure
+
+```yaml
+# overlays/<name>/kustomization.yaml
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+metadata:
+  name: my-overlay
+
+bases:
+  - ../../
+
+resources:
+  # Overlay-specific resources
+  - agents-workflow.yaml
+```
+
+### Overlay Workflow
+
+Overlay workflows follow the normalized pattern with shared steps:
+
+```yaml
+apiVersion: kfg.dev/v1alpha1
+kind: CmdWorkflow
+metadata:
+  name: myproject.workflow.main
+spec:
+  cmds:
+    - myproject.cmd.foo
+  before:
+    # Phase 1 (-90): Gitignore
+    - step: kfg.ensure-gitignore
+      weight: -90
+    # Phase 2 (-70): Detection
+    - step: kfg.detect-agent
+      weight: -70
+    # Phase 3-7: Scaffold, Settings, Context, Extension installs, etc.
+    # Phase 10 (-40): MCP aggregation with extension assets
+    - step: kfg.materialize
+      weight: -40
+      env:
+        MODE: "aggregate"
+        ASSETS: "myproject.mcp.local:kfg.extension.ctx7.mcp"
+        CONVERTER: "kfg.convert.self.mcp.claude"
+        OUTPUTS: ".mcp.json"
+        WRAP_KEY: "mcpServers"
 ```
 
 ## Build Result

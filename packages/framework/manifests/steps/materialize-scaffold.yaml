@@ -1,0 +1,21 @@
+apiVersion: kfg.dev/v1alpha1
+kind: Step
+metadata:
+  name: kfg.materialize-scaffold
+spec:
+  run: |
+    local dirs="${DIRECTORIES:-}"
+    
+    [ -z "$dirs" ] && { __kfg_log_warn "no directories to create"; return 0; }
+    
+    IFS=':' read -ra dir_array <<< "$dirs"
+    for dir in "${dir_array[@]}"; do
+      [ -z "$dir" ] && continue
+      mkdir -p "$dir"
+      __kfg_add_artifact "$dir"
+      __kfg_log_info "scaffold: created directory ${dir}"
+    done
+  artifacts:
+    - scaffold
+  env:
+    DIRECTORIES: ""

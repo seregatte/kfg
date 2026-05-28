@@ -2,6 +2,7 @@ package generate
 
 import (
 	"encoding/base64"
+	"regexp"
 	"sort"
 	"strings"
 
@@ -89,11 +90,11 @@ func (g *Generator) GenerateKustomization(rk *resolve.ResolvedKustomization) (st
 
 // ResolvedMultiWorkflow represents the resolved output for multi-workflow shell generation.
 type ResolvedMultiWorkflow struct {
-	Name      string                      // Kustomization name (directory name)
-	Shell     string                      // Shell type from first workflow
+	Name      string                         // Kustomization name (directory name)
+	Shell     string                         // Shell type from first workflow
 	Workflows []*resolve.ResolvedCmdWorkflow // All resolved workflows
-	Steps     map[string]*manifest.Step   // All available steps
-	Cmds      map[string]*manifest.Cmd   // All available cmds
+	Steps     map[string]*manifest.Step      // All available steps
+	Cmds      map[string]*manifest.Cmd       // All available cmds
 }
 
 // GenerateAllWorkflows generates shell code from multiple resolved workflows.
@@ -188,7 +189,7 @@ func (g *Generator) generateMultiWorkflowStepFunctions(code *strings.Builder, wo
 		for _, entry := range rw.Cmds {
 			for _, step := range entry.BeforeSteps {
 				allSteps[step.Step.Metadata.Name] = step.Step
-		}
+			}
 			for _, step := range entry.AfterSteps {
 				allSteps[step.Step.Metadata.Name] = step.Step
 			}
@@ -284,7 +285,7 @@ func (g *Generator) generateArtifactsDeclaration(code *strings.Builder, rk *reso
 
 // generateGlobalBuildResult generates the build result file setup at global scope.
 // This includes creating the temp file, decoding the base64-encoded YAML, exporting
-// the environment variable, defining the helper function, and registering the EXIT trap.
+// the environment variable, and defining the helper function.
 func (g *Generator) generateGlobalBuildResult(code *strings.Builder) {
 	if g.buildResultYAML == "" {
 		return // No build result to emit
@@ -294,7 +295,7 @@ func (g *Generator) generateGlobalBuildResult(code *strings.Builder) {
 	encodedBuildResult := base64.StdEncoding.EncodeToString([]byte(g.buildResultYAML))
 
 	code.WriteString("# Build result file setup (global scope)\n")
-	code.WriteString("__kfg_build_result_file=$(mktemp -t nixai-build-XXXXXX.yaml)\n")
+	code.WriteString("__kfg_build_result_file=$(mktemp -t kfg-build-XXXXXX.yaml)\n")
 	code.WriteString("echo \"" + encodedBuildResult + "\" | base64 -d > \"$__kfg_build_result_file\"\n")
 	code.WriteString("export KFG_BUILD_RESULT_FILE=$__kfg_build_result_file\n")
 	code.WriteString("\n")
@@ -303,10 +304,6 @@ func (g *Generator) generateGlobalBuildResult(code *strings.Builder) {
 	code.WriteString("__kfg_build_result() {\n")
 	code.WriteString("    cat \"$KFG_BUILD_RESULT_FILE\"\n")
 	code.WriteString("}\n")
-	code.WriteString("\n")
-
-	code.WriteString("# Cleanup trap for build result file on shell exit\n")
-	code.WriteString("trap 'rm -f \"$__kfg_build_result_file\"' EXIT\n")
 	code.WriteString("\n")
 }
 
@@ -376,28 +373,37 @@ func (g *Generator) generateWorkflowCmdWrappers(code *strings.Builder, rw *resol
 
 // convertWorkflowCmdToTemplateData converts a workflow cmd entry to template data.
 func (g *Generator) convertWorkflowCmdToTemplateData(rw *resolve.ResolvedCmdWorkflow, entry *resolve.ResolvedCmdEntry) templates.WorkflowCmdData {
-	// Collect all artifacts from Cmd and dependent steps
-	allArtifacts := entry.Cmd.Spec.Artifacts
-	for _, step := range entry.BeforeSteps {
-		allArtifacts = append(allArtifacts, step.Step.Spec.Artifacts...)
-	}
-	for _, step := range entry.AfterSteps {
-		allArtifacts = append(allArtifacts, step.Step.Spec.Artifacts...)
-	}
-	// Also include global workflow steps
+	// Build step output lookup for $kfg.output(...) expansion
+	stepOutputLookup := make(map[string]string)
 	for _, step := range rw.BeforeSteps {
-		allArtifacts = append(allArtifacts, step.Step.Spec.Artifacts...)
+		if step.Step.Spec.Output != nil {
+			stepOutputLookup[step.Name] = step.Step.Spec.Output.Name
+		}
 	}
 	for _, step := range rw.AfterSteps {
-		allArtifacts = append(allArtifacts, step.Step.Spec.Artifacts...)
+		if step.Step.Spec.Output != nil {
+			stepOutputLookup[step.Name] = step.Step.Spec.Output.Name
+		}
 	}
-	// Sort for determinism
-	sort.Strings(allArtifacts)
+	for _, step := range entry.BeforeSteps {
+		if step.Step.Spec.Output != nil {
+			stepOutputLookup[step.Name] = step.Step.Spec.Output.Name
+		}
+	}
+	for _, step := range entry.AfterSteps {
+		if step.Step.Spec.Output != nil {
+			stepOutputLookup[step.Name] = step.Step.Spec.Output.Name
+		}
+	}
+
+	// Note: We no longer pre-register Step artifacts globally before execution.
+	// Artifacts should only be registered when the Step itself runs or restores from cache.
+	// This allows cache persistence to compute a meaningful delta of Step-local artifacts.
+	// See: fix-step-cache-artifact-isolation design decision on reducing wrapper-level pre-registration.
 
 	data := templates.WorkflowCmdData{
 		CmdName:   entry.Cmd.Metadata.CommandName,
 		RunScript: strings.TrimSpace(entry.Cmd.Spec.Run),
-		Artifacts: allArtifacts,
 		Env:       formatCmdEnv(resolver.ResolveMap(entry.Cmd.Spec.Env)), // Cmd env: direct assignment
 	}
 
@@ -411,10 +417,17 @@ func (g *Generator) convertWorkflowCmdToTemplateData(rw *resolve.ResolvedCmdWork
 				whenCondition = g.generateWhenCondition(step.When)
 			}
 			data.GlobalBeforeSteps[i] = templates.WorkflowStepData{
-				StepName:      step.Step.Metadata.Name,
+				StepRefName:   step.Name,               // StepReference.name (runtime execution identity)
+				StepName:      step.Step.Metadata.Name, // Step metadata.name (for function lookup)
 				IgnoreFailure: step.FailurePolicy == "Ignore",
 				WhenCondition: whenCondition,
-				Env:           formatEnvDefaults(resolver.ResolveMap(step.Env)), // Resolve env placeholders
+				Env:           formatEnvWithKfgOutput(resolver.ResolveMap(step.Env), stepOutputLookup), // Resolve env placeholders
+				CacheEnabled: isCacheEnabled(step.Cache),
+				HasOutput:    step.Step.Spec.Output != nil,
+				OutputName:   getOutputName(step.Step.Spec.Output),
+				// Declarative artifacts
+				StepArtifacts: step.Step.Spec.Artifacts, // Artifacts declared in Step.Spec
+				RefArtifacts:  step.Artifacts,            // Artifacts declared in StepReference
 			}
 		}
 	}
@@ -429,10 +442,17 @@ func (g *Generator) convertWorkflowCmdToTemplateData(rw *resolve.ResolvedCmdWork
 				whenCondition = g.generateWhenCondition(step.When)
 			}
 			data.GlobalAfterSteps[i] = templates.WorkflowStepData{
-				StepName:      step.Step.Metadata.Name,
+				StepRefName:   step.Name,               // StepReference.name (runtime execution identity)
+				StepName:      step.Step.Metadata.Name, // Step metadata.name (for function lookup)
 				IgnoreFailure: step.FailurePolicy == "Ignore",
 				WhenCondition: whenCondition,
-				Env:           formatEnvDefaults(resolver.ResolveMap(step.Env)), // Resolve env placeholders
+				Env:           formatEnvWithKfgOutput(resolver.ResolveMap(step.Env), stepOutputLookup), // Resolve env placeholders
+				CacheEnabled: isCacheEnabled(step.Cache),
+				HasOutput:    step.Step.Spec.Output != nil,
+				OutputName:   getOutputName(step.Step.Spec.Output),
+				// Declarative artifacts
+				StepArtifacts: step.Step.Spec.Artifacts, // Artifacts declared in Step.Spec
+				RefArtifacts:  step.Artifacts,            // Artifacts declared in StepReference
 			}
 		}
 	}
@@ -447,10 +467,17 @@ func (g *Generator) convertWorkflowCmdToTemplateData(rw *resolve.ResolvedCmdWork
 				whenCondition = g.generateWhenCondition(step.When)
 			}
 			data.CmdBeforeSteps[i] = templates.WorkflowStepData{
-				StepName:      step.Step.Metadata.Name,
+				StepRefName:   step.Name,               // StepReference.name (runtime execution identity)
+				StepName:      step.Step.Metadata.Name, // Step metadata.name (for function lookup)
 				IgnoreFailure: step.FailurePolicy == "Ignore",
 				WhenCondition: whenCondition,
-				Env:           formatEnvDefaults(resolver.ResolveMap(step.Env)), // Resolve env placeholders
+				Env:           formatEnvWithKfgOutput(resolver.ResolveMap(step.Env), stepOutputLookup), // Resolve env placeholders
+				CacheEnabled: isCacheEnabled(step.Cache),
+				HasOutput:    step.Step.Spec.Output != nil,
+				OutputName:   getOutputName(step.Step.Spec.Output),
+				// Declarative artifacts
+				StepArtifacts: step.Step.Spec.Artifacts, // Artifacts declared in Step.Spec
+				RefArtifacts:  step.Artifacts,            // Artifacts declared in StepReference
 			}
 		}
 	}
@@ -465,10 +492,17 @@ func (g *Generator) convertWorkflowCmdToTemplateData(rw *resolve.ResolvedCmdWork
 				whenCondition = g.generateWhenCondition(step.When)
 			}
 			data.CmdAfterSteps[i] = templates.WorkflowStepData{
-				StepName:      step.Step.Metadata.Name,
+				StepRefName:   step.Name,               // StepReference.name (runtime execution identity)
+				StepName:      step.Step.Metadata.Name, // Step metadata.name (for function lookup)
 				IgnoreFailure: step.FailurePolicy == "Ignore",
 				WhenCondition: whenCondition,
-				Env:           formatEnvDefaults(resolver.ResolveMap(step.Env)), // Resolve env placeholders
+				Env:           formatEnvWithKfgOutput(resolver.ResolveMap(step.Env), stepOutputLookup), // Resolve env placeholders
+				CacheEnabled: isCacheEnabled(step.Cache),
+				HasOutput:    step.Step.Spec.Output != nil,
+				OutputName:   getOutputName(step.Step.Spec.Output),
+				// Declarative artifacts
+				StepArtifacts: step.Step.Spec.Artifacts, // Artifacts declared in Step.Spec
+				RefArtifacts:  step.Artifacts,            // Artifacts declared in StepReference
 			}
 		}
 	}
@@ -563,65 +597,54 @@ func (g *Generator) generateWorkflowCmdCode(data templates.WorkflowCmdData) stri
 func (g *Generator) generateStepCall(code *strings.Builder, step templates.WorkflowStepData, indent int) {
 	spaces := strings.Repeat("    ", indent)
 
-	// Check if we need subshell for env
+	// Check if we need inline env assignment
 	hasEnv := len(step.Env) > 0
+
+	// Generate inline env string if needed
+	envStr := ""
+	if hasEnv {
+		// Sort env keys for deterministic output
+		keys := make([]string, 0, len(step.Env))
+		for k := range step.Env {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+		for _, k := range keys {
+			envStr += k + "=\"" + step.Env[k] + "\" "
+		}
+	}
+
+	// Build declarative artifacts string (Step.Spec.Artifacts + StepReference.Artifacts)
+	declArtifacts := ""
+	allDeclArtifacts := append([]string{}, step.StepArtifacts...) // Copy to avoid modifying original
+	allDeclArtifacts = append(allDeclArtifacts, step.RefArtifacts...)
+	if len(allDeclArtifacts) > 0 {
+		// Sort for determinism
+		sort.Strings(allDeclArtifacts)
+		// Remove duplicates
+		uniqueDecl := make([]string, 0, len(allDeclArtifacts))
+		for i, art := range allDeclArtifacts {
+			if i == 0 || art != allDeclArtifacts[i-1] {
+				uniqueDecl = append(uniqueDecl, art)
+			}
+		}
+		declArtifacts = strings.Join(uniqueDecl, "\n")
+	}
+
+	// Generate the step call with declarative artifacts as second argument
+	stepCall := "__kfg_run_step_" + step.StepName + " \"" + step.StepRefName + "\" \"" + declArtifacts + "\""
+	if step.IgnoreFailure {
+		stepCall += " || true"
+	} else {
+		stepCall += " || return $?"
+	}
 
 	if step.WhenCondition != "" {
 		code.WriteString(spaces + "if " + step.WhenCondition + "; then\n")
-		if hasEnv {
-			// Wrap in subshell with env exports
-			code.WriteString(spaces + "    (\n")
-			// Sort env keys for deterministic output
-			keys := make([]string, 0, len(step.Env))
-			for k := range step.Env {
-				keys = append(keys, k)
-			}
-			sort.Strings(keys)
-			for _, k := range keys {
-				code.WriteString(spaces + "        export " + k + "=\"" + step.Env[k] + "\"\n")
-			}
-			code.WriteString(spaces + "        __kfg_run_step_" + step.StepName + "\n")
-			code.WriteString(spaces + "    )")
-			if step.IgnoreFailure {
-				code.WriteString(" || true\n")
-			} else {
-				code.WriteString(" || return $?\n")
-			}
-		} else {
-			if step.IgnoreFailure {
-				code.WriteString(spaces + "    __kfg_run_step_" + step.StepName + " || true\n")
-			} else {
-				code.WriteString(spaces + "    __kfg_run_step_" + step.StepName + " || return $?\n")
-			}
-		}
+		code.WriteString(spaces + "    " + envStr + stepCall + "\n")
 		code.WriteString(spaces + "fi\n")
 	} else {
-		if hasEnv {
-			// Wrap in subshell with env exports
-			code.WriteString(spaces + "(\n")
-			// Sort env keys for deterministic output
-			keys := make([]string, 0, len(step.Env))
-			for k := range step.Env {
-				keys = append(keys, k)
-			}
-			sort.Strings(keys)
-			for _, k := range keys {
-				code.WriteString(spaces + "    export " + k + "=\"" + step.Env[k] + "\"\n")
-			}
-			code.WriteString(spaces + "    __kfg_run_step_" + step.StepName + "\n")
-			code.WriteString(spaces + ")")
-			if step.IgnoreFailure {
-				code.WriteString(" || true\n")
-			} else {
-				code.WriteString(" || return $?\n")
-			}
-		} else {
-			if step.IgnoreFailure {
-				code.WriteString(spaces + "__kfg_run_step_" + step.StepName + " || true\n")
-			} else {
-				code.WriteString(spaces + "__kfg_run_step_" + step.StepName + " || return $?\n")
-			}
-		}
+		code.WriteString(spaces + envStr + stepCall + "\n")
 	}
 }
 
@@ -629,64 +652,56 @@ func (g *Generator) generateStepCall(code *strings.Builder, step templates.Workf
 func (g *Generator) generateAfterStepCall(code *strings.Builder, step templates.WorkflowStepData, indent int) {
 	spaces := strings.Repeat("    ", indent)
 
-	// Check if we need subshell for env
+	// Check if we need inline env assignment
 	hasEnv := len(step.Env) > 0
+
+	// Generate inline env string if needed
+	envStr := ""
+	if hasEnv {
+		// Sort env keys for deterministic output
+		keys := make([]string, 0, len(step.Env))
+		for k := range step.Env {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+		for _, k := range keys {
+			envStr += k + "=\"" + step.Env[k] + "\" "
+		}
+	}
+
+	// Build declarative artifacts string (Step.Spec.Artifacts + StepReference.Artifacts)
+	declArtifacts := ""
+	allDeclArtifacts := append([]string{}, step.StepArtifacts...) // Copy to avoid modifying original
+	allDeclArtifacts = append(allDeclArtifacts, step.RefArtifacts...)
+	if len(allDeclArtifacts) > 0 {
+		// Sort for determinism
+		sort.Strings(allDeclArtifacts)
+		// Remove duplicates
+		uniqueDecl := make([]string, 0, len(allDeclArtifacts))
+		for i, art := range allDeclArtifacts {
+			if i == 0 || art != allDeclArtifacts[i-1] {
+				uniqueDecl = append(uniqueDecl, art)
+			}
+		}
+		declArtifacts = strings.Join(uniqueDecl, "\n")
+	}
+
+	// Generate the step call with declarative artifacts as second argument
+	stepCall := "__kfg_run_step_" + step.StepName + " \"" + step.StepRefName + "\" \"" + declArtifacts + "\""
 
 	if step.WhenCondition != "" {
 		code.WriteString(spaces + "if " + step.WhenCondition + "; then\n")
-		if hasEnv {
-			// Wrap in subshell with env exports
-			code.WriteString(spaces + "    (\n")
-			// Sort env keys for deterministic output
-			keys := make([]string, 0, len(step.Env))
-			for k := range step.Env {
-				keys = append(keys, k)
-			}
-			sort.Strings(keys)
-			for _, k := range keys {
-				code.WriteString(spaces + "        export " + k + "=\"" + step.Env[k] + "\"\n")
-			}
-			code.WriteString(spaces + "        __kfg_run_step_" + step.StepName + "\n")
-			code.WriteString(spaces + "    )")
-			if step.IgnoreFailure {
-				code.WriteString(" || true\n")
-			} else {
-				code.WriteString("\n")
-			}
+		if step.IgnoreFailure {
+			code.WriteString(spaces + "    " + envStr + stepCall + " || true\n")
 		} else {
-			if step.IgnoreFailure {
-				code.WriteString(spaces + "    __kfg_run_step_" + step.StepName + " || true\n")
-			} else {
-				code.WriteString(spaces + "    [ $__kfg_status -eq 0 ] && __kfg_run_step_" + step.StepName + "\n")
-			}
+			code.WriteString(spaces + "    [ $__kfg_status -eq 0 ] && " + envStr + stepCall + "\n")
 		}
 		code.WriteString(spaces + "fi\n")
 	} else {
-		if hasEnv {
-			// Wrap in subshell with env exports
-			code.WriteString(spaces + "(\n")
-			// Sort env keys for deterministic output
-			keys := make([]string, 0, len(step.Env))
-			for k := range step.Env {
-				keys = append(keys, k)
-			}
-			sort.Strings(keys)
-			for _, k := range keys {
-				code.WriteString(spaces + "    export " + k + "=\"" + step.Env[k] + "\"\n")
-			}
-			code.WriteString(spaces + "    __kfg_run_step_" + step.StepName + "\n")
-			code.WriteString(spaces + ")")
-			if step.IgnoreFailure {
-				code.WriteString(" || true\n")
-			} else {
-				code.WriteString("\n")
-			}
+		if step.IgnoreFailure {
+			code.WriteString(spaces + envStr + stepCall + " || true\n")
 		} else {
-			if step.IgnoreFailure {
-				code.WriteString(spaces + "__kfg_run_step_" + step.StepName + " || true\n")
-			} else {
-				code.WriteString(spaces + "[ $__kfg_status -eq 0 ] && __kfg_run_step_" + step.StepName + "\n")
-			}
+			code.WriteString(spaces + "[ $__kfg_status -eq 0 ] && " + envStr + stepCall + "\n")
 		}
 	}
 }
@@ -714,6 +729,56 @@ func formatCmdEnv(env map[string]string) map[string]string {
 	return result
 }
 
+// buildStepOutputLookup builds a lookup map from step-ref-name to output name.
+// This is used to expand $kfg.output(step-ref-name) references in env values.
+func buildStepOutputLookup(steps []resolve.ResolvedStep) map[string]string {
+	lookup := make(map[string]string)
+	for _, step := range steps {
+		if step.Step.Spec.Output != nil {
+			lookup[step.Name] = step.Step.Spec.Output.Name
+		}
+	}
+	return lookup
+}
+
+// expandKfgOutputInEnv expands $kfg.output(step-ref-name) references in env values.
+// The pattern is replaced with $(__kfg_output_get "step-ref-name" "output-name").
+// If the referenced step doesn't have an output, the pattern is left unchanged
+// (validation should catch this earlier).
+func expandKfgOutputInEnv(envValue string, stepOutputLookup map[string]string) string {
+	// Pattern: $kfg.output(step-ref-name)
+	re := regexp.MustCompile(`\$kfg\.output\(([a-zA-Z0-9._-]+)\)`)
+
+	result := re.ReplaceAllStringFunc(envValue, func(match string) string {
+		// Extract the step-ref-name from the match
+		submatch := re.FindStringSubmatch(match)
+		if len(submatch) > 1 {
+			stepRefName := submatch[1]
+			outputName, ok := stepOutputLookup[stepRefName]
+			if ok {
+				return "$(__kfg_output_get \"" + stepRefName + "\" \"" + outputName + "\")"
+			}
+			// If no output found, return unchanged (validation should catch this)
+			return match
+		}
+		return match
+	})
+
+	return result
+}
+
+// formatEnvWithKfgOutput formats env values with default expansion and $kfg.output expansion.
+func formatEnvWithKfgOutput(env map[string]string, stepOutputLookup map[string]string) map[string]string {
+	result := make(map[string]string)
+	for k, v := range env {
+		// First expand $kfg.output references
+		expanded := expandKfgOutputInEnv(v, stepOutputLookup)
+		// Then wrap in default expansion
+		result[k] = "${" + k + ":-" + expanded + "}"
+	}
+	return result
+}
+
 // convertStepToTemplateData converts a Step to StepData.
 func (g *Generator) convertStepToTemplateData(step *manifest.Step) templates.StepData {
 	data := templates.StepData{
@@ -721,6 +786,9 @@ func (g *Generator) convertStepToTemplateData(step *manifest.Step) templates.Ste
 		HasOutput:     step.Spec.Output != nil,
 		Artifacts:     step.Spec.Artifacts,
 		IgnoreFailure: false,
+
+		// Cache configuration from Step default
+		CacheEnabled: isCacheEnabled(step.Spec.Cache),
 		Env:           formatEnvDefaults(resolver.ResolveMap(step.Spec.Env)), // Resolve env placeholders
 	}
 
@@ -791,4 +859,17 @@ func (g *Generator) generateOutputCondition(output *manifest.OutputCondition) st
 		return "__kfg_when_matches \"" + step + "\" \"" + name + "\" \"" + output.Matches + "\""
 	}
 	return ""
+}
+
+// getOutputName returns the output name from an Output, or empty string if nil.
+func getOutputName(output *manifest.Output) string {
+	if output != nil {
+		return output.Name
+	}
+	return ""
+}
+
+// isCacheEnabled returns true if cache is configured and enabled.
+func isCacheEnabled(cache *manifest.CacheConfig) bool {
+	return cache != nil && (cache.Enabled == nil || *cache.Enabled)
 }

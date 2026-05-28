@@ -1,0 +1,86 @@
+apiVersion: kfg.dev/v1alpha1
+kind: Step
+metadata:
+  name: ctx7.steps.install
+spec:
+  run: |
+    __kfg_log_info "Installing ctx7 skills..."
+
+    # Validate required env vars
+    if [ -z "$FLAGS" ]; then
+      __kfg_log_error "Missing required environment variable: FLAGS"
+      exit 1
+    fi
+
+    if [ -z "$OUTPUT_DIR" ]; then
+      __kfg_log_error "Missing required environment variable: OUTPUT_DIR"
+      exit 1
+    fi
+
+    __kfg_log_debug "FLAGS=$FLAGS"
+    __kfg_log_debug "OUTPUT_DIR=$OUTPUT_DIR"
+
+    # Determine agent from FLAGS
+    AGENT=""
+    SKILL_SRC=""
+    if echo "$FLAGS" | grep -q "claude"; then
+      AGENT="claude"
+    elif echo "$FLAGS" | grep -q "opencode"; then
+      AGENT="opencode"
+      SKILL_SRC=".agents/skills"
+    elif echo "$FLAGS" | grep -q "gemini"; then
+      AGENT="gemini"
+    elif echo "$FLAGS" | grep -q "pi"; then
+      AGENT="pi"
+      SKILL_SRC=".agents/skills"
+    fi
+
+    # Ensure output directory exists
+    mkdir -p "$OUTPUT_DIR"
+
+    # Execute install command
+    ctx7 setup --cli --project $FLAGS > /dev/null 2>&1
+
+    # Copy generated skills into OUTPUT_DIR
+    if [ -n "$SKILL_SRC" ] && [ -d "$SKILL_SRC" ]; then
+      cp -Rf "$SKILL_SRC"/* "$OUTPUT_DIR/" 2>/dev/null || true
+      __kfg_log_info "Copied ctx7 skills from $SKILL_SRC to $OUTPUT_DIR"
+      rm -rf "$SKILL_SRC"
+    else
+      __kfg_log_debug "No ctx7 skills directory found at $SKILL_SRC"
+    fi
+
+    # Extract ctx7 context for output
+    CONTEXT_FILE=".${AGENT}/ctx7-agents.md"
+    CTX7_CONTENT=""
+    if [ -f "$CONTEXT_FILE" ]; then
+      # Extract content between <!-- context7 --> markers
+      if grep -q '<!-- context7 -->' "$CONTEXT_FILE"; then
+        CTX7_CONTENT=$(sed -n '/^<!-- context7 -->$/,/^<!-- context7 -->$/p' "$CONTEXT_FILE" | sed '1d;$d')
+        __kfg_log_debug "Extracted ctx7 context from $CONTEXT_FILE"
+      else
+        __kfg_log_debug "No <!-- context7 --> markers found in $CONTEXT_FILE"
+      fi
+    else
+      __kfg_log_debug "Context file not found: $CONTEXT_FILE"
+    fi
+
+    # Cleanup temporary agent home if opencode
+    if [ "$AGENT" = "opencode" ]; then
+      __kfg_log_debug "Removing .agents directory"
+      rm -rf .agents
+    fi
+
+    __kfg_log_info "Installed ctx7 skills"
+
+    # Output ctx7 context (will be captured by kfg)
+    echo "$CTX7_CONTENT"
+
+  env:
+    FLAGS: "--yes"
+    OUTPUT_DIR: ""
+  output:
+    name: ctx7_context
+    type: string
+  cache:
+    enabled: true

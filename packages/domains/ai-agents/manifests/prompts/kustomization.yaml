@@ -1,0 +1,8 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - git-commit.yaml
+  - refactor-pure.yaml
+  - review-code.yaml
+  - review-search.yaml

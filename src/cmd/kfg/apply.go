@@ -6,12 +6,14 @@ import (
 	"os"
 	"strings"
 
-	"github.com/spf13/cobra"
+	"github.com/seregatte/kfg/src/internal/config"
+	"github.com/seregatte/kfg/src/internal/converter"
 	"github.com/seregatte/kfg/src/internal/generate"
 	"github.com/seregatte/kfg/src/internal/kustomize"
+	"github.com/seregatte/kfg/src/internal/logger"
 	"github.com/seregatte/kfg/src/internal/manifest"
 	"github.com/seregatte/kfg/src/internal/resolve"
-	"github.com/seregatte/kfg/src/internal/logger"
+	"github.com/spf13/cobra"
 )
 
 var (
@@ -21,6 +23,11 @@ var (
 	applyOutput        string
 	applyWorkflow      string
 	applyCmds          string
+	applyConvert       string
+	applyUse           string
+	applyWith          string
+	applyRefresh       bool
+	applyStoreDir      string
 )
 
 // ApplyResult holds the result of the apply pipeline (load → validate → index → resolve).
@@ -125,17 +132,58 @@ var applyCmd = &cobra.Command{
 This command processes a kustomization or manifest file, resolves the workflow,
 and generates shell functions that can be sourced or used interactively.
 
-The [path] argument can be a kustomization directory path or a manifest file.
-If not provided, the -k or -f flag must be used.
+Modes:
+  1. Shell generation (default): Generate shell functions from Cmd/CmdWorkflow resources
+     using -w/--workflow and -c/--cmds flags.
+
+  2. Conversion mode: Transform Asset data using a Converter resource with --convert
+     and --use flags. Outputs data in the Converter's specified format.
+
+  3. Inline conversion: Use --convert with raw string input and --with for an inline
+     yq expression, bypassing Converter resource lookup.
+
+  4. Stdin pipeline: Use -f - with --with to pass stdin directly to the yq engine
+     for multi-document merge operations.
+
+The source can be provided as:
+  - A positional argument (path or GitHub URL)
+  - The -k flag (kustomization path or GitHub URL)
+  - The -f flag (manifest file path or stdin)
+  - The KFG_KPATH environment variable (used as fallback)
+
+GitHub URLs are supported and will be cloned automatically:
+  - https://github.com/owner/repo//path
+  - https://github.com/owner/repo//path?ref=v1.0.0
+
+Environment variables:
+  KFG_KPATH      Default kustomization path if -k or -f not specified
+  KFG_REFRESH    Set to "1" to invalidate and rebuild cache entries for cacheable Steps
+  KFG_STORE_DIR  Custom store directory for cache entries (defaults to ~/.kfg/store)
 
 Examples:
+  # Shell generation
   kfg apply .nixai/overlay/dev
   kfg apply -k .nixai/overlay/dev
+  kfg apply -k https://github.com/owner/repo//manifests
   kfg apply .nixai/overlay/dev --workflow dev,openspec
   kfg apply -k .nixai/overlay/dev --workflow ai-agents
   kfg apply -k .nixai/overlay/dev --cmds claude
   kfg apply -f manifest.yaml
-  kfg apply -f - (read from stdin)`,
+  kfg apply -f - (read from stdin)
+  kfg apply -k .nixai/overlay/dev --refresh  (invalidate and rebuild cache entries)
+  KFG_KPATH=./manifests kfg apply
+  KFG_KPATH=https://github.com/owner/repo//manifests kfg apply
+
+  # Conversion mode
+  kfg apply -f manifest.yaml --convert my-asset --use my-converter
+  kfg apply -f manifest.yaml --convert my-asset --use my-converter -o output.json
+
+  # Inline conversion
+  kfg apply -f manifest.yaml --convert my-asset --with '.data | {"key": .value}'
+  kfg apply -f manifest.yaml --convert '{"key":"value"}' --with '.key'
+
+  # Stdin pipeline
+  echo '{"a":1}---{"b":2}' | kfg apply -f - --with 'select(fi == 0) * select(fi == 1)'`,
 	Args: cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		// Handle positional argument - if provided, use it as kustomization path
@@ -152,9 +200,14 @@ Examples:
 			}
 		}
 
+		// KFG_KPATH fallback: if kustomize path is empty, use env var
+		if applyKustomizePath == "" && applyFile == "" {
+			applyKustomizePath = config.GetKPath()
+		}
+
 		// Validate flags/args
 		if applyKustomizePath == "" && applyFile == "" {
-			logger.Error("apply", "Either a positional path, -k (kustomize path), or -f (file) is required")
+			logger.Error("apply", "kustomization source required. Provide a path, use -k flag, -f flag, or set KFG_KPATH.")
 			cmd.Help()
 			os.Exit(2)
 		}
@@ -164,7 +217,51 @@ Examples:
 			os.Exit(2)
 		}
 
-		// Run the apply pipeline
+		// Validate conversion mode mutual exclusivity
+		if applyConvert != "" || applyUse != "" {
+			// --convert and --use must be used together (--with can substitute for --use)
+			if applyConvert == "" {
+				logger.Error("apply", "--use requires --convert to be specified")
+				os.Exit(2)
+			}
+			if applyUse == "" && applyWith == "" {
+				logger.Error("apply", "--convert requires --use or --with to be specified")
+				os.Exit(2)
+			}
+			// --convert/--use cannot be used with -w/--workflow
+			if applyWorkflow != "" {
+				logger.Error("apply", "--convert/--use cannot be used with --workflow/-w (shell generation flag)")
+				os.Exit(2)
+			}
+			// --convert/--use cannot be used with -c/--cmds
+			if applyCmds != "" {
+				logger.Error("apply", "--convert/--use cannot be used with --cmds/-c (shell generation flag)")
+				os.Exit(2)
+			}
+		}
+
+		// Validate --with flag
+		if err := validateWithFlag(applyWith, applyConvert, applyUse, applyFile, applyWorkflow, applyCmds); err != nil {
+			logger.Error("apply", err.Error())
+			os.Exit(2)
+		}
+
+		// Stdin raw mode: -f - with --with and no --convert
+		// Must run BEFORE runApplyPipeline since stdin can only be read once
+		if applyFile == "-" && applyWith != "" && applyConvert == "" {
+			data, err := io.ReadAll(os.Stdin)
+			if err != nil {
+				logger.Error("apply", fmt.Sprintf("Failed to read stdin: %v", err))
+				os.Exit(1)
+			}
+			if err := runStdinConversion(string(data), applyWith, applyOutput); err != nil {
+				logger.Error("apply", err.Error())
+				os.Exit(1)
+			}
+			return
+		}
+
+		// Run the apply pipeline (GitHub URLs are passed directly to kustomize loader)
 		result, err := runApplyPipeline(applyKustomizePath, applyFile)
 		if err != nil {
 			logger.Error("apply", err.Error())
@@ -172,6 +269,16 @@ Examples:
 			os.Exit(1)
 		}
 
+		// Conversion mode (--convert + --use or --convert + --with)
+		if applyConvert != "" {
+			if err := runConversion(result.Resources, applyConvert, applyUse, applyWith, applyOutput); err != nil {
+				logger.Error("apply", err.Error())
+				os.Exit(1)
+			}
+			return
+		}
+
+		// Shell generation mode (existing behavior)
 		// Resolve cmd filter
 		var cmdFilter []string
 		if applyCmds != "" {
@@ -198,6 +305,14 @@ Examples:
 				os.Exit(1)
 			}
 			result.Shell = shellType
+
+			// Prepend refresh header if refresh flag is set
+			if applyRefresh {
+				shellCode = "export KFG_REFRESH=1\n\n" + shellCode
+			}
+			if applyStoreDir != "" {
+				shellCode = fmt.Sprintf("export KFG_STORE_DIR=%s\n\n", applyStoreDir) + shellCode
+			}
 
 			// Output to file or stdout
 			if applyOutput != "" {
@@ -238,6 +353,14 @@ Examples:
 			}
 
 			// Output to file or stdout
+
+			// Prepend refresh header if refresh flag is set
+			if applyRefresh {
+				shellCode = "export KFG_REFRESH=1\n\n" + shellCode
+			}
+			if applyStoreDir != "" {
+				shellCode = fmt.Sprintf("export KFG_STORE_DIR=%s\n\n", applyStoreDir) + shellCode
+			}
 			if applyOutput != "" {
 				err = os.WriteFile(applyOutput, []byte(shellCode), 0644)
 				if err != nil {
@@ -261,6 +384,33 @@ func init() {
 	applyCmd.Flags().StringVarP(&applyOutput, "output", "o", "", "Output file path (default: stdout)")
 	applyCmd.Flags().StringVarP(&applyWorkflow, "workflow", "w", "", "CmdWorkflow name(s), comma-separated (default: all workflows)")
 	applyCmd.Flags().StringVarP(&applyCmds, "cmds", "c", "", "Comma-separated list of cmds to generate")
+	applyCmd.Flags().StringVar(&applyConvert, "convert", "", "Asset name for conversion mode")
+
+	applyCmd.Flags().BoolVarP(&applyRefresh, "refresh", "r", false, "Invalidate and rebuild cache entries for cacheable Steps")
+	applyCmd.Flags().StringVar(&applyUse, "use", "", "Converter name for conversion mode")
+	applyCmd.Flags().StringVar(&applyWith, "with", "", "Inline yq expression for conversion mode (bypasses Converter lookup)")
+	applyCmd.Flags().StringVar(&applyStoreDir, "store", "", "Custom store directory for cache entries (overrides KFG_STORE_DIR)")
+}
+
+// validateWithFlag checks --with flag mutual exclusivity and requirements.
+// Returns an error if validation fails.
+func validateWithFlag(with, convert, use, file, workflow, cmds string) error {
+	if with == "" {
+		return nil
+	}
+	if use != "" {
+		return fmt.Errorf("--with and --use are mutually exclusive (use one or the other, not both)")
+	}
+	if convert == "" && file != "-" {
+		return fmt.Errorf("--with requires --convert or -f - (stdin) to be specified")
+	}
+	if workflow != "" {
+		return fmt.Errorf("--with cannot be used with --workflow/-w (shell generation flag)")
+	}
+	if cmds != "" {
+		return fmt.Errorf("--with cannot be used with --cmds/-c (shell generation flag)")
+	}
+	return nil
 }
 
 func printApplyError(err error, path string) {
@@ -377,7 +527,7 @@ func resolveAndGenerateMultiWorkflow(resolver *resolve.Resolver, index *resolve.
 	// Collect all steps and cmds for the multi-workflow resolved
 	allSteps := make(map[string]*manifest.Step)
 	allCmds := make(map[string]*manifest.Cmd)
-	
+
 	// Collect from index (available steps and cmds)
 	for _, step := range index.GetSteps() {
 		allSteps[step.Metadata.Name] = step
@@ -385,7 +535,7 @@ func resolveAndGenerateMultiWorkflow(resolver *resolve.Resolver, index *resolve.
 	for _, cmd := range index.GetCmds() {
 		allCmds[cmd.Metadata.Name] = cmd
 	}
-	
+
 	// Also add steps from resolved workflows (referenced steps)
 	for _, wf := range workflows {
 		for _, step := range wf.BeforeSteps {
@@ -425,4 +575,163 @@ func resolveAndGenerateMultiWorkflow(resolver *resolve.Resolver, index *resolve.
 	}
 
 	return shellCode, kustomizationName, shell, nil
+}
+
+// runConversion executes the conversion pipeline: find Asset (or treat as raw string),
+// find Converter (or use inline expression), run engine, output result.
+func runConversion(resources []manifest.ParsedResource, assetName, converterName, inlineExpression, outputFile string) error {
+	engine := converter.NewEngine()
+
+	// Try to find Asset by metadata.name
+	var foundAsset *manifest.Assets
+	var availableAssets []string
+	for _, res := range resources {
+		if res.Assets != nil {
+			availableAssets = append(availableAssets, res.Assets.Metadata.Name)
+			if res.Assets.Metadata.Name == assetName {
+				foundAsset = res.Assets
+			}
+		}
+	}
+
+	// Asset found: use it
+	if foundAsset != nil {
+		asset := converter.MapManifestAssets(foundAsset)
+
+		// --with: inline expression mode (skip Converter lookup)
+		if inlineExpression != "" {
+			result, err := engine.ApplyWithExpression(asset, inlineExpression)
+			if err != nil {
+				return fmt.Errorf("conversion failed: %w", err)
+			}
+			return writeOutput(result, outputFile)
+		}
+
+		// --use: Converter lookup mode (existing behavior)
+		var foundConverter *manifest.Converter
+		var availableConverters []string
+		for _, res := range resources {
+			if res.Converter != nil {
+				availableConverters = append(availableConverters, res.Converter.Metadata.Name)
+				if res.Converter.Metadata.Name == converterName {
+					foundConverter = res.Converter
+				}
+			}
+		}
+		if foundConverter == nil {
+			msg := fmt.Sprintf("Converter not found: %s", converterName)
+			if len(availableConverters) > 0 {
+				msg += fmt.Sprintf(" (available: %s)", strings.Join(availableConverters, ", "))
+			}
+			return fmt.Errorf("%s", msg)
+		}
+
+		conv := converter.MapManifestConverter(foundConverter)
+		result, err := engine.Apply(conv, asset)
+		if err != nil {
+			return fmt.Errorf("conversion failed: %w", err)
+		}
+		return writeOutput(result, outputFile)
+	}
+
+	// Asset not found: try raw string fallback
+	// Need either a converter or an inline expression to proceed
+	if inlineExpression == "" && converterName == "" {
+		msg := fmt.Sprintf("Asset not found: %s", assetName)
+		if len(availableAssets) > 0 {
+			msg += fmt.Sprintf(" (available: %s)", strings.Join(availableAssets, ", "))
+		}
+		return fmt.Errorf("%s", msg)
+	}
+
+	// Detect format for raw string fallback
+	inputFormat := engine.DetectFormat(assetName)
+
+	// Without --with, only accept structured JSON (objects/arrays) as raw input.
+	// Plain YAML scalars like "nonexistent" are valid YAML but likely meant
+	// to be asset names — don't silently treat them as raw input.
+	if inlineExpression == "" && inputFormat == "yaml" && !looksLikeStructuredJSON(assetName) {
+		msg := fmt.Sprintf("Asset not found: %s", assetName)
+		if len(availableAssets) > 0 {
+			msg += fmt.Sprintf(" (available: %s)", strings.Join(availableAssets, ", "))
+		}
+		return fmt.Errorf("%s", msg)
+	}
+
+	// 2. Find the converter (needed for both --with and raw input fallback)
+	var foundConverter *manifest.Converter
+	var availableConverters []string
+	for _, res := range resources {
+		if res.Converter != nil {
+			availableConverters = append(availableConverters, res.Converter.Metadata.Name)
+			if res.Converter.Metadata.Name == converterName {
+				foundConverter = res.Converter
+			}
+		}
+	}
+
+	// 3. Raw input with converter (no --with): apply converter's expression to raw string
+	if inlineExpression == "" && inputFormat != "" && converterName != "" {
+		if foundConverter == nil {
+			msg := fmt.Sprintf("Converter not found: %s", converterName)
+			if len(availableConverters) > 0 {
+				msg += fmt.Sprintf(" (available: %s)", strings.Join(availableConverters, ", "))
+			}
+			return fmt.Errorf("%s", msg)
+		}
+		conv := converter.MapManifestConverter(foundConverter)
+		result, err := engine.ApplyRawWithConverter(assetName, inputFormat, conv)
+		if err != nil {
+			return fmt.Errorf("conversion failed: %w", err)
+		}
+		return writeOutput(result, outputFile)
+	}
+
+	// 4. --with mode: detect format, apply raw with inline expression
+	if inputFormat == "" {
+		msg := fmt.Sprintf("Asset not found: %s", assetName)
+		if len(availableAssets) > 0 {
+			msg += fmt.Sprintf(" (available: %s)", strings.Join(availableAssets, ", "))
+		}
+		msg += fmt.Sprintf("\nNo matching Asset found and input is not valid JSON or YAML")
+		return fmt.Errorf("%s", msg)
+	}
+
+	result, err := engine.ApplyRaw(assetName, inputFormat, inlineExpression)
+	if err != nil {
+		return fmt.Errorf("conversion failed: %w", err)
+	}
+	return writeOutput(result, outputFile)
+}
+
+// looksLikeStructuredJSON returns true if the input looks like a JSON
+// object or array (not a plain scalar). Used to distinguish intentional
+// raw JSON input from asset names that happen to be valid YAML scalars.
+func looksLikeStructuredJSON(input string) bool {
+	trimmed := strings.TrimSpace(input)
+	return strings.HasPrefix(trimmed, "{") || strings.HasPrefix(trimmed, "[")
+}
+
+// runStdinConversion reads stdin and applies an inline yq expression directly.
+// No manifest parsing occurs.
+func runStdinConversion(input, expression, outputFile string) error {
+	engine := converter.NewEngine()
+	result, err := engine.ApplyRaw(input, engine.DetectFormat(input), expression)
+	if err != nil {
+		return fmt.Errorf("conversion failed: %w", err)
+	}
+	return writeOutput(result, outputFile)
+}
+
+// writeOutput writes the conversion result to a file or stdout.
+func writeOutput(result, outputFile string) error {
+	if outputFile != "" {
+		if err := os.WriteFile(outputFile, []byte(result), 0644); err != nil {
+			return fmt.Errorf("failed to write output file: %w", err)
+		}
+		logger.Info("apply", fmt.Sprintf("Wrote conversion output to %s", outputFile))
+	} else {
+		fmt.Print(result)
+	}
+	return nil
 }

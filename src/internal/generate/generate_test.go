@@ -283,7 +283,6 @@ spec:
 	assert.Contains(t, code, "KFG_BUILD_RESULT_FILE")
 	assert.Contains(t, code, "__kfg_build_result()")
 	assert.Contains(t, code, "base64 -d")
-	assert.Contains(t, code, "trap 'rm -f \"$__kfg_build_result_file\"' EXIT")
 }
 
 func TestGeneratorNoBuildResultSetup(t *testing.T) {
@@ -370,9 +369,6 @@ func TestGeneratorBuildResultHelper(t *testing.T) {
 	assert.Contains(t, code, "__kfg_build_result() {")
 	assert.Contains(t, code, "cat \"$KFG_BUILD_RESULT_FILE\"")
 	assert.Contains(t, code, "}")
-
-	// Verify cleanup trap uses EXIT (not RETURN) for global scope
-	assert.Contains(t, code, "trap 'rm -f \"$__kfg_build_result_file\"' EXIT")
 }
 
 func TestGeneratorBuildResultWithMultipleCmds(t *testing.T) {
@@ -863,17 +859,17 @@ func TestGenerateAllWorkflows_StepDeduplication(t *testing.T) {
 
 	// Create resolved workflows with shared step
 	resolvedWorkflow1 := &resolve.ResolvedCmdWorkflow{
-		Workflow: workflow1,
-		Cmds:     map[string]*resolve.ResolvedCmdEntry{"build": {Cmd: cmd1}},
+		Workflow:    workflow1,
+		Cmds:        map[string]*resolve.ResolvedCmdEntry{"build": {Cmd: cmd1}},
 		BeforeSteps: []resolve.ResolvedStep{{Step: sharedStep, FailurePolicy: "Fail"}},
-		Shell:    "bash",
+		Shell:       "bash",
 	}
 
 	resolvedWorkflow2 := &resolve.ResolvedCmdWorkflow{
-		Workflow: workflow2,
-		Cmds:     map[string]*resolve.ResolvedCmdEntry{"deploy": {Cmd: cmd2}},
+		Workflow:    workflow2,
+		Cmds:        map[string]*resolve.ResolvedCmdEntry{"deploy": {Cmd: cmd2}},
 		BeforeSteps: []resolve.ResolvedStep{{Step: sharedStep, FailurePolicy: "Fail"}},
-		Shell:    "bash",
+		Shell:       "bash",
 	}
 
 	multi := &ResolvedMultiWorkflow{
