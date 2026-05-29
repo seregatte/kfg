@@ -1,10 +1,4 @@
-# kfg-step-cache-atomic-write Specification
-
-## Purpose
-
-Define atomic write semantics for cache entries to prevent partial or corrupted cache state.
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: Atomic Cache Write
 The runtime SHALL write cache entries atomically so that a partial or interrupted write cannot be observed as a valid cache hit. Atomic write is performed entirely by the Go `kfg sys cache store` subcommand.
@@ -29,4 +23,3 @@ The runtime SHALL write cache entries atomically so that a partial or interrupte
 - **WHEN** the shell helper `__kfg_cache_store` is called
 - **THEN** it SHALL delegate to `kfg sys cache store` which performs the atomic write internally
 - **AND** the shell SHALL NOT perform any file operations for cache storage
-
