@@ -67,7 +67,7 @@ func NewLoader(opts *LoaderOptions) *Loader {
 // Example:
 //
 //	loader := NewLoader(nil)
-//	resMap, err := loader.Load(".nixai/overlay/dev")
+//	resMap, err := loader.Load("packages/domains/ai-agents/overlays/dev")
 func (l *Loader) Load(path string) (resmap.ResMap, error) {
 	return l.kustomizer.Run(l.fSys, path)
 }

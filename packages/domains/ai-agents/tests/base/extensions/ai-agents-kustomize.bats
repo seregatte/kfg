@@ -1,29 +1,29 @@
 #!/usr/bin/env bats
 
-# Validate kustomize build succeeds for base and overlay.
-# Skip if kustomize is not installed.
+# Validate kfg build succeeds for base and overlay.
+# Skip if kfg is not available.
 
-MANIFESTS_BASE=".manifests/base"
-MANIFESTS_OVERLAY=".manifests/overlay/dev"
+MANIFESTS_BASE="$BATS_TEST_DIRNAME/../../../manifests"
+MANIFESTS_OVERLAY="$BATS_TEST_DIRNAME/../../../overlays/dev"
 
 setup() {
-    if ! command -v kustomize >/dev/null 2>&1; then
-        skip "kustomize not installed"
+    if ! command -v kfg >/dev/null 2>&1; then
+        skip "kfg not installed"
     fi
 }
 
-@test "kustomize build base succeeds" {
-    run kustomize build "$MANIFESTS_BASE"
+@test "kfg build base succeeds" {
+    run kfg build "$MANIFESTS_BASE"
     [ "$status" -eq 0 ]
 }
 
-@test "kustomize build overlay/dev succeeds" {
-    run kustomize build "$MANIFESTS_OVERLAY"
+@test "kfg build overlay/dev succeeds" {
+    run kfg build "$MANIFESTS_OVERLAY"
     [ "$status" -eq 0 ]
 }
 
 @test "base build output contains ai-agents resources" {
-    run kustomize build "$MANIFESTS_BASE"
+    run kfg build "$MANIFESTS_BASE"
     [ "$status" -eq 0 ]
     echo "$output" | grep -q "ai.claude.asset.settings"
     echo "$output" | grep -q "ai.steps.detect"
@@ -31,7 +31,7 @@ setup() {
 }
 
 @test "base build output contains renamed extension resources" {
-    run kustomize build "$MANIFESTS_BASE"
+    run kfg build "$MANIFESTS_BASE"
     [ "$status" -eq 0 ]
     echo "$output" | grep -q "ctx7.steps.install"
     echo "$output" | grep -q "ctx7.assets.mcp"
@@ -41,7 +41,7 @@ setup() {
 }
 
 @test "base build output does not contain old names" {
-    run kustomize build "$MANIFESTS_BASE"
+    run kfg build "$MANIFESTS_BASE"
     [ "$status" -eq 0 ]
     ! echo "$output" | grep -q "kfg.agent"
     ! echo "$output" | grep -q "kfg.extension.self"

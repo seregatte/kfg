@@ -1,8 +1,4 @@
-## Purpose
-
-Define how cacheable Steps persist and restore their runtime results, including artifact isolation semantics, path preservation, and diagnostic logging.
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: Cache Identity and Invalidation
 The runtime SHALL identify cache entries per resolved Step invocation using only the `StepReference.name`. The cache identity computation and existence check SHALL be performed by Go subcommands, with shell helpers acting as thin wrappers.
@@ -72,31 +68,6 @@ Cache hits SHALL preserve workflow semantics for downstream Steps. The restore i
 - **WHEN** the shell helper `__kfg_cache_restore` is called
 - **THEN** it SHALL execute `eval "$(kfg sys cache restore <step-ref> --workdir "$PWD")"` to apply the restored state
 
-### Requirement: Cache Storage and Operations
-The CLI SHALL expose internal operational management for cached Step entries through `kfg sys cache` command group.
-
-#### Scenario: List cache entries
-- **WHEN** user runs `kfg sys cache ls`
-- **THEN** the CLI SHALL list cached Step entries with step reference names and operational metadata
-
-#### Scenario: Inspect cache entry
-- **WHEN** user runs `kfg sys cache inspect <step-ref>`
-- **THEN** the CLI SHALL show the stored metadata for that cache entry
-- **AND** SHALL include the full relative paths of all persisted artifacts as recorded in `metadata.yaml`
-- **AND** SHALL include output metadata
-
-#### Scenario: Remove cache entry
-- **WHEN** user runs `kfg sys cache rm <step-ref>`
-- **THEN** the CLI SHALL remove the specified cache entry from storage
-
-#### Scenario: Prune cache entries
-- **WHEN** user runs `kfg sys cache prune`
-- **THEN** the CLI SHALL remove cache entries according to the implemented prune policy
-
-#### Scenario: Show cache disk usage
-- **WHEN** user runs `kfg sys cache du`
-- **THEN** the CLI SHALL report disk usage for persisted cache entries
-
 ### Requirement: Cache Diagnostics
 The runtime SHALL emit diagnostic logs for cache behavior. Logging remains in the shell wrapper since it operates in the user's shell context.
 
@@ -133,4 +104,3 @@ The runtime SHALL store all cache entry metadata, including artifact paths, in a
 ### Requirement: Shell-side filesystem snapshot and diff
 **Reason**: `__kfg_fs_snapshot`, `__kfg_fs_diff`, and `__kfg_add_diff_artifacts` shell helpers are removed. Filesystem diff is performed internally by the Go `kfg sys cache store` subcommand.
 **Migration**: Domain manifests (`ctx7/steps/install.yaml`, `openspec/steps/install.yaml`) no longer need manual snapshot/diff code. The Go `store` subcommand detects new files automatically.
-

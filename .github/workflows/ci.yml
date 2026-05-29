@@ -4,27 +4,36 @@ on:
   push:
     branches: [main]
   pull_request:
-    branches: [main]
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
+      - name: Checkout
+        uses: actions/checkout@v4
         with:
-          go-version: '1.22'
+          fetch-depth: 0
+
+      - name: Trial merge
+        if: github.event_name == 'pull_request'
+        run: |
+          git fetch origin "${{ github.base_ref }}"
+          git merge --no-commit --no-ff "origin/${{ github.base_ref }}"
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@v4
+
+      - name: Setup Nix cache
+        uses: DeterminateSystems/magic-nix-cache-action@v2
 
       - name: Build
-        working-directory: src
-        run: go build ./cmd/kfg
+        run: nix develop .#ci --command make build
 
-      - name: Test
-        working-directory: src
-        run: go test ./...
+      - name: Unit tests
+        run: nix develop .#ci --command make test
 
-      - name: Run vet
-        working-directory: src
-        run: go vet ./...
+      - name: Vet
+        run: nix develop .#ci --command make vet
+
+      - name: Bats integration tests
+        run: nix develop .#ci --command make test-bats
