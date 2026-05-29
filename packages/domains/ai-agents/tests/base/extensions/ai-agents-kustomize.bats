@@ -3,8 +3,8 @@
 # Validate kfg build succeeds for base and overlay.
 # Skip if kfg is not available.
 
-MANIFESTS_BASE="../manifests"
-MANIFESTS_OVERLAY="../overlays/dev"
+MANIFESTS_BASE="$BATS_TEST_DIRNAME/../../../manifests"
+MANIFESTS_OVERLAY="$BATS_TEST_DIRNAME/../../../overlays/dev"
 
 setup() {
     if ! command -v kfg >/dev/null 2>&1; then
