@@ -7,14 +7,14 @@
 
   outputs = { self, nixpkgs }:
     let
-      version = "0.0.4";
+      version = "0.0.5";
 
       # Platform-specific SHA-256 hashes (updated by release workflow)
       platformHashes = {
-        x86_64-linux   = "sha256-bv7R81eSXHmGQHDEh9ZroGn81uaQQ9/yyHW8hJKg8Yo=";
-        aarch64-linux  = "sha256-ff90gDYivuUt/MSY1KFfZ7Y0RRCF01h6AcON9oz+HCE=";
-        x86_64-darwin  = "sha256-krvk3gOqlkLaPuJj9Txz/zHFrPDk794W5hgggt6p5AU=";
-        aarch64-darwin = "sha256-r28cilxJl9v4v9bSI82eXgd41xoXYnvnlNcIwIKSFOw=";
+        x86_64-linux   = "sha256-o14SXklK5wsF/WdtcYETnI0zJKWe92gTLs0dfHNMaaQ=";
+        aarch64-linux  = "sha256-4J5sd2f3WEp0iNfOtx5nBKx2GOa5F0k4TNojd8VacQI=";
+        x86_64-darwin  = "sha256-/SY+ClQfG79sItzcy0ANzKkb266qf7hmpUy7ru/f0CY=";
+        aarch64-darwin = "sha256-RKS5asS7bVnH3TZjwFRY321iIgT2+6K1e62jw6ALFd0=";
       };
 
       # Map Nix system to GoReleaser archive name components
