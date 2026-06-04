@@ -1,6 +1,6 @@
 # kfg Framework Package
 
-The framework package (`packages/framework/`) provides shared manifest primitives and reusable steps that domain packages can compose and extend.
+The framework package (`packages/framework/`) provides shared manifest primitives and reusable steps for domain packages to compose and extend.
 
 ## Public API
 
@@ -8,42 +8,21 @@ The framework package (`packages/framework/`) provides shared manifest primitive
 
 **File:** `packages/framework/kustomization.yaml`
 
-Consumers should reference this kustomization, not internal framework paths. The public kustomization composes all exported framework resources.
+Consumers reference this kustomization, not internal framework paths.
 
 ### Exported Steps
 
-The framework exports five core reusable steps:
-
-1. **`kfg.materialize`** - Generate shell code from manifests using converters
-   - Supports per-item and aggregate modes
-   - Handles asset-to-converter-to-output composition
-   - Manages artifact registration
-
-2. **`kfg.cleanup`** - Clean up generated artifacts
-   - Removes all artifacts registered in the current session
-   - Suitable for use as an after-step
-   - Runs even if earlier steps failed
-
-3. **`kfg.ensure-gitignore`** - Manage repository `.gitignore` entries
-   - Adds entries to `.gitignore` without duplication
-   - Creates the file if it doesn't exist
-   - Prevents build artifacts from being tracked
-
-4. **`kfg.copy-context`** - Copy context files into artifacts
-   - Supports copying multiple files to a destination
-   - Preserves directory structure
-   - Useful for populating artifacts with supporting files
-
-5. **`kfg.materialize-scaffold`** - Generate scaffolding from templates
-   - Generates project/feature scaffolding structures
-   - Supports template variable substitution
-   - Typical usage: new project or feature setup
+| Step | Purpose |
+|------|---------|
+| `kfg.materialize` | Generate shell code from manifests using converters (per-item or aggregate modes) |
+| `kfg.cleanup` | Clean up all artifacts registered in current session |
+| `kfg.ensure-gitignore` | Add entries to `.gitignore` without duplication |
+| `kfg.copy-context` | Copy context files into artifacts, preserving structure |
+| `kfg.materialize-scaffold` | Generate scaffolding from templates |
 
 ## Using Framework Steps
 
-Domain packages compose the framework package and use its exported steps in their workflows.
-
-### Example: Domain Composition
+Domain packages compose the framework and use its exported steps in workflows:
 
 ```yaml
 apiVersion: kfg.dev/v1alpha1
@@ -62,9 +41,9 @@ spec:
         OUTPUTS: /tmp/output.yaml
 ```
 
-### Shell Runtime API
+## Shell Runtime API
 
-Framework steps depend on the stable shell runtime API exported by the engine:
+Framework steps depend on the stable shell runtime API:
 
 - `KFG_SESSION_ID` - Unique session identifier
 - `KFG_WORKFLOW_NAME` - Current workflow name
@@ -73,77 +52,46 @@ Framework steps depend on the stable shell runtime API exported by the engine:
 - `__kfg_build_result()` - Record build results
 - `__kfg_log_*()` - Structured logging functions
 
-Framework steps MUST NOT hardcode engine-specific paths or make assumptions about the engine's internal structure. They MUST use only the documented runtime API.
-
-## Framework Specifications
-
-Framework-specific capabilities are documented in `docs/context/openspec/specs/framework-*`:
-
-- **reusable-framework-steps** - Contract and behavior of exported steps
-- **framework-package-contract** - Public API and stability guarantees
-
-See `docs/context/openspec/config.yaml` for the consolidated OpenSpec root.
+Framework steps MUST use only documented runtime API. See `docs/context/openspec/specs/kfg-shell-runtime-api/spec.md`.
 
 ## Framework Tests
 
-Framework-specific Bats suites are in `packages/framework/tests/`:
-
-- Step functionality tests
-- Shell generation validation
-- Artifact registration and cleanup
-- Gitignore entry management
-
-Run framework tests with:
+Bats suites in `packages/framework/tests/`:
 
 ```bash
-bats packages/framework/tests/**/*.bats
+make test-bats  # Canonical entrypoint (all tests including framework)
 ```
 
-Or use the canonical test target:
-
-```bash
-make test-bats  # Runs all tests including framework
-```
+Tests cover: step functionality, shell generation, artifact registration, gitignore management.
 
 ## Framework Development
 
-### Adding a New Framework Step
+### Adding a Step
 
-1. Create the step manifest in `packages/framework/manifests/steps/<name>.yaml`
-2. Add it to `packages/framework/manifests/steps/kustomization.yaml`
-3. Create a spec with `framework-` prefix in `docs/context/openspec/specs/` documenting the step
+1. Create manifest in `packages/framework/manifests/steps/<name>.yaml`
+2. Add to `packages/framework/manifests/steps/kustomization.yaml`
+3. Create spec: `docs/context/openspec/specs/framework-<name>/spec.md`
 4. Add Bats tests in `packages/framework/tests/`
 5. Update this documentation
 
-### Updating Framework Behavior
-
-Framework changes are tracked in `docs/context/openspec/changes/` with `framework-` prefix. When making changes that affect framework behavior:
-
-1. Create a change proposal in `docs/context/openspec/changes/` with `framework-` prefix
-2. Update relevant specs
-3. Update this documentation
-4. Add or update Bats tests
-5. If cross-layer (affects engine or domains), create sibling changes with matching slugs
-
 ### Backward Compatibility
 
-Framework maintains a backward-compatibility commitment:
-
+Framework maintains stability:
 - Exported step names and behavior remain stable
-- New steps can be added without breaking existing consumers
-- Breaking changes require a deprecation period and migration documentation
-- The shell runtime API is stable (see shell-runtime-api spec)
+- New steps added without breaking existing consumers
+- Breaking changes require deprecation period + migration docs
+- Shell runtime API is stable (see spec)
 
 ## Integration with Domain Packages
 
-Domain packages use the framework by:
+Domain packages use framework by:
 
-1. Basing their kustomization on `packages/framework/`
-2. Composing framework steps in their workflows
+1. Basing kustomization on `packages/framework/`
+2. Composing framework steps in workflows
 3. Extending framework behavior where needed
-4. Testing against the framework API
+4. Testing against framework API
 
-See `packages/domains/ai-agents/kustomization.yaml` for an example.
+See `packages/domains/ai-agents/kustomization.yaml` for example.
 
 ## Further Reading
 

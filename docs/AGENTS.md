@@ -1,149 +1,49 @@
-# AGENTS.md
+# AI Agent Developer Context
 
-This file provides guidance to AI agents when working
-with code in the kfg repository.
+kfg is a declarative shell compiler (Go + Cobra/Viper). See [`README.md`](../README.md) for overview and installation.
 
-kfg is a standalone CLI for processing YAML manifests
-into shell functions. It's written in Go using Cobra for
-CLI framework and Viper for configuration.
+## Quick Dev Commands
 
-## Quick Reference
-
-All commands run through the Nix dev shell (`flake.nix`):
+All commands via Nix dev shell:
 
 ```bash
-# Build
-nix develop --command make build    # → ./bin/kfg
-
-# Test
-nix develop --command make test
-nix develop --command make test-bats
-
-# Development
-nix develop --command make fmt
-nix develop --command make lint
-nix develop --command make vet
+make build          # → ./bin/kfg
+make test           # Go unit tests
+make test-bats      # Integration tests
+make fmt lint vet   # Code quality
 ```
 
 ## Git Worktree Workflow
 
-**CRITICAL RULE: No files outside a worktree may be modified. All code changes,
-edits, and file modifications must occur exclusively within a Git worktree.
-Before performing ANY task, the agent MUST create or switch to the appropriate
-worktree. This is the first action, always.**
+**CRITICAL RULE: All code changes ONLY in git worktrees. Worktree first, always.**
 
-All code changes must be developed in a Git worktree. This ensures
-isolation between branches and prevents conflicts with the main
-repository state.
+### Worktree Setup
 
-### Worktree Path Structure
+Worktrees at: `../wkt/kfg/<branch-name>`
 
-Worktrees are created at:
-```
-../wkt/kfg/<branch-name>
-```
+**Branch naming:**
+- Recognized prefixes: `feature/`, `fix/`, `chore/`, `hotfix/`, `docs/`, `release/`, `main`
+- Unrecognized: auto-prefix with `feature/`
 
-The project name (`kfg`) is derived from the repository root directory name.
+Example: `nixai-absort` → `feature/nixai-absort`
 
-### Branch Naming & Normalization
+### Workflow Steps
 
-**Recognized prefixes (passthrough without modification):**
-- `feature/` — new features
-- `fix/` — bug fixes
-- `chore/` — maintenance tasks
-- `hotfix/` — critical production fixes
-- `docs/` — documentation changes
-- `main` — primary development branch
-- `release/` — release branches (e.g., `release/1.2.0`)
-
-**Unnaming rule:** If a branch name lacks a recognized prefix, the
-agent automatically prefixes it with `feature/`.
-
-Examples:
-- `nixai-absort` → `feature/nixai-absort`
-- `feature/nixai-absort` → `feature/nixai-absort` (no duplication)
-- `fix/login-crash` → `fix/login-crash` (passthrough)
-- `main` → `main` (passthrough)
-- `release/1.2.0` → `release/1.2.0` (passthrough)
-
-### Agent Workflow
-
-**STEP 0 (MANDATORY — Always first):**
-Before ANY code modification, read operation on project files, or task execution:
-1. Determine the target branch name
-2. Normalize it according to the rules below
-3. Create the worktree or switch to an existing one
-4. Change working directory into the worktree
-5. Only then proceed with the actual task
-
-**Steps 1–9:**
-
-1. **Determine the branch name**  
-   From OpenSpec change slug, user instruction, or task context.
-
-2. **Normalize the branch name**  
-   Apply prefix rules if needed.
-
-3. **Check if already in worktree**  
-   If CWD is already `../wkt/kfg/<branch>`, skip to step 9.
-
-4. **Check if worktree exists**  
-   If `../wkt/kfg/<branch>` exists, switch into it and skip to step 8.
-
-5. **Create the worktree**  
+1. Determine normalized branch name
+2. Create/switch worktree:
    ```bash
-   # For a new branch
-   git worktree add ../wkt/kfg/<branch> -b <branch>
-   
-   # For an existing local branch
-   git worktree add ../wkt/kfg/<branch> <branch>
+   git worktree add ../wkt/kfg/<branch> -b <branch>  # New branch
+   git worktree add ../wkt/kfg/<branch> <branch>     # Existing
    ```
+3. Push to remote: `git push -u origin <branch>`
+4. Create draft PR (base: `main` for feature/fix/docs, ask for release branches)
+5. Work in worktree; all commands execute inside `../wkt/kfg/<branch>`
 
-6. **Push the branch to remote**  
-   ```bash
-   git push -u origin <branch>
-   ```
-
-7. **Determine PR base branch**  
-   - For `feature/`, `fix/`, `chore/`, `hotfix/`, `docs/`: base is `main`
-   - For `release/*`: **ask the user** which branch is the parent before opening the PR
-
-8. **Create a draft PR**  
-   ```bash
-   gh pr create --draft --base <parent-branch> \
-     --title "<branch-name or descriptive title>" \
-     --body "<minimal context, link to OpenSpec change if applicable>"
-   ```
-
-9. **Work within the worktree**  
-   All subsequent commands (build, test, code edits) execute inside
-   `../wkt/kfg/<branch>`.
-
-### Important Notes
-
-- **NEVER modify any files outside a worktree.** The main repository root
-  must remain untouched. Every edit, creation, or change must happen inside
-  `../wkt/kfg/<branch>`.
-- **Worktree first, always.** Before starting any task, ensure you are inside
-  the correct worktree. This is the first mandatory step, not an afterthought.
-- If a worktree already exists and you are not inside it, switch into
-  it rather than creating a new one.
-- The draft PR serves as early visibility; it can be marked ready for
-  review once the work is complete.
+**Important:** NEVER modify files outside a worktree. Main repo stays untouched.
 
 ## OpenSpec Commands
 
-Always run `openspec` through `kfg run` with the AI
-agents dev overlay instead of invoking `openspec`
-directly:
-
-```bash
-nix develop --command kfg \
-  -k packages/domains/ai-agents/overlays/dev \
-  run openspec -- <openspec-args>
-```
-
-Example:
+Run via `kfg run` with AI agents dev overlay:
 
 ```bash
 nix develop --command kfg \
@@ -153,128 +53,65 @@ nix develop --command kfg \
 
 ## Testing
 
-### Go Unit Tests
+- **Go tests:** `make test` → `src/internal/*_test.go`
+- **Bats tests:** `make test-bats` (canonical entrypoint)
+- **Key roots:** `tests/bats/`, `packages/framework/tests/`, `packages/domains/ai-agents/tests/`
 
-Run Go unit tests with `make test`. Tests live in
-`src/internal/*_test.go` files.
+## Canonical Specifications
 
-### Bats Integration Tests
+Refer to OpenSpec specs for authoritative behavior:
 
-Run integration tests with `make test-bats`. That is the
-canonical entrypoint and it discovers tests from engine
-and package roots.
+- **Engine specs** (`docs/context/openspec/specs/kfg-*`):
+  - `kfg-project-structure` - Repository layout
+  - `kfg-manifest-model` - Resource kinds
+  - `kfg-manifest-placeholder` - Placeholder resolution
+  - `kfg-cli-conventions` - Command standards
+  - `kfg-bats-test-layout` - Test organization
+  - `kfg-shellgen-run-command` - Run command spec
+  - `kfg-logging-session-system` - Logging API
+  - `kfg-cache-step` - Cache behavior
 
-Key test roots:
+- **Framework specs** (`docs/context/openspec/specs/framework-*`)
+- **Domain specs** (`docs/context/openspec/specs/domain-ai-agents-*`)
 
-- `tests/bats/`
-- `packages/framework/tests/`
-- `packages/domains/ai-agents/tests/`
-
-## Canonical Specs
-
-For detailed design and authoritative behavior, refer to
-the OpenSpec specs for the layer you are changing:
-
-- Engine specs with prefix: `../context/openspec/specs/kfg-*`
-- Framework specs with prefix: `../context/openspec/specs/framework-*`
-- Domain specs with prefix: `../context/openspec/specs/domain-ai-agents-*`
-
-All specs are consolidated in a single OpenSpec root: `../context/openspec/`
-
-### Especially Relevant Engine Specs
-
-- `../context/openspec/specs/kfg-project-structure/spec.md`
-- `../context/openspec/specs/kfg-manifest-model/spec.md`
-- `../context/openspec/specs/kfg-manifest-placeholder/spec.md`
-- `../context/openspec/specs/kfg-cli-conventions/spec.md`
-- `../context/openspec/specs/kfg-bats-test-layout/spec.md`
-- `../context/openspec/specs/kfg-shellgen-run-command/spec.md`
-- `../context/openspec/specs/kfg-logging-session-system/spec.md`
-- `../context/openspec/specs/kfg-cache-step/spec.md`
+All specs consolidated at: `docs/context/openspec/`
 
 ## Language Policy
 
-All repository-facing written content MUST be in en-US.
+All repository-facing content in **en-US**:
+- Files under `docs/` and `docs/context/`
+- All OpenSpec content
+- Code comments and user-facing strings
+- Examples and guides
 
-This applies to:
-
-- All files under `docs/`, including `docs/context/`
-- All OpenSpec content in `../context/openspec/`
-- Code comments in all source files
-- User-facing strings in source files
-- Examples, guides, and agent instructions
-
-Do not introduce Portuguese or mixed-language content in
-new or updated files unless the file intentionally records
-external third-party content or localized product strings.
+No Portuguese/mixed-language unless recording third-party content.
 
 ## Release Process
 
-Releases are managed through a branch-based workflow with automated
-flake updates via GitHub Actions.
+### Workflow
 
-### Workflow Overview
-
-1. **Stabilize features on a release branch**  
-   Merge all feature/fix PRs into `release/<version>` (e.g., `release/0.0.4`).
-
-2. **Create the tag**  
-   When the release branch is ready:
-   ```bash
-   git tag v0.0.4
-   git push origin v0.0.4
-   ```
-
-3. **GitHub Actions runs automatically**  
-   The `release.yml` workflow triggers on the tag push:
-   - **job: release** — GoReleaser builds binaries for all platforms
-     and publishes them to the GitHub Release
-   - **job: update-flake** — computes SHA-256 hashes for each
-     platform binary, updates `flake.nix` with the new version
-     and hashes, then pushes the updated `flake.nix` back to
-     the release branch
-
-4. **Create PR from release branch to main**  
-   After the workflow completes, the release branch contains
-   the updated `flake.nix`. Open the PR:
-   ```bash
-   gh pr create --base main \
-     --title "Release v0.0.4" \
-     --body "Release v0.0.4 — includes updated flake.nix from CI"
-   ```
-
-5. **Merge to main**  
-   Once the PR is merged, `nix run github:seregatte/kfg`
-   will serve the new version.
+1. Stabilize features on `release/<version>` branch
+2. Create tag: `git tag v0.0.4 && git push origin v0.0.4`
+3. CI runs: GoReleaser builds + publishes, then updates `flake.nix`
+4. Create PR: `release/<version>` → `main`
+5. Merge to main
 
 ### Agent Responsibilities
 
-- **When the user says "release vX.Y.Z"**:
-  1. Create the tag on the current release branch
-  2. Push the tag to trigger the workflow
-  3. Wait for `update-flake` job to complete (it adds the
-     `flake.nix` commit to the release branch)
-  4. Create the PR from `release/<version>` to `main`
+When user says "release vX.Y.Z":
+1. Tag on release branch
+2. Push tag (triggers workflow)
+3. Wait for `update-flake` job to complete
+4. Create PR to main
 
-- **If the release branch doesn't exist**: create it first by
-  merging the required features into `release/<version>`,
-  then follow the steps above.
-
-### Important Notes
-
-- The `release.yml` workflow only triggers on tag pushes
-  (`push: tags: 'v*'`), so commits pushed to the release
-  branch by `update-flake` will not re-trigger the release.
-- The CI workflow (`ci.yml`) will run on the `update-flake`
-  push to verify tests — this is expected and harmless.
-- Never modify `flake.nix` version or hashes manually unless
-  correcting a broken release (the workflow handles this
-  automatically for all future releases).
+**Notes:**
+- Workflow only triggers on tag pushes (`v*`)
+- Never manually modify `flake.nix` hashes/version
+- CI runs on `update-flake` push (expected, harmless)
 
 ## Local State & Gotchas
 
-- Version is injected via ldflags at build time
-  (see Makefile)
-- The binary must be built before running Bats tests
-- Store directory is created on first use
+- Version injected via ldflags at build time (Makefile)
+- Binary must be built before running Bats tests
+- Store directory created on first use
 - Log files use `.log` extension (not `.jsonl`)
