@@ -96,7 +96,7 @@ jobs:
           git add flake.nix
           git commit -m "chore(flake): update to v${{ steps.version.outputs.VERSION }}"
 
-          # Detect branch containing the tag and push to it
-          TAG_BRANCH=$(git branch -r --contains HEAD | grep -v 'HEAD' | head -1 | sed 's|origin/||')
-          git push origin HEAD:${TAG_BRANCH}
+          # Push to release branch (tags follow pattern release/vX.Y.Z)
+          VERSION=${{ steps.version.outputs.VERSION }}
+          git push origin HEAD:release/v${VERSION}
 
