@@ -11,18 +11,18 @@
 
       # Platform-specific SHA-256 hashes (updated by release workflow)
       platformHashes = {
-        x86_64-linux   = "sha256-DU9Z1FTCedRsjTYz2hHejeb+QffcyUaBQJ2VAxf+ouc=";
-        aarch64-linux  = "sha256-zLQ5DqEswvz3UnQiaKxHOAvbZNY4S8TM48dD//P8+ag=";
-        x86_64-darwin  = "sha256-kHtbgKCa+S6+WxQTU2+SCwYkq5nD6vpKqFJRjfD+glg=";
-        aarch64-darwin = "sha256-uHsq30ihm4p60YCdq7K0yDqE02O6Ll0gFm3kqUjLFYE=";
+        x86_64-linux   = "sha256-PH3GBX5XUKkZIwHpfz3adinTv7ui0WZ3JbvVLkLkabE=";
+        aarch64-linux  = "sha256-WezyOdpQa472oKhYPMa7mNnz+5Yq6oOd8AHl+KxMVmc=";
+        x86_64-darwin  = "sha256-F8faoyWqDVNVIwYRwgt0E7j1zCtqfgiuf9WUJAnKUjg=";
+        aarch64-darwin = "sha256-OU/MEVoQ4rx/b3rEcWE0B3E7icLo28NhWKp8vofuIYc=";
       };
 
       # Map Nix system to GoReleaser archive name components
       platformArchiveNames = {
-        x86_64-linux   = "sha256-DU9Z1FTCedRsjTYz2hHejeb+QffcyUaBQJ2VAxf+ouc=";
-        aarch64-linux  = "sha256-zLQ5DqEswvz3UnQiaKxHOAvbZNY4S8TM48dD//P8+ag=";
-        x86_64-darwin  = "sha256-kHtbgKCa+S6+WxQTU2+SCwYkq5nD6vpKqFJRjfD+glg=";
-        aarch64-darwin = "sha256-uHsq30ihm4p60YCdq7K0yDqE02O6Ll0gFm3kqUjLFYE=";
+        x86_64-linux   = "linux_amd64";
+        aarch64-linux  = "linux_arm64";
+        x86_64-darwin  = "darwin_amd64";
+        aarch64-darwin = "darwin_arm64";
       };
 
       supportedSystems = [ "x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin" ];

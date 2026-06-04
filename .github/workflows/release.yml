@@ -83,11 +83,11 @@ jobs:
           # Update version
           sed -i "s|version = \".*\"|version = \"${VERSION}\"|" flake.nix
 
-          # Update hashes (using | delimiter to avoid conflicts with / in hashes)
-          sed -i "s|x86_64-linux.*= \".*\"|x86_64-linux   = \"${{ steps.hashes.outputs.HASH_LINUX_AMD64 }}\"|" flake.nix
-          sed -i "s|aarch64-linux.*= \".*\"|aarch64-linux  = \"${{ steps.hashes.outputs.HASH_LINUX_ARM64 }}\"|" flake.nix
-          sed -i "s|x86_64-darwin.*= \".*\"|x86_64-darwin  = \"${{ steps.hashes.outputs.HASH_DARWIN_AMD64 }}\"|" flake.nix
-          sed -i "s|aarch64-darwin.*= \".*\"|aarch64-darwin = \"${{ steps.hashes.outputs.HASH_DARWIN_ARM64 }}\"|" flake.nix
+          # Update hashes (using sed ranges to only modify platformHashes block)
+          sed -i '/platformHashes = {/,/};/ s|x86_64-linux.*= ".*"|x86_64-linux   = "${{ steps.hashes.outputs.HASH_LINUX_AMD64 }}"|' flake.nix
+          sed -i '/platformHashes = {/,/};/ s|aarch64-linux.*= ".*"|aarch64-linux  = "${{ steps.hashes.outputs.HASH_LINUX_ARM64 }}"|' flake.nix
+          sed -i '/platformHashes = {/,/};/ s|x86_64-darwin.*= ".*"|x86_64-darwin  = "${{ steps.hashes.outputs.HASH_DARWIN_AMD64 }}"|' flake.nix
+          sed -i '/platformHashes = {/,/};/ s|aarch64-darwin.*= ".*"|aarch64-darwin = "${{ steps.hashes.outputs.HASH_DARWIN_ARM64 }}"|' flake.nix
 
       - name: Push updated flake.nix
         run: |
