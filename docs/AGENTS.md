@@ -208,6 +208,69 @@ Do not introduce Portuguese or mixed-language content in
 new or updated files unless the file intentionally records
 external third-party content or localized product strings.
 
+## Release Process
+
+Releases are managed through a branch-based workflow with automated
+flake updates via GitHub Actions.
+
+### Workflow Overview
+
+1. **Stabilize features on a release branch**  
+   Merge all feature/fix PRs into `release/<version>` (e.g., `release/0.0.4`).
+
+2. **Create the tag**  
+   When the release branch is ready:
+   ```bash
+   git tag v0.0.4
+   git push origin v0.0.4
+   ```
+
+3. **GitHub Actions runs automatically**  
+   The `release.yml` workflow triggers on the tag push:
+   - **job: release** — GoReleaser builds binaries for all platforms
+     and publishes them to the GitHub Release
+   - **job: update-flake** — computes SHA-256 hashes for each
+     platform binary, updates `flake.nix` with the new version
+     and hashes, then pushes the updated `flake.nix` back to
+     the release branch
+
+4. **Create PR from release branch to main**  
+   After the workflow completes, the release branch contains
+   the updated `flake.nix`. Open the PR:
+   ```bash
+   gh pr create --base main \
+     --title "Release v0.0.4" \
+     --body "Release v0.0.4 — includes updated flake.nix from CI"
+   ```
+
+5. **Merge to main**  
+   Once the PR is merged, `nix run github:seregatte/kfg`
+   will serve the new version.
+
+### Agent Responsibilities
+
+- **When the user says "release vX.Y.Z"**:
+  1. Create the tag on the current release branch
+  2. Push the tag to trigger the workflow
+  3. Wait for `update-flake` job to complete (it adds the
+     `flake.nix` commit to the release branch)
+  4. Create the PR from `release/<version>` to `main`
+
+- **If the release branch doesn't exist**: create it first by
+  merging the required features into `release/<version>`,
+  then follow the steps above.
+
+### Important Notes
+
+- The `release.yml` workflow only triggers on tag pushes
+  (`push: tags: 'v*'`), so commits pushed to the release
+  branch by `update-flake` will not re-trigger the release.
+- The CI workflow (`ci.yml`) will run on the `update-flake`
+  push to verify tests — this is expected and harmless.
+- Never modify `flake.nix` version or hashes manually unless
+  correcting a broken release (the workflow handles this
+  automatically for all future releases).
+
 ## Local State & Gotchas
 
 - Version is injected via ldflags at build time
