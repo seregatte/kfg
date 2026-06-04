@@ -22,7 +22,7 @@ type StepData struct {
 	Artifacts     []string          // NEW: artifacts produced by this step
 	Env           map[string]string // NEW: environment variables for this step
 	// Cache configuration
-	CacheEnabled bool   // Whether caching is enabled for this step
+	CacheEnabled bool // Whether caching is enabled for this step
 }
 
 // BeforeStepData represents a before step in a command wrapper.

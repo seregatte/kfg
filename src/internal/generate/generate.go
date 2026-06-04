@@ -422,12 +422,12 @@ func (g *Generator) convertWorkflowCmdToTemplateData(rw *resolve.ResolvedCmdWork
 				IgnoreFailure: step.FailurePolicy == "Ignore",
 				WhenCondition: whenCondition,
 				Env:           formatEnvWithKfgOutput(resolver.ResolveMap(step.Env), stepOutputLookup), // Resolve env placeholders
-				CacheEnabled: isCacheEnabled(step.Cache),
-				HasOutput:    step.Step.Spec.Output != nil,
-				OutputName:   getOutputName(step.Step.Spec.Output),
+				CacheEnabled:  isCacheEnabled(step.Cache),
+				HasOutput:     step.Step.Spec.Output != nil,
+				OutputName:    getOutputName(step.Step.Spec.Output),
 				// Declarative artifacts
 				StepArtifacts: step.Step.Spec.Artifacts, // Artifacts declared in Step.Spec
-				RefArtifacts:  step.Artifacts,            // Artifacts declared in StepReference
+				RefArtifacts:  step.Artifacts,           // Artifacts declared in StepReference
 			}
 		}
 	}
@@ -447,12 +447,12 @@ func (g *Generator) convertWorkflowCmdToTemplateData(rw *resolve.ResolvedCmdWork
 				IgnoreFailure: step.FailurePolicy == "Ignore",
 				WhenCondition: whenCondition,
 				Env:           formatEnvWithKfgOutput(resolver.ResolveMap(step.Env), stepOutputLookup), // Resolve env placeholders
-				CacheEnabled: isCacheEnabled(step.Cache),
-				HasOutput:    step.Step.Spec.Output != nil,
-				OutputName:   getOutputName(step.Step.Spec.Output),
+				CacheEnabled:  isCacheEnabled(step.Cache),
+				HasOutput:     step.Step.Spec.Output != nil,
+				OutputName:    getOutputName(step.Step.Spec.Output),
 				// Declarative artifacts
 				StepArtifacts: step.Step.Spec.Artifacts, // Artifacts declared in Step.Spec
-				RefArtifacts:  step.Artifacts,            // Artifacts declared in StepReference
+				RefArtifacts:  step.Artifacts,           // Artifacts declared in StepReference
 			}
 		}
 	}
@@ -472,12 +472,12 @@ func (g *Generator) convertWorkflowCmdToTemplateData(rw *resolve.ResolvedCmdWork
 				IgnoreFailure: step.FailurePolicy == "Ignore",
 				WhenCondition: whenCondition,
 				Env:           formatEnvWithKfgOutput(resolver.ResolveMap(step.Env), stepOutputLookup), // Resolve env placeholders
-				CacheEnabled: isCacheEnabled(step.Cache),
-				HasOutput:    step.Step.Spec.Output != nil,
-				OutputName:   getOutputName(step.Step.Spec.Output),
+				CacheEnabled:  isCacheEnabled(step.Cache),
+				HasOutput:     step.Step.Spec.Output != nil,
+				OutputName:    getOutputName(step.Step.Spec.Output),
 				// Declarative artifacts
 				StepArtifacts: step.Step.Spec.Artifacts, // Artifacts declared in Step.Spec
-				RefArtifacts:  step.Artifacts,            // Artifacts declared in StepReference
+				RefArtifacts:  step.Artifacts,           // Artifacts declared in StepReference
 			}
 		}
 	}
@@ -497,12 +497,12 @@ func (g *Generator) convertWorkflowCmdToTemplateData(rw *resolve.ResolvedCmdWork
 				IgnoreFailure: step.FailurePolicy == "Ignore",
 				WhenCondition: whenCondition,
 				Env:           formatEnvWithKfgOutput(resolver.ResolveMap(step.Env), stepOutputLookup), // Resolve env placeholders
-				CacheEnabled: isCacheEnabled(step.Cache),
-				HasOutput:    step.Step.Spec.Output != nil,
-				OutputName:   getOutputName(step.Step.Spec.Output),
+				CacheEnabled:  isCacheEnabled(step.Cache),
+				HasOutput:     step.Step.Spec.Output != nil,
+				OutputName:    getOutputName(step.Step.Spec.Output),
 				// Declarative artifacts
 				StepArtifacts: step.Step.Spec.Artifacts, // Artifacts declared in Step.Spec
-				RefArtifacts:  step.Artifacts,            // Artifacts declared in StepReference
+				RefArtifacts:  step.Artifacts,           // Artifacts declared in StepReference
 			}
 		}
 	}
@@ -789,7 +789,7 @@ func (g *Generator) convertStepToTemplateData(step *manifest.Step) templates.Ste
 
 		// Cache configuration from Step default
 		CacheEnabled: isCacheEnabled(step.Spec.Cache),
-		Env:           formatEnvDefaults(resolver.ResolveMap(step.Spec.Env)), // Resolve env placeholders
+		Env:          formatEnvDefaults(resolver.ResolveMap(step.Spec.Env)), // Resolve env placeholders
 	}
 
 	if step.Spec.Output != nil {

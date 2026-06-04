@@ -1,4 +1,4 @@
-## ADDED Requirements
+## MODIFIED Requirements
 
 ### Requirement: Version reflects devShell contract change
 
@@ -51,24 +51,3 @@ The `devShells.dev` MUST maintain all Go development capabilities after this cha
 - **THEN** shellHook MUST set `PATH="./bin:$PATH"`
 - **AND** shellHook MUST set `OPENSPEC_ROOT_DIR=docs/context`
 - **AND** shellHook MUST run `source <(go run ./src/cmd/kfg apply -k packages/domains/ai-agents/overlays/dev)`
-
-## MODIFIED Requirements
-
-### Requirement: Version exposure
-
-The flake SHALL expose the version string for downstream consumers.
-
-#### Scenario: lib.version
-
-- **WHEN** a consumer accesses `kfg.lib.version`
-- **THEN** the value SHALL match the hardcoded `version` attribute in the flake
-
-## REMOVED Requirements
-
-### Requirement: nixai dependency via inputsFrom
-
-**Reason**: kfg now declares all dev shell tooling inline. The `nixai` input and
-the `inputsFrom` delegation are removed as part of the absorb-nixai change.
-
-**Migration**: No migration needed. Developers run `nix develop` as before; the
-shell is now self-contained. No reference to `github:seregatte/nixai` is required.

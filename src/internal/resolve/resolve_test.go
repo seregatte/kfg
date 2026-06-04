@@ -1112,7 +1112,7 @@ func TestResolveStepReferences_CachePopulation(t *testing.T) {
 	index := NewIndex([]manifest.ParsedResource{
 		{Step: step},
 		{CmdWorkflow: workflow},
-		})
+	})
 
 	resolver := NewResolver(index)
 	resolved, err := resolver.ResolveKustomization("test", nil)
@@ -1145,19 +1145,19 @@ func TestResolveStepReferences_CacheNoOverride(t *testing.T) {
 		Spec: manifest.CmdWorkflowSpec{
 			Cmds: []string{},
 			Before: []manifest.StepReference{
-					{
-						Name: "cached-ref",
-						Step: "cached-step",
-						// No cache override - should use step default
-						},
-					},
+				{
+					Name: "cached-ref",
+					Step: "cached-step",
+					// No cache override - should use step default
 				},
-			}
+			},
+		},
+	}
 
 	index := NewIndex([]manifest.ParsedResource{
 		{Step: step},
 		{CmdWorkflow: workflow},
-		})
+	})
 
 	resolver := NewResolver(index)
 	resolved, err := resolver.ResolveKustomization("test", nil)
@@ -1187,18 +1187,18 @@ func TestResolveStepReferences_NoCache(t *testing.T) {
 		Spec: manifest.CmdWorkflowSpec{
 			Cmds: []string{},
 			Before: []manifest.StepReference{
-					{
-						Name: "no-cache-ref",
-						Step: "no-cache-step",
-						},
-					},
+				{
+					Name: "no-cache-ref",
+					Step: "no-cache-step",
 				},
-			}
+			},
+		},
+	}
 
 	index := NewIndex([]manifest.ParsedResource{
 		{Step: step},
 		{CmdWorkflow: workflow},
-		})
+	})
 
 	resolver := NewResolver(index)
 	resolved, err := resolver.ResolveKustomization("test", nil)
@@ -1227,19 +1227,19 @@ func TestResolveStepReferences_RefCacheOnly(t *testing.T) {
 		Spec: manifest.CmdWorkflowSpec{
 			Cmds: []string{},
 			Before: []manifest.StepReference{
-					{
-						Name:  "ref-cached",
-						Step:  "nocache-step",
-						Cache: &manifest.CacheConfig{Enabled: boolPtr(true)},
-						},
-					},
+				{
+					Name:  "ref-cached",
+					Step:  "nocache-step",
+					Cache: &manifest.CacheConfig{Enabled: boolPtr(true)},
 				},
-			}
+			},
+		},
+	}
 
 	index := NewIndex([]manifest.ParsedResource{
 		{Step: step},
 		{CmdWorkflow: workflow},
-		})
+	})
 
 	resolver := NewResolver(index)
 	resolved, err := resolver.ResolveKustomization("test", nil)

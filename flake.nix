@@ -7,14 +7,14 @@
 
   outputs = { self, nixpkgs }:
     let
-      version = "0.0.6";
+      version = "0.0.7";
 
       # Platform-specific SHA-256 hashes (updated by release workflow)
       platformHashes = {
-        x86_64-linux   = "sha256-fd6TRt/Ymz1C+Bit+IqjRnVDYrWQA4KILXbHRRPjQVo=";
-        aarch64-linux  = "sha256-NgbPNPxEcVqZi6kHuib7UxTcZjWRYAj+CYn4hUJr2zM=";
-        x86_64-darwin  = "sha256-Z5sZVPo2azgyoeRRK+dDkCswHCxZVwhxX6b0K8XbgWI=";
-        aarch64-darwin = "sha256-fGS0e2kCiY/CdAJMwhG8CtNgAeksNwz3KGplopCqig0=";
+        x86_64-linux   = "sha256-jFkLNBgetJytQFjTkX9xnYlBW4PW0wfM8hTRoujvwTk=";
+        aarch64-linux  = "sha256-vZteV2+6bofNxGWc2cUsD+cRzrTAKlG56vNRbLDNGZE=";
+        x86_64-darwin  = "sha256-yy2IpJT/ZlwYODZZYgZftwkxhPtMQj36/DmakQz8L8s=";
+        aarch64-darwin = "sha256-Wd+GOlv0t70VxiUuteAXvcdTHuNumdhuaDrfDCmYiLs=";
       };
 
       # Map Nix system to GoReleaser archive name components
@@ -205,7 +205,7 @@
         in
         {
           default = pkgs.mkShell {
-            buildInputs = devInputs ++ [ pkgs.nodejs pkgs.go kfg-bundle ];
+            buildInputs = devInputs ++ [ kfg-bundle ];
             shellHook = ''
               export KFG_DIR=${self.outPath}
               if [ "$COLUMNS" -lt 45 ] 2>/dev/null; then
@@ -213,9 +213,6 @@
               else
                 export STARSHIP_CONFIG=${self.outPath}/assets/starship/full.toml
               fi
-              export PATH="./bin:$PATH"
-              export OPENSPEC_ROOT_DIR=docs/context
-              source <(go run ./src/cmd/kfg apply -k packages/domains/ai-agents/overlays/dev)
             '';
           };
 
@@ -223,13 +220,13 @@
             buildInputs = devInputs ++ [ pkgs.nodejs pkgs.go kfg-bundle ];
             shellHook = ''
               export KFG_DIR=${self.outPath}
+              export PATH="./bin:$PATH"
+              export OPENSPEC_ROOT_DIR=docs/context
               if [ "$COLUMNS" -lt 45 ] 2>/dev/null; then
                 export STARSHIP_CONFIG=${self.outPath}/assets/starship/mobile.toml
               else
                 export STARSHIP_CONFIG=${self.outPath}/assets/starship/full.toml
               fi
-              export PATH="./bin:$PATH"
-              export OPENSPEC_ROOT_DIR=docs/context
               source <(go run ./src/cmd/kfg apply -k packages/domains/ai-agents/overlays/dev)
             '';
           };
