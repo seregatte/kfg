@@ -7,7 +7,7 @@
 
   outputs = { self, nixpkgs }:
     let
-      version = "0.0.6";
+      version = "0.0.7";
 
       # Platform-specific SHA-256 hashes (updated by release workflow)
       platformHashes = {
@@ -205,7 +205,7 @@
         in
         {
           default = pkgs.mkShell {
-            buildInputs = devInputs ++ [ pkgs.nodejs pkgs.go kfg-bundle ];
+            buildInputs = devInputs ++ [ kfg-bundle ];
             shellHook = ''
               export KFG_DIR=${self.outPath}
               if [ "$COLUMNS" -lt 45 ] 2>/dev/null; then
@@ -213,9 +213,6 @@
               else
                 export STARSHIP_CONFIG=${self.outPath}/assets/starship/full.toml
               fi
-              export PATH="./bin:$PATH"
-              export OPENSPEC_ROOT_DIR=docs/context
-              source <(go run ./src/cmd/kfg apply -k packages/domains/ai-agents/overlays/dev)
             '';
           };
 
@@ -223,13 +220,13 @@
             buildInputs = devInputs ++ [ pkgs.nodejs pkgs.go kfg-bundle ];
             shellHook = ''
               export KFG_DIR=${self.outPath}
+              export PATH="./bin:$PATH"
+              export OPENSPEC_ROOT_DIR=docs/context
               if [ "$COLUMNS" -lt 45 ] 2>/dev/null; then
                 export STARSHIP_CONFIG=${self.outPath}/assets/starship/mobile.toml
               else
                 export STARSHIP_CONFIG=${self.outPath}/assets/starship/full.toml
               fi
-              export PATH="./bin:$PATH"
-              export OPENSPEC_ROOT_DIR=docs/context
               source <(go run ./src/cmd/kfg apply -k packages/domains/ai-agents/overlays/dev)
             '';
           };

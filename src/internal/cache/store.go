@@ -11,10 +11,10 @@ import (
 
 // StoreInput represents the JSON input for the store subcommand.
 type StoreInput struct {
-	Before     []string       `json:"before"`
-	After      []string       `json:"after"`
-	Declarative []string      `json:"declarative"`
-	Output     *StoreOutput   `json:"output,omitempty"`
+	Before      []string     `json:"before"`
+	After       []string     `json:"after"`
+	Declarative []string     `json:"declarative"`
+	Output      *StoreOutput `json:"output,omitempty"`
 }
 
 // StoreOutput represents the output to cache.

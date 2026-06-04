@@ -343,8 +343,6 @@ func TestGoldenStepWithLogging(t *testing.T) {
 
 	// Verify the helper function definitions are present
 
-
-
 	// Verify the Step's run script is included (using the new helper names)
 	assert.Contains(t, output, "__kfg_log_info \"step:logging\" \"Starting\"", "step should call __kfg_log_info")
 	assert.Contains(t, output, "__kfg_log_debug \"step:logging\" \"Completed\"", "step should call __kfg_log_debug")
@@ -358,8 +356,8 @@ func TestGoldenStepWithCache(t *testing.T) {
 	assert.NoError(t, err)
 
 	data := StepData{
-		StepName:    "cached-step",
-		RunScript:   "echo hello world",
+		StepName:     "cached-step",
+		RunScript:    "echo hello world",
 		CacheEnabled: true,
 		HasOutput:    true,
 		OutputName:   "result",

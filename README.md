@@ -101,12 +101,30 @@ spec:
 
 ## Development
 
-See [`docs/AGENTS.md`](docs/AGENTS.md) for agent developer guidance. To build locally:
+### DevShells
+
+kfg provides three devShells via Nix flakes:
+
+| Shell | Usage | Description |
+|-------|-------|-------------|
+| `default` | `nix develop` | **Consumer shell** — tools and environment for consuming kfg. No Go/Node.js. Suitable for `inputsFrom` in other projects. |
+| `dev` | `nix develop .#dev` | **Development shell** — full Go workflow with kfg source compilation. Use this for kfg development. |
+| `ci` | `nix develop .#ci` | **Minimal CI shell** — Go and make only. Used by CI pipelines for building and testing. |
+
+### Building Locally
+
+For **kfg development**, use the explicit `.#dev` shell:
 
 ```bash
-nix develop --command make build        # → ./bin/kfg
-nix develop --command make test         # Go unit tests
-nix develop --command make test-bats    # Bats integration tests
+nix develop .#dev --command make build        # → ./bin/kfg
+nix develop .#dev --command make test         # Go unit tests
+nix develop .#dev --command make test-bats    # Bats integration tests
+```
+
+For **consuming kfg** in other projects, use the default shell (implicit):
+
+```bash
+nix develop --command kfg -- --help
 ```
 
 ## Repository Structure

@@ -4,13 +4,13 @@ kfg is a declarative shell compiler (Go + Cobra/Viper). See [`README.md`](../REA
 
 ## Quick Dev Commands
 
-All commands via Nix dev shell:
+All commands via Nix **development shell** (explicit `.#dev`):
 
 ```bash
-make build          # → ./bin/kfg
-make test           # Go unit tests
-make test-bats      # Integration tests
-make fmt lint vet   # Code quality
+nix develop .#dev --command make build          # → ./bin/kfg
+nix develop .#dev --command make test           # Go unit tests
+nix develop .#dev --command make test-bats      # Integration tests
+nix develop .#dev --command make fmt lint vet   # Code quality
 ```
 
 ## Git Worktree Workflow
@@ -37,16 +37,19 @@ Example: `nixai-absort` → `feature/nixai-absort`
    ```
 3. Push to remote: `git push -u origin <branch>`
 4. Create draft PR (base: `main` for feature/fix/docs, ask for release branches)
-5. Work in worktree; all commands execute inside `../wkt/kfg/<branch>`
+5. Work in worktree; all commands execute inside `../wkt/kfg/<branch>` using the **development shell**:
+   ```bash
+   nix develop .#dev --command make build
+   ```
 
-**Important:** NEVER modify files outside a worktree. Main repo stays untouched.
+**Important:** NEVER modify files outside a worktree. Main repo stays untouched. Always use the explicit `.#dev` shell for kfg development (the default shell is for consumers).
 
 ## OpenSpec Commands
 
-Run via `kfg run` with AI agents dev overlay:
+Run via `kfg run` with AI agents dev overlay (use **development shell**):
 
 ```bash
-nix develop --command kfg \
+nix develop .#dev --command kfg \
   -k packages/domains/ai-agents/overlays/dev \
   run openspec -- view
 ```
