@@ -120,9 +120,9 @@ type ResolvedStep struct {
 	Name          string // Required: StepReference.name (runtime execution identity)
 	Step          *manifest.Step
 	When          *manifest.WhenClause
-	FailurePolicy string            // "Fail" (default) or "Ignore"
-	Env           map[string]string // Merged env: StepSpec.Env + StepReference.Env
-	Artifacts     []string          // Additional artifacts from StepReference
+	FailurePolicy string                // "Fail" (default) or "Ignore"
+	Env           map[string]string     // Merged env: StepSpec.Env + StepReference.Env
+	Artifacts     []string              // Additional artifacts from StepReference
 	Cache         *manifest.CacheConfig // Merged cache: StepReference.Cache takes precedence over Step.Spec.Cache
 }
 

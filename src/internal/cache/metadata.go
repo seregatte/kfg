@@ -12,10 +12,10 @@ import (
 
 // CacheMetadata represents the metadata.yaml content in a cache entry.
 type CacheMetadata struct {
-	StepRefName string    `yaml:"stepRefName"`
-	Timestamp   string    `yaml:"timestamp"`
+	StepRefName string          `yaml:"stepRefName"`
+	Timestamp   string          `yaml:"timestamp"`
 	Output      *OutputMetadata `yaml:"output,omitempty"`
-	Artifacts   []string  `yaml:"artifacts,omitempty"`
+	Artifacts   []string        `yaml:"artifacts,omitempty"`
 }
 
 // OutputMetadata represents cached output data.
