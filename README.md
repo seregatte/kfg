@@ -101,17 +101,12 @@ spec:
 
 ## Development
 
-Enter the Nix dev shell as your development entrypoint. It provides Go, Node.js, bats, and all AI agent tools:
+See [`docs/AGENTS.md`](docs/AGENTS.md) for agent developer guidance. To build locally:
 
 ```bash
-nix develop
-
-# Once inside the dev shell:
-make build        # Build the binary → ./bin/kfg
-make test         # Go unit tests
-make test-bats    # Bats integration tests
-make fmt          # Format code
-make lint         # Run linter
+nix develop --command make build        # → ./bin/kfg
+nix develop --command make test         # Go unit tests
+nix develop --command make test-bats    # Bats integration tests
 ```
 
 ## Repository Structure
@@ -149,7 +144,7 @@ KFG uses a package-oriented architecture:
 - AI agents domain: `packages/domains/ai-agents/kustomization.yaml`
 - Domain overlay (dev): `packages/domains/ai-agents/overlays/dev/`
 
-For more details, see [AGENTS.md](AGENTS.md).
+For detailed specs and workflow documentation, see [`docs/AGENTS.md`](docs/AGENTS.md).
 
 ## License
 
