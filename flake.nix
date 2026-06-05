@@ -205,7 +205,7 @@
           };
 
            dev = pkgs.mkShell {
-             buildInputs = devInputs ++ [ pkgs.nodejs bats pkgs.go kfg-bundle ];
+             buildInputs = devInputs ++ [ pkgs.nodejs pkgs.bats pkgs.go kfg-bundle ];
             shellHook = ''
               export KFG_DIR=${self.outPath}
               export PATH="./bin:$PATH"
@@ -221,7 +221,7 @@
 
            # Minimal devShell for CI — no kfg-bundle (avoids broken gws-bin on Linux).
            ci = pkgs.mkShell {
-             buildInputs = devInputs ++ [ bats pkgs.go pkgs.gnumake ];
+             buildInputs = devInputs ++ [ pkgs.bats pkgs.go pkgs.gnumake ];
             shellHook = ''
               export PATH="./bin:$PATH"
               export OPENSPEC_ROOT_DIR=docs/context
