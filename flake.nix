@@ -38,15 +38,6 @@
           archiveName = platformArchiveNames.${system};
           hash = platformHashes.${system};
 
-          # Dev/test dependencies (PATH at runtime, not bundled)
-          devInputs = with pkgs; [
-            yq-go jq yajsv gomplate
-            coreutils findutils gnused gnugrep
-            bash bats
-            google-cloud-sdk
-            uv
-          ];
-
           # npmGlobal derivation (AI agents CLIs)
           npmGlobal =
             let
@@ -194,18 +185,15 @@
           };
           kfg-bundle = self.packages.${system}.kfg-bundle;
 
-          # Dev/test dependencies (PATH at runtime, not bundled)
+          # Shared utilities (PATH at runtime)
           devInputs = with pkgs; [
-            yq-go jq yajsv gomplate
             coreutils findutils gnused gnugrep
-            bash bats
-            google-cloud-sdk
-            uv
+            bash
           ];
         in
         {
-          default = pkgs.mkShell {
-            buildInputs = devInputs ++ [ kfg-bundle ];
+           default = pkgs.mkShell {
+             buildInputs = devInputs ++ [ pkgs.nodejs kfg-bundle ];
             shellHook = ''
               export KFG_DIR=${self.outPath}
               if [ "$COLUMNS" -lt 45 ] 2>/dev/null; then
@@ -216,8 +204,8 @@
             '';
           };
 
-          dev = pkgs.mkShell {
-            buildInputs = devInputs ++ [ pkgs.nodejs pkgs.go kfg-bundle ];
+           dev = pkgs.mkShell {
+             buildInputs = devInputs ++ [ pkgs.nodejs bats pkgs.go kfg-bundle ];
             shellHook = ''
               export KFG_DIR=${self.outPath}
               export PATH="./bin:$PATH"
@@ -231,9 +219,9 @@
             '';
           };
 
-          # Minimal devShell for CI — no kfg-bundle (avoids broken gws-bin on Linux).
-          ci = pkgs.mkShell {
-            buildInputs = devInputs ++ [ pkgs.go pkgs.gnumake ];
+           # Minimal devShell for CI — no kfg-bundle (avoids broken gws-bin on Linux).
+           ci = pkgs.mkShell {
+             buildInputs = devInputs ++ [ bats pkgs.go pkgs.gnumake ];
             shellHook = ''
               export PATH="./bin:$PATH"
               export OPENSPEC_ROOT_DIR=docs/context
