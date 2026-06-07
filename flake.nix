@@ -188,12 +188,12 @@
           # Shared utilities (PATH at runtime)
           devInputs = with pkgs; [
             coreutils findutils gnused gnugrep
-            bash
+            bash nodejs uv
           ];
         in
         {
            default = pkgs.mkShell {
-             buildInputs = devInputs ++ [ pkgs.nodejs kfg-bundle ];
+             buildInputs = devInputs ++ [ kfg-bundle ];
             shellHook = ''
               export KFG_DIR=${self.outPath}
               if [ "$COLUMNS" -lt 45 ] 2>/dev/null; then
@@ -205,7 +205,7 @@
           };
 
            dev = pkgs.mkShell {
-             buildInputs = devInputs ++ [ pkgs.nodejs pkgs.bats pkgs.go kfg-bundle ];
+             buildInputs = devInputs ++ [ pkgs.bats pkgs.go kfg-bundle ];
             shellHook = ''
               export KFG_DIR=${self.outPath}
               export PATH="./bin:$PATH"
