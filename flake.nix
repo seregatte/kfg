@@ -7,14 +7,14 @@
 
   outputs = { self, nixpkgs }:
     let
-      version = "0.0.8";
+      version = "0.0.9";
 
       # Platform-specific SHA-256 hashes (updated by release workflow)
       platformHashes = {
-        x86_64-linux   = "sha256-z8QIZaeULy+dhS3qpW3ff3cGozMnZ36K0ruchsw7owE=";
-        aarch64-linux  = "sha256-kvieQSJgDY4B2tNgqvLTbSyOw7DQK3iVrw36dIS58Is=";
-        x86_64-darwin  = "sha256-0+qGwI020Mo/hffiaPX6DR87vFE7kx+2Ar/kUYy/TNA=";
-        aarch64-darwin = "sha256-vA4xzd+VVOOvKLJLorAlwKn3TWQQUHZByTrH7RqQDdk=";
+        x86_64-linux   = "sha256-WMpDI+rPfZNheLP96oJraW8gOGdFN/57tVN6N1W7lr4=";
+        aarch64-linux  = "sha256-cp8fTT7D/UQds12QfCHOe1iQTgp+y39MjjKO63ng7lA=";
+        x86_64-darwin  = "sha256-Tdei/loZwQQuhDAYhu/URa+urPwEYI4952bMiDkiw6U=";
+        aarch64-darwin = "sha256-lnhS9gCldGxeiqoI49DnA7tbvsQ2YiuOAzAkTR4eKf4=";
       };
 
       # Map Nix system to GoReleaser archive name components
@@ -188,12 +188,12 @@
           # Shared utilities (PATH at runtime)
           devInputs = with pkgs; [
             coreutils findutils gnused gnugrep
-            bash
+            bash nodejs uv
           ];
         in
         {
            default = pkgs.mkShell {
-             buildInputs = devInputs ++ [ pkgs.nodejs kfg-bundle ];
+             buildInputs = devInputs ++ [ kfg-bundle ];
             shellHook = ''
               export KFG_DIR=${self.outPath}
               if [ "$COLUMNS" -lt 45 ] 2>/dev/null; then
@@ -205,7 +205,7 @@
           };
 
            dev = pkgs.mkShell {
-             buildInputs = devInputs ++ [ pkgs.nodejs pkgs.bats pkgs.go kfg-bundle ];
+             buildInputs = devInputs ++ [ pkgs.bats pkgs.go kfg-bundle ];
             shellHook = ''
               export KFG_DIR=${self.outPath}
               export PATH="./bin:$PATH"
