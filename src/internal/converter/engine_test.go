@@ -618,3 +618,26 @@ func TestApplyWithExpressionJSONAsset(t *testing.T) {
 		t.Errorf("expected 'npx', got %q", result)
 	}
 }
+
+func TestApplyRawWithConverterMcpEnabledFalse(t *testing.T) {
+	engine := NewEngine()
+
+	conv := Converter{
+		Name:         "ai.opencode.conv.mcp",
+		InputFormat:  "yaml",
+		OutputFormat: "json",
+		Expression:   `(.name) as $n | {($n): {"type": "local", "command": [.server.command] + .server.args, "environment": .server.env, "enabled": .enabled}}`,
+	}
+
+	result, err := engine.ApplyRawWithConverter("name: playwright\nenabled: false\nserver:\n  command: npx\n  args:\n    - -y\n    - \"@playwright/mcp@latest\"\n    - \"--extension\"\n  env: {}", "yaml", conv)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if !strings.Contains(result, `"enabled": false`) {
+		t.Fatalf("expected enabled false in output, got: %s", result)
+	}
+	if !strings.Contains(result, `"--extension"`) {
+		t.Fatalf("expected extension arg in output, got: %s", result)
+	}
+}
