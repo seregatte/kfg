@@ -1,25 +1,52 @@
 # KFG - Declarative Shell Compiler
 
-KFG is a declarative shell compiler that transforms YAML manifests into bash functions. It allows you to define shell commands, their dependencies, and execution steps in YAML manifests, then generates shell integration code that can be sourced or used interactively.
+[![GitHub release (latest by date)](https://img.shields.io/github/v/release/seregatte/kfg)](https://github.com/seregatte/kfg/releases)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Nix](https://img.shields.io/badge/Nix-5277C3?logo=nixos&logoColor=white)](https://nixos.org)
+
+**KFG** (Key Function Generator) is a declarative shell compiler that transforms YAML manifests into bash functions. Define commands, dependencies, and execution steps in YAML, and KFG generates shell code that can be sourced or used interactively.
+
+## Why KFG?
+
+- **Declarative**: Define what to do in YAML, not how to do it in bash
+- **Dependencies**: KFG manages execution order automatically via DAG
+- **Cache**: Steps are cached to avoid unnecessary re-executions
+- **Reusable**: Create modular and reusable manifests
+- **Versionable**: Your shell workflows can now be versioned as code
+
+## Use Cases
+
+- **Application deployment**: Define declarative deploy pipelines
+- **Environment setup**: Automate project configuration with dependencies
+- **AI agent workflows**: Generate commands for Claude, Copilot, etc.
+- **CI/CD**: Standardize build and deploy processes
+- **MCP server management**: Configure and manage MCP servers declaratively
 
 ## Installation
 
-### Install via Nix (Recommended)
+### Prerequisites
 
-The easiest way to get kfg is via Nix. Pre-built binaries are available from GitHub Releases:
+To install via Nix (recommended):
+- [Nix](https://nixos.org/download.html) with flakes enabled
+
+To build from source:
+- Go 1.21+
+- Make
+
+### Via Nix (Recommended)
 
 ```bash
-# Build from GitHub Releases
+# Build and install
 nix build github:seregatte/kfg
 
-# Run directly without installing
+# Run without installing
 nix run github:seregatte/kfg -- --help
 
-# Add to current shell temporarily
+# Add to current shell
 nix shell github:seregatte/kfg
 ```
 
-This works on Linux and macOS (x86_64 and ARM64).
+Supports Linux and macOS (x86_64 and ARM64).
 
 ### Build from Source
 
@@ -39,56 +66,141 @@ make install
 
 ## Quick Start
 
-### Apply a Kustomization
+### 1. Create your first manifest
 
-```bash
-# Apply a kustomization directory
-kfg apply -k path/to/kustomization --workflow myworkflow
+Create a file `hello.yaml`:
 
-# Apply with explicit file
-kfg apply -f manifest.yaml --workflow myworkflow
-
-# Apply from stdin
-kfg apply -f - --workflow myworkflow
+```yaml
+apiVersion: kfg.dev/v1alpha1
+kind: Cmd
+metadata:
+  name: myapp.cmd.hello
+  commandName: hello
+spec:
+  run: echo "Hello from KFG!"
 ```
 
-### Run an Agent
+### 2. Apply the manifest
 
 ```bash
-# Run a specific agent
-kfg run -k path/to/kustomization myagent
-
-# List available agents
-kfg run -k path/to/kustomization
-
-# Run with arguments
-kfg run -k path/to/kustomization myagent -- --option value
+kfg apply -f hello.yaml --workflow default
 ```
+
+This generates and executes the shell code. Now you have a `hello` command available!
+
+### 3. Run the command
+
+```bash
+hello
+# Output: Hello from KFG!
+```
+
+### Complete Example: Deploy Pipeline
+
+Create `deploy.yaml`:
+
+```yaml
+apiVersion: kfg.dev/v1alpha1
+kind: Cmd
+metadata:
+  name: myapp.cmd.deploy
+  commandName: deploy
+spec:
+  env:
+    DEPLOY_TARGET: "{env:DEPLOY_TARGET:-production}"
+  run: |
+    echo "Deploying to $DEPLOY_TARGET..."
+    kubectl apply -f manifests/
+
+---
+apiVersion: kfg.dev/v1alpha1
+kind: Step
+metadata:
+  name: myapp.steps.validate
+spec:
+  run: |
+    [ -f "config.yaml" ] && echo "Config found" || exit 1
+  output:
+    name: STATUS
+    type: string
+
+---
+apiVersion: kfg.dev/v1alpha1
+kind: CmdWorkflow
+metadata:
+  name: myapp.workflow.deploy
+spec:
+  cmds: [myapp.cmd.deploy]
+  before:
+    - step: myapp.steps.validate
+```
+
+Apply with:
+
+```bash
+DEPLOY_TARGET=staging kfg apply -f deploy.yaml --workflow deploy
+```
+
+📖 **More examples**: See [docs/getting-started.md](docs/getting-started.md) for a full tutorial.
+
+## Documentation
+
+- **[Getting Started](docs/getting-started.md)** - Step-by-step tutorial
+- **[CLI Reference](docs/cli-reference.md)** - Complete CLI reference
+- **[Manifest Model](docs/manifest-model.md)** - Schema and manifest types
+- **[Architecture](docs/architecture.md)** - KFG internal architecture
+- **[Troubleshooting](docs/troubleshooting.md)** - Common issues and solutions
+- **[Contributing](CONTRIBUTING.md)** - How to contribute
 
 ## Command Reference
 
-| Command | Alias | Description |
-|---------|-------|-------------|
-| `kfg apply` | | Apply a kustomization or manifest file |
-| `kfg run` | | Run an agent one-shot |
-| `kfg build` | | Build kustomization to YAML |
-| `kfg sys log` | | System logging (internal) |
-| `kfg sys cache` | | Step cache management |
-| `kfg version` | | Show version information |
+| Command | Description | Example |
+|---------|-------------|---------|
+| `kfg apply` | Apply kustomization/manifest and generate shell code | `kfg apply -f manifest.yaml --workflow main` |
+| `kfg run` | Run an agent one-shot | `kfg run -k ./manifests myagent` |
+| `kfg build` | Build kustomization to YAML | `kfg build ./manifests -o output.yaml` |
+| `kfg sys cache` | Step cache management | `kfg sys cache ls` |
+| `kfg sys log` | Structured logging for scripts | `kfg sys log info "component" "message"` |
+| `kfg version` | Show version information | `kfg version` |
+
+📖 **Full reference**: See [docs/cli-reference.md](docs/cli-reference.md) for all commands, flags, and environment variables.
+
+## Comparison with Alternatives
+
+| Feature | KFG | Make | Just | Task |
+|---------|-----|------|------|------|
+| **Syntax** | Declarative YAML | Makefile | Justfile | YAML |
+| **Dependencies** | Automatic via DAG | Manual | Manual | Manual |
+| **Step caching** | ✅ Native | ❌ | ❌ | ❌ |
+| **Modular composition** | ✅ Kustomize | ❌ | ❌ | Limited |
+| **Code generation** | ✅ Shell functions | ❌ | ❌ | ❌ |
+| **Placeholders** | ✅ `{env:VAR}` | ❌ | ❌ | Limited |
+| **Versionable** | ✅ Yes | ✅ Yes | ✅ Yes | ✅ Yes |
+
+**When to use KFG?**
+- When you need **automatic dependencies** between tasks
+- When you want **smart caching** to avoid re-executions
+- When you need to **compose manifests** from different sources (Kustomize)
+- When you want to **generate reusable shell functions**
+- When you're working with **AI agents** that need structured commands
 
 ## Environment Variables
 
-| Variable | Description |
-|----------|-------------|
-| `KFG_VERBOSE` | Verbosity level (0-5) |
-| `KFG_STORE_DIR` | Store directory (default: ~/.kfg/store) |
-| `KFG_LOG_FILE` | Log file path |
-| `KFG_LOG_DIR` | Log directory |
-| `KFG_LOG_COLOR` | Log color mode (auto/always/never) |
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `KFG_VERBOSE` | Verbosity level (0-5) | `KFG_VERBOSE=3` |
+| `KFG_STORE_DIR` | Store directory (cache) | `~/.kfg/store` |
+| `KFG_LOG_FILE` | Log file path | `/tmp/kfg.log` |
+| `KFG_LOG_DIR` | Log directory | `~/.local/state/kfg/logs` |
+| `KFG_LOG_COLOR` | Color mode (auto/always/never) | `auto` |
+| `KFG_KPATH` | Default kustomization path | `./manifests` |
+| `KFG_REFRESH` | Invalidate cache (set to "1") | `1` |
+
+📖 **Full reference**: See [docs/cli-reference.md](docs/cli-reference.md#environment-variables).
 
 ## API Version
 
-KFG uses the `kfg.dev/v1alpha1` API version for manifests:
+KFG uses `kfg.dev/v1alpha1` as the API version for manifests:
 
 ```yaml
 apiVersion: kfg.dev/v1alpha1
@@ -99,37 +211,44 @@ spec:
   run: echo "Hello, World!"
 ```
 
+📖 **Full schema**: See [docs/manifest-model.md](docs/manifest-model.md) for all resource types.
+
+## Real-World Examples
+
+KFG is used in this repository itself to manage AI agent workflows:
+
+```bash
+# Apply development overlay
+kfg apply -k packages/domains/ai-agents/overlays/dev --workflow agents
+
+# Run a specific agent
+kfg run -k packages/domains/ai-agents/overlays/dev openspec
+```
+
+See more examples in `packages/domains/ai-agents/manifests/`.
+
 ## Development
 
 ### DevShells
 
-kfg provides three devShells via Nix flakes:
+KFG provides three devShells via Nix flakes:
 
 | Shell | Usage | Description |
 |-------|-------|-------------|
-| `default` | `nix develop` | **Consumer shell** — tools and environment for consuming kfg. No Go/Node.js. Suitable for `inputsFrom` in other projects. |
-| `dev` | `nix develop .#dev` | **Development shell** — full Go workflow with kfg source compilation. Use this for kfg development. |
-| `ci` | `nix develop .#ci` | **Minimal CI shell** — Go and make only. Used by CI pipelines for building and testing. |
+| `default` | `nix develop` | **Consumer shell** — tools for using KFG |
+| `dev` | `nix develop .#dev` | **Development shell** — full development environment |
+| `ci` | `nix develop .#ci` | **CI shell** — minimal for build and tests |
 
-### Building Locally
-
-For **kfg development**, use the explicit `.#dev` shell:
+### Building
 
 ```bash
+# Using the dev shell
 nix develop .#dev --command make build        # → ./bin/kfg
 nix develop .#dev --command make test         # Go unit tests
 nix develop .#dev --command make test-bats    # Bats integration tests
 ```
 
-For **consuming kfg** in other projects, use the default shell (implicit):
-
-```bash
-nix develop --command kfg -- --help
-```
-
-## Repository Structure
-
-KFG uses a package-oriented architecture:
+### Repository Structure
 
 ```
 ├── src/                          # Engine implementation (Go)
@@ -137,33 +256,31 @@ KFG uses a package-oriented architecture:
 │   └── internal/                 # Internal packages
 ├── packages/
 │   ├── framework/                # Shared manifest primitives
-│   │   ├── manifests/            # Reusable steps (materialize, cleanup, etc.)
-│   │   └── tests/                # Framework test suite
+│   │   ├── manifests/            # Reusable steps
+│   │   └── tests/                # Framework tests
 │   └── domains/
 │       └── ai-agents/            # AI agents domain package
 │           ├── manifests/        # AI agent resources
 │           ├── overlays/dev/     # Development overlay
-│           └── tests/            # Domain test suite
+│           └── tests/            # Domain tests
 ├── docs/
 │   ├── AGENTS.md                 # AI agent operating context
 │   └── context/
-│       └── openspec/             # Unified OpenSpec root
+│       └── openspec/             # OpenSpec specifications
 ├── tests/
 │   └── bats/                     # Engine and integration tests
-│       ├── cli/                  # CLI command tests
-│       ├── workflows/            # Runtime workflow tests
-│       └── helpers/              # Shared test helpers
 └── Makefile                      # Build and test targets
 ```
 
-**Public Entrypoints:**
-- Engine CLI: `./bin/kfg`
-- Framework package: `packages/framework/kustomization.yaml`
-- AI agents domain: `packages/domains/ai-agents/kustomization.yaml`
-- Domain overlay (dev): `packages/domains/ai-agents/overlays/dev/`
-
-For detailed specs and workflow documentation, see [`docs/AGENTS.md`](docs/AGENTS.md).
+📖 **Detailed architecture**: See [docs/architecture.md](docs/architecture.md).
 
 ## License
 
-MIT License
+MIT License — see [LICENSE](LICENSE) for details.
+
+## Links
+
+- **Repository**: https://github.com/seregatte/kfg
+- **Releases**: https://github.com/seregatte/kfg/releases
+- **Issues**: https://github.com/seregatte/kfg/issues
+- **Discussions**: https://github.com/seregatte/kfg/discussions

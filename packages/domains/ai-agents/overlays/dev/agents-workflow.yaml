@@ -11,6 +11,11 @@ spec:
     - ai.pi.cmd.main
     - ai.cmds.openspec
   before:
+    # Phase 0 (-100): Deprecation warning
+    - name: agents.deprecation-warn
+      step: ai.steps.deprecation-warn
+      weight: -100
+
     # Phase 1 (-90): Ensure gitignore
     - name: agents.ensure-gitignore
       step: kfg.ensure-gitignore

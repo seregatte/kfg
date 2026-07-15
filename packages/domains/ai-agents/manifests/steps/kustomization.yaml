@@ -3,3 +3,4 @@ kind: Kustomization
 
 resources:
   - detect.yaml
+  - deprecation-warn.yaml

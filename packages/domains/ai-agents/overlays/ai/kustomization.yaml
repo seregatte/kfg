@@ -1,0 +1,12 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# AI wizard overlay
+# Lightweight workspace for interactive configuration generation
+# References framework base, domain manifests, and wizard resources
+
+resources:
+  - ../../../../framework/
+  - ../../manifests/
+  - ai-workflow.yaml
+  - assets/prompts/kfg-wizard.yaml

@@ -1,0 +1,108 @@
+apiVersion: kfg.dev/v1alpha1
+kind: CmdWorkflow
+metadata:
+  name: kfg.ai.workflow
+  shell: bash
+spec:
+  cmds:
+    - ai.pi.cmd.main
+    - ai.opencode.cmd.main
+  before:
+    # Phase 1 (-90): Ensure gitignore
+    - name: ai.ensure-gitignore
+      step: kfg.ensure-gitignore
+      weight: -90
+      env:
+        GITIGNORE_ENTRIES: "/.opencode/:/.pi/:/opencode.json"
+
+    # Phase 2 (-70): Detection
+    - name: ai.detect-agent
+      step: ai.steps.detect
+      weight: -70
+
+    # Phase 3 (-65): Scaffold (per-agent)
+    - name: ai.scaffold.opencode
+      step: kfg.materialize-scaffold
+      weight: -65
+      when:
+        output:
+          step: ai.detect-agent
+          name: AGENT
+          equals: "opencode"
+      env:
+        DIRECTORIES: ".opencode:.opencode/skills:.opencode/commands"
+      artifacts:
+        - .opencode/
+    - name: ai.scaffold.pi
+      step: kfg.materialize-scaffold
+      weight: -65
+      when:
+        output:
+          step: ai.detect-agent
+          name: AGENT
+          equals: "pi"
+      env:
+        DIRECTORIES: ".pi:.pi/skills:.pi/prompts"
+      artifacts:
+        - .pi/
+
+    # Phase 4 (-55): ctx7 install (per-agent)
+    - name: ai.ctx7.install.opencode
+      step: ctx7.steps.install
+      weight: -55
+      when:
+        output:
+          step: ai.detect-agent
+          name: AGENT
+          equals: "opencode"
+      env:
+        FLAGS: "--opencode --yes"
+        OUTPUT_DIR: ".opencode/skills/"
+    - name: ai.ctx7.install.pi
+      step: ctx7.steps.install
+      weight: -55
+      when:
+        output:
+          step: ai.detect-agent
+          name: AGENT
+          equals: "pi"
+      env:
+        FLAGS: "--opencode --yes"
+        OUTPUT_DIR: ".pi/skills"
+
+    # Phase 5 (-45): Wizard materialize (per-agent)
+    - name: ai.wizard.opencode
+      step: kfg.materialize
+      weight: -45
+      when:
+        output:
+          step: ai.detect-agent
+          name: AGENT
+          equals: "opencode"
+      env:
+        MODE: "per-item"
+        ASSETS: "ai.prompts.kfg-wizard"
+        CONVERTER: "ai.opencode.conv.command"
+        OUTPUTS: ".opencode/commands/kfg-wizard.md"
+    - name: ai.wizard.pi
+      step: kfg.materialize
+      weight: -45
+      when:
+        output:
+          step: ai.detect-agent
+          name: AGENT
+          equals: "pi"
+      env:
+        MODE: "per-item"
+        ASSETS: "ai.prompts.kfg-wizard"
+        CONVERTER: "ai.pi.conv.command"
+        OUTPUTS: ".pi/prompts/kfg-wizard.md"
+
+  after:
+    - name: ai.cleanup.final
+      step: kfg.cleanup
+      when:
+        output:
+          step: ai.detect-agent
+          name: AGENT
+          in: ["opencode", "pi"]
