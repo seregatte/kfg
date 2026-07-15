@@ -78,6 +78,42 @@ nix develop .#dev --command kfg \
   run openspec -- view
 ```
 
+## AI Wizard Command
+
+The `kfg ai` command starts an interactive AI wizard that generates project-specific kfg configurations.
+
+```bash
+kfg ai                                          # Start wizard with pi (default)
+kfg ai -- "create a new project"                # Start wizard with initial prompt
+KFG_AI_AGENT=opencode kfg ai                    # Start wizard with opencode
+kfg ai -- --model sonnet "create project"       # Forward args to agent
+```
+
+### Environment Variables
+
+- **KFG_AI_AGENT**: Agent to use for the wizard (default: `pi`)
+  - Supported values: `pi`, `opencode`
+  - Invalid values fall back to `pi` with a warning
+
+### What the Wizard Does
+
+1. Asks about your project type, language, and requirements
+2. Selects appropriate building blocks from the kfg domain catalog
+3. Presents a summary of what will be generated
+4. Asks for confirmation before writing any files
+5. Generates complete, project-specific kfg manifests
+
+### Implementation Details
+
+- CLI command: `src/cmd/kfg/ai.go`
+- Overlay: `packages/domains/ai-agents/overlays/ai/`
+- Wizard skill prompt: `packages/domains/ai-agents/overlays/ai/assets/prompts/kfg-wizard.yaml`
+- The command wraps `kfg run -k packages/domains/ai-agents/overlays/ai <agent> -- <args>` via subprocess
+
+### Deprecation Notice
+
+The `overlays/dev/` overlay is deprecated. When used, it displays a warning directing users to `kfg ai` instead. The dev overlay remains functional for backward compatibility.
+
 ## Testing
 
 - **Go tests:** `make test` → `src/internal/*_test.go`
