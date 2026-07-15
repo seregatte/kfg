@@ -1,218 +1,218 @@
 # Troubleshooting
 
-Este guia ajuda a diagnosticar e resolver problemas comuns com o KFG.
+This guide helps diagnose and resolve common issues with KFG.
 
-## Problemas de Instalação
+## Installation Issues
 
 ### `kfg: command not found`
 
-**Causa**: O binário do KFG não está no PATH.
+**Cause**: The KFG binary is not in your PATH.
 
-**Soluções**:
+**Solutions**:
 
-1. **Via Nix**: Adicione ao shell atual
+1. **Via Nix**: Add to current shell
    ```bash
    nix shell github:seregatte/kfg
    ```
 
-2. **Build do fonte**: Adicione ao PATH
+2. **Build from source**: Add to PATH
    ```bash
    export PATH="$PWD/bin:$PATH"
-   # Ou copie para um diretório no PATH
+   # Or copy to a PATH directory
    sudo cp bin/kfg /usr/local/bin/
    ```
 
-3. **GOPATH**: Verifique se está no PATH
+3. **GOPATH**: Check if it's in your PATH
    ```bash
    export PATH="$GOPATH/bin:$PATH"
    ```
 
 ### Nix: `flakes experimental feature is disabled`
 
-**Causa**: Flakes não estão habilitados no Nix.
+**Cause**: Flakes are not enabled in Nix.
 
-**Solução**: Habilite flakes em `~/.config/nix/nix.conf`:
+**Solution**: Enable flakes in `~/.config/nix/nix.conf`:
 ```
 experimental-features = nix-command flakes
 ```
 
-Ou use o flag `--extra-experimental-features`:
+Or use the `--extra-experimental-features` flag:
 ```bash
 nix --extra-experimental-features "nix-command flakes" shell github:seregatte/kfg
 ```
 
-### Erro ao buildar: `go: command not found`
+### Build error: `go: command not found`
 
-**Causa**: Go não está instalado ou não está no PATH.
+**Cause**: Go is not installed or not in your PATH.
 
-**Solução**:
+**Solution**:
 ```bash
-# Instalar Go (Linux)
+# Install Go (Linux)
 sudo apt install golang-go
 
-# Ou via Nix
+# Or via Nix
 nix shell nixpkgs#go
 ```
 
-Verifique a versão (requer 1.21+):
+Check the version (requires 1.21+):
 ```bash
 go version
 ```
 
-## Problemas de Execução
+## Execution Issues
 
 ### `Error: manifest validation failed`
 
-**Causa**: Manifest YAML inválido.
+**Cause**: Invalid YAML manifest.
 
-**Diagnóstico**:
+**Diagnosis**:
 ```bash
-# Aumentar verbosidade
+# Increase verbosity
 KFG_VERBOSE=3 kfg apply -f manifest.yaml --workflow test
 
-# Validar YAML
+# Validate YAML
 python3 -c "import yaml; yaml.safe_load(open('manifest.yaml'))"
 ```
 
-**Causas comuns**:
-- `apiVersion` incorreto (deve ser `kfg.dev/v1alpha1`)
-- `kind` inválido (Cmd, CmdWorkflow, Step, etc.)
-- Campos obrigatórios faltando
-- Indentação YAML incorreta
+**Common causes**:
+- Incorrect `apiVersion` (must be `kfg.dev/v1alpha1`)
+- Invalid `kind` (Cmd, CmdWorkflow, Step, etc.)
+- Missing required fields
+- Incorrect YAML indentation
 
-**Exemplo correto**:
+**Correct example**:
 ```yaml
-apiVersion: kfg.dev/v1alpha1  # Obrigatório
-kind: Cmd                      # Obrigatório
+apiVersion: kfg.dev/v1alpha1  # Required
+kind: Cmd                      # Required
 metadata:
-  name: myapp.cmd.example      # Obrigatório
-  commandName: example         # Obrigatório para Cmd
+  name: myapp.cmd.example      # Required
+  commandName: example         # Required for Cmd
 spec:
-  run: echo "hello"            # Obrigatório
+  run: echo "hello"            # Required
 ```
 
 ### `Error: workflow not found`
 
-**Causa**: O workflow especificado não existe no manifest.
+**Cause**: The specified workflow does not exist in the manifest.
 
-**Solução**:
+**Solution**:
 ```bash
-# Listar workflows disponíveis
+# List available workflows
 kfg build -k ./manifests | grep "kind: CmdWorkflow" -A 2
 
-# Ou verificar o nome exato
+# Or check the exact name
 grep "name:.*workflow" manifest.yaml
 ```
 
 ### `Error: circular dependency detected`
 
-**Causa**: Steps formam um ciclo no DAG.
+**Cause**: Steps form a cycle in the DAG.
 
-**Exemplo problemático**:
+**Problematic example**:
 ```yaml
 before:
   - step: step-a
     when:
       output:
-        step: step-b  # step-b depende de step-a
+        step: step-b  # step-b depends on step-a
         name: STATUS
         equals: "ok"
   - step: step-b
     when:
       output:
-        step: step-a  # step-a depende de step-b
+        step: step-a  # step-a depends on step-b
         name: STATUS
         equals: "ok"
 ```
 
-**Solução**: Reorganize as dependências para evitar ciclos.
+**Solution**: Reorganize dependencies to avoid cycles.
 
-### Comando não funciona após `kfg apply`
+### Command not working after `kfg apply`
 
-**Causa**: O código gerado não foi sourceado no shell atual.
+**Cause**: The generated code was not sourced into the current shell.
 
-**Solução**:
+**Solution**:
 ```bash
-# Opção 1: Usar --interactive para abrir shell interativo
+# Option 1: Use --interactive to open an interactive shell
 kfg apply -f manifest.yaml --workflow test --interactive
 
-# Opção 2: Source manualmente
+# Option 2: Source manually
 eval "$(kfg apply -f manifest.yaml --workflow test --print)"
 
-# Opção 3: Adicionar ao .bashrc
+# Option 3: Add to .bashrc
 echo 'eval "$(kfg apply -f manifest.yaml --workflow test --print)"' >> ~/.bashrc
 ```
 
-## Problemas de Cache
+## Cache Issues
 
 ### `Error: cache corrupted`
 
-**Causa**: Arquivos de cache corrompidos.
+**Cause**: Corrupted cache files.
 
-**Solução**:
+**Solution**:
 ```bash
-# Limpar todo o cache
+# Clear all cache
 rm -rf ~/.kfg/store/cache
 
-# Ou apenas entradas específicas
+# Or remove specific entries
 kfg sys cache ls
 kfg sys cache rm <id>
 
-# Reconstruir na próxima execução
+# Rebuild on next run
 KFG_REFRESH=1 kfg apply -f manifest.yaml --workflow test
 ```
 
-### Steps não estão sendo cacheadas
+### Steps are not being cached
 
-**Causa**: Step não está marcada como cacheable.
+**Cause**: Step is not marked as cacheable.
 
-**Solução**:
+**Solution**:
 ```yaml
 kind: Step
 metadata:
   name: myapp.steps.expensive
   annotations:
-    kfg.dev/cacheable: "true"  # Adicionar esta anotação
+    kfg.dev/cacheable: "true"  # Add this annotation
 spec:
   run: ...
 ```
 
-### Cache não invalida após mudar manifest
+### Cache not invalidating after manifest change
 
-**Causa**: O hash do step não mudou (mesmo código).
+**Cause**: The step hash hasn't changed (same code).
 
-**Solução**:
+**Solution**:
 ```bash
-# Forçar invalidação
+# Force invalidation
 KFG_REFRESH=1 kfg apply -f manifest.yaml --workflow test
 
-# Ou remover cache manualmente
+# Or remove cache manually
 kfg sys cache rm <step-id>
 ```
 
-## Problemas de Logging
+## Logging Issues
 
-### Logs não aparecem
+### Logs are not appearing
 
-**Causa**: Verbosidade muito baixa.
+**Cause**: Verbosity is too low.
 
-**Solução**:
+**Solution**:
 ```bash
-# Aumentar verbosidade
+# Increase verbosity
 KFG_VERBOSE=5 kfg apply -f manifest.yaml --workflow test
 ```
 
-**Níveis de verbosidade**:
-- `0`: Quiet (sem output)
-- `1`: Error + Warn + Info (padrão)
+**Verbosity levels**:
+- `0`: Quiet (no output)
+- `1`: Error + Warn + Info (default)
 - `2`: + Detail
 - `3`: + Warn/Detail
 - `4`: + Debug
 - `5`: + Debug verbose
 
-### Não sei onde estão os logs
+### Where are the logs?
 
-**Localização padrão**:
+**Default location**:
 ```bash
 # Linux
 ~/.local/state/kfg/logs/kfg.jsonl
@@ -220,145 +220,145 @@ KFG_VERBOSE=5 kfg apply -f manifest.yaml --workflow test
 # macOS
 ~/Library/Application Support/kfg/logs/kfg.jsonl
 
-# Ou caminho customizado
+# Or custom path
 echo $KFG_LOG_FILE
 ```
 
-**Ver logs em tempo real**:
+**View logs in real time**:
 ```bash
 tail -f ~/.local/state/kfg/logs/kfg.jsonl | jq .
 ```
 
-### Logs muito verbosos
+### Logs are too verbose
 
-**Solução**: Reduza a verbosidade
+**Solution**: Reduce verbosity
 ```bash
 KFG_VERBOSE=1 kfg apply -f manifest.yaml --workflow test
 ```
 
-## Problemas de Performance
+## Performance Issues
 
-### `kfg apply` muito lento
+### `kfg apply` is too slow
 
-**Causas possíveis**:
+**Possible causes**:
 
-1. **Muitos manifests para processar**
+1. **Too many manifests to process**
    ```bash
-   # Diagnosticar
+   # Diagnose
    KFG_VERBOSE=3 kfg apply -f manifest.yaml --workflow test 2>&1 | grep "Parsing"
    
-   # Solução: Usar kustomization ao invés de múltiplos -f
+   # Solution: Use kustomization instead of multiple -f flags
    kfg apply -k ./manifests --workflow test
    ```
 
-2. **Steps não cacheadas**
+2. **Steps are not cached**
    ```bash
-   # Verificar cache
+   # Check cache
    kfg sys cache ls
    
-   # Solução: Marcar steps como cacheable
+   # Solution: Mark steps as cacheable
    annotations:
      kfg.dev/cacheable: "true"
    ```
 
-3. **Kustomize processando overlays complexos**
+3. **Kustomize processing complex overlays**
    ```bash
-   # Diagnosticar
+   # Diagnose
    KFG_VERBOSE=3 kfg build -k ./manifests
    
-   # Solução: Simplificar overlays ou usar base diretamente
+   # Solution: Simplify overlays or use base directly
    kfg apply -k ./base --workflow test
    ```
 
-### Uso excessivo de memória
+### Excessive memory usage
 
-**Causa**: Manifests muito grandes ou muitos recursos.
+**Cause**: Very large manifests or too many resources.
 
-**Solução**:
+**Solution**:
 ```bash
-# Dividir em múltiplas aplicações
+# Split into multiple applications
 kfg apply -f part1.yaml --workflow test1
 kfg apply -f part2.yaml --workflow test2
 
-# Ou usar kustomization para composição modular
+# Or use kustomization for modular composition
 kfg apply -k ./manifests --workflow test
 ```
 
-## Problemas de Debug
+## Debug Issues
 
-### Como ver o código shell gerado?
+### How to view the generated shell code?
 
 ```bash
-# Gerar sem executar
+# Generate without executing
 kfg build -k ./manifests -o generated.yaml
 
-# Ou para stdout
+# Or to stdout
 kfg build -k ./manifests
 
-# Ver código de um workflow específico
+# View code for a specific workflow
 kfg build -k ./manifests --workflow test
 ```
 
-### Como debugar um step específico?
+### How to debug a specific step?
 
 ```bash
-# Aumentar verbosidade
+# Increase verbosity
 KFG_VERBOSE=5 kfg apply -f manifest.yaml --workflow test
 
-# Executar step manualmente
+# Run step manually
 bash -x -c "$(kfg build -k ./manifests | grep -A 50 '_kfg.step.my_step')"
 
-# Ver outputs do step
+# View step outputs
 echo $KFG_STEP_my_step_STATUS
 ```
 
-### Como verificar variáveis de ambiente?
+### How to check environment variables?
 
 ```bash
-# Ver todas as variáveis KFG
+# View all KFG variables
 env | grep KFG
 
-# Ver variáveis de um step específico
+# View variables for a specific step
 kfg sys cache inspect <step-id> | jq .env
 ```
 
-## Problemas Comuns com Kustomize
+## Common Kustomize Issues
 
 ### `Error: failed to load kustomization`
 
-**Causa**: kustomization.yaml inválido ou recursos faltando.
+**Cause**: Invalid kustomization.yaml or missing resources.
 
-**Diagnóstico**:
+**Diagnosis**:
 ```bash
-# Validar kustomization
+# Validate kustomization
 kustomize build ./manifests
 
-# Ver recursos referenciados
+# Check referenced resources
 grep "resources:" -A 10 ./manifests/kustomization.yaml
 ```
 
-**Solução**: Verificar se todos os arquivos referenciados existem.
+**Solution**: Verify that all referenced files exist.
 
-### Overlays não estão sendo aplicados
+### Overlays are not being applied
 
-**Causa**: Ordem de recursos ou patches incorretos.
+**Cause**: Incorrect resource order or patches.
 
-**Diagnóstico**:
+**Diagnosis**:
 ```bash
-# Ver resultado do build
+# View build result
 kustomize build ./overlays/dev
 
-# Verificar patches
+# Check patches
 cat ./overlays/dev/kustomization.yaml
 ```
 
-**Solução**: Verificar sintaxe de patches e ordem de recursos.
+**Solution**: Verify patch syntax and resource order.
 
-### Recursos duplicados
+### Duplicate resources
 
-**Causa**: Mesmo recurso definido em base e overlay.
+**Cause**: Same resource defined in both base and overlay.
 
-**Solução**: Usar patches ao invés de redefinir recursos:
+**Solution**: Use patches instead of redefining resources:
 ```yaml
 # overlays/dev/kustomization.yaml
 apiVersion: kustomize.config.k8s.io/v1beta1
@@ -375,32 +375,32 @@ patches:
         value: development
 ```
 
-## Erros de Runtime
+## Runtime Errors
 
 ### `Error: placeholder resolution failed`
 
-**Causa**: Variável de ambiente não existe.
+**Cause**: Environment variable doesn't exist.
 
-**Solução**:
+**Solution**:
 ```yaml
-# Ruim: variável pode não existir
+# Bad: variable may not exist
 env:
   API_KEY: "{env:API_KEY}"
 
-# Bom: com valor padrão
+# Good: with default value
 env:
   API_KEY: "{env:API_KEY:-default_key}"
 ```
 
 ### `Error: step output not available`
 
-**Causa**: Tentativa de usar output de step que ainda não executou.
+**Cause**: Trying to use output from a step that hasn't executed yet.
 
-**Solução**: Garantir ordem correta no workflow:
+**Solution**: Ensure correct workflow order:
 ```yaml
 before:
-  - step: step-a  # Executa primeiro
-  - step: step-b  # Pode usar output de step-a
+  - step: step-a  # Executes first
+  - step: step-b  # Can use step-a's output
     when:
       output:
         step: step-a
@@ -410,44 +410,44 @@ before:
 
 ### `Error: command execution failed`
 
-**Causa**: Comando shell falhou (exit code != 0).
+**Cause**: Shell command failed (exit code != 0).
 
-**Diagnóstico**:
+**Diagnosis**:
 ```bash
-# Aumentar verbosidade
+# Increase verbosity
 KFG_VERBOSE=5 kfg apply -f manifest.yaml --workflow test
 
-# Executar manualmente
-bash -x -c "comando_que_falhou"
+# Run manually
+bash -x -c "failing_command"
 ```
 
-**Solução**: Corrigir o comando ou adicionar tratamento de erro:
+**Solution**: Fix the command or add error handling:
 ```yaml
 spec:
   run: |
-    set -e  # Falhar em qualquer erro
-    comando || { echo "Erro: comando falhou"; exit 1; }
+    set -e  # Fail on any error
+    command || { echo "Error: command failed"; exit 1; }
 ```
 
-## Como Reportar Bugs
+## How to Report Bugs
 
-Se você encontrou um bug que não está neste guia:
+If you found a bug that's not in this guide:
 
-1. **Verifique issues existentes**: https://github.com/seregatte/kfg/issues
-2. **Colete informações**:
+1. **Check existing issues**: https://github.com/seregatte/kfg/issues
+2. **Gather information**:
    ```bash
    kfg version
    KFG_VERBOSE=5 kfg apply -f manifest.yaml --workflow test 2>&1 | tee debug.log
    ```
-3. **Abra uma issue**: https://github.com/seregatte/kfg/issues/new
-   - Descreva o problema
-   - Inclua `debug.log`
-   - Inclua o manifest YAML (remova dados sensíveis)
+3. **Open an issue**: https://github.com/seregatte/kfg/issues/new
+   - Describe the problem
+   - Include `debug.log`
+   - Include the YAML manifest (remove sensitive data)
 
-## Recursos Adicionais
+## Additional Resources
 
-- **[Getting Started](getting-started.md)** - Tutorial passo a passo
-- **[CLI Reference](cli-reference.md)** - Referência completa
-- **[Architecture](architecture.md)** - Arquitetura interna
-- **[GitHub Discussions](https://github.com/seregatte/kfg/discussions)** - Perguntas e discussões
-- **[GitHub Issues](https://github.com/seregatte/kfg/issues)** - Reportar bugs
+- **[Getting Started](getting-started.md)** - Step-by-step tutorial
+- **[CLI Reference](cli-reference.md)** - Full reference
+- **[Architecture](architecture.md)** - Internal architecture
+- **[GitHub Discussions](https://github.com/seregatte/kfg/discussions)** - Questions and discussions
+- **[GitHub Issues](https://github.com/seregatte/kfg/issues)** - Report bugs

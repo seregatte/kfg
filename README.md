@@ -4,51 +4,51 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Nix](https://img.shields.io/badge/Nix-5277C3?logo=nixos&logoColor=white)](https://nixos.org)
 
-**KFG** (Key Function Generator) é um compilador shell declarativo que transforma manifests YAML em funções bash. Defina comandos, dependências e passos de execução em YAML, e o KFG gera código shell que pode ser "sourceado" ou usado interativamente.
+**KFG** (Key Function Generator) is a declarative shell compiler that transforms YAML manifests into bash functions. Define commands, dependencies, and execution steps in YAML, and KFG generates shell code that can be sourced or used interactively.
 
-## Por que usar KFG?
+## Why KFG?
 
-- **Declarativo**: Defina o que fazer em YAML, não como fazer em bash
-- **Dependências**: O KFG gerencia a ordem de execução automaticamente
-- **Cache**: Steps são cacheadas para evitar re-execuções desnecessárias
-- **Reutilizável**: Crie manifests modulares e reutilizáveis
-- **Versionável**: Seus workflows de shell agora podem ser versionados como código
+- **Declarative**: Define what to do in YAML, not how to do it in bash
+- **Dependencies**: KFG manages execution order automatically via DAG
+- **Cache**: Steps are cached to avoid unnecessary re-executions
+- **Reusable**: Create modular and reusable manifests
+- **Versionable**: Your shell workflows can now be versioned as code
 
-## Casos de Uso
+## Use Cases
 
-- **Deploy de aplicações**: Defina pipelines de deploy declarativos
-- **Setup de ambientes**: Automatize configuração de projetos com dependências
-- **Workflows de AI agents**: Gere comandos para Claude, Copilot, etc.
-- **CI/CD**: Padronize processos de build e deploy
-- **Gerenciamento de MCP servers**: Configure e gerencie MCP servers declarativamente
+- **Application deployment**: Define declarative deploy pipelines
+- **Environment setup**: Automate project configuration with dependencies
+- **AI agent workflows**: Generate commands for Claude, Copilot, etc.
+- **CI/CD**: Standardize build and deploy processes
+- **MCP server management**: Configure and manage MCP servers declaratively
 
-## Instalação
+## Installation
 
-### Pré-requisitos
+### Prerequisites
 
-Para instalar via Nix (recomendado):
-- [Nix](https://nixos.org/download.html) com flakes habilitados
+To install via Nix (recommended):
+- [Nix](https://nixos.org/download.html) with flakes enabled
 
-Para buildar do fonte:
+To build from source:
 - Go 1.21+
 - Make
 
-### Via Nix (Recomendado)
+### Via Nix (Recommended)
 
 ```bash
-# Build e instalar
+# Build and install
 nix build github:seregatte/kfg
 
-# Executar sem instalar
+# Run without installing
 nix run github:seregatte/kfg -- --help
 
-# Adicionar ao shell atual
+# Add to current shell
 nix shell github:seregatte/kfg
 ```
 
-Suporta Linux e macOS (x86_64 e ARM64).
+Supports Linux and macOS (x86_64 and ARM64).
 
-### Build do Fonte
+### Build from Source
 
 ```bash
 git clone https://github.com/seregatte/kfg.git
@@ -56,9 +56,9 @@ cd kfg
 make build
 ```
 
-O binário será colocado em `./bin/kfg`.
+The binary will be placed in `./bin/kfg`.
 
-### Instalar no GOPATH
+### Install to GOPATH
 
 ```bash
 make install
@@ -66,9 +66,9 @@ make install
 
 ## Quick Start
 
-### 1. Crie seu primeiro manifest
+### 1. Create your first manifest
 
-Crie um arquivo `hello.yaml`:
+Create a file `hello.yaml`:
 
 ```yaml
 apiVersion: kfg.dev/v1alpha1
@@ -80,24 +80,24 @@ spec:
   run: echo "Hello from KFG!"
 ```
 
-### 2. Aplique o manifest
+### 2. Apply the manifest
 
 ```bash
 kfg apply -f hello.yaml --workflow default
 ```
 
-Isso gera e executa o código shell. Agora você tem um comando `hello` disponível!
+This generates and executes the shell code. Now you have a `hello` command available!
 
-### 3. Execute o comando
+### 3. Run the command
 
 ```bash
 hello
 # Output: Hello from KFG!
 ```
 
-### Exemplo Completo: Pipeline de Deploy
+### Complete Example: Deploy Pipeline
 
-Crie `deploy.yaml`:
+Create `deploy.yaml`:
 
 ```yaml
 apiVersion: kfg.dev/v1alpha1
@@ -135,72 +135,72 @@ spec:
     - step: myapp.steps.validate
 ```
 
-Aplique com:
+Apply with:
 
 ```bash
 DEPLOY_TARGET=staging kfg apply -f deploy.yaml --workflow deploy
 ```
 
-📖 **Mais exemplos**: Veja [docs/getting-started.md](docs/getting-started.md) para um tutorial completo.
+📖 **More examples**: See [docs/getting-started.md](docs/getting-started.md) for a full tutorial.
 
-## Documentação
+## Documentation
 
-- **[Getting Started](docs/getting-started.md)** - Tutorial passo a passo
-- **[CLI Reference](docs/cli-reference.md)** - Referência completa da CLI
-- **[Manifest Model](docs/manifest-model.md)** - Schema e tipos de manifests
-- **[Architecture](docs/architecture.md)** - Arquitetura interna do KFG
-- **[Troubleshooting](docs/troubleshooting.md)** - Problemas comuns e soluções
-- **[Contributing](CONTRIBUTING.md)** - Como contribuir
+- **[Getting Started](docs/getting-started.md)** - Step-by-step tutorial
+- **[CLI Reference](docs/cli-reference.md)** - Complete CLI reference
+- **[Manifest Model](docs/manifest-model.md)** - Schema and manifest types
+- **[Architecture](docs/architecture.md)** - KFG internal architecture
+- **[Troubleshooting](docs/troubleshooting.md)** - Common issues and solutions
+- **[Contributing](CONTRIBUTING.md)** - How to contribute
 
 ## Command Reference
 
-| Comando | Descrição | Exemplo |
-|---------|-----------|---------|
-| `kfg apply` | Aplica kustomization/manifest e gera shell code | `kfg apply -f manifest.yaml --workflow main` |
-| `kfg run` | Executa um agent one-shot | `kfg run -k ./manifests myagent` |
-| `kfg build` | Build kustomization para YAML | `kfg build ./manifests -o output.yaml` |
-| `kfg sys cache` | Gerenciamento de cache de steps | `kfg sys cache ls` |
-| `kfg sys log` | Logging estruturado para scripts | `kfg sys log info "component" "message"` |
-| `kfg version` | Mostra informações de versão | `kfg version` |
+| Command | Description | Example |
+|---------|-------------|---------|
+| `kfg apply` | Apply kustomization/manifest and generate shell code | `kfg apply -f manifest.yaml --workflow main` |
+| `kfg run` | Run an agent one-shot | `kfg run -k ./manifests myagent` |
+| `kfg build` | Build kustomization to YAML | `kfg build ./manifests -o output.yaml` |
+| `kfg sys cache` | Step cache management | `kfg sys cache ls` |
+| `kfg sys log` | Structured logging for scripts | `kfg sys log info "component" "message"` |
+| `kfg version` | Show version information | `kfg version` |
 
-📖 **Referência completa**: Veja [docs/cli-reference.md](docs/cli-reference.md) para todos os comandos, flags e variáveis de ambiente.
+📖 **Full reference**: See [docs/cli-reference.md](docs/cli-reference.md) for all commands, flags, and environment variables.
 
-## Comparação com Alternativas
+## Comparison with Alternatives
 
-| Ferramenta | KFG | Make | Just | Task |
-|------------|-----|------|------|------|
-| **Sintaxe** | YAML declarativo | Makefile | Justfile | YAML |
-| **Dependências** | Automáticas via DAG | Manual | Manual | Manual |
-| **Cache de steps** | ✅ Nativo | ❌ | ❌ | ❌ |
-| **Composição modular** | ✅ Kustomize | ❌ | ❌ | Limitado |
-| **Geração de código** | ✅ Shell functions | ❌ | ❌ | ❌ |
-| **Placeholders** | ✅ `{env:VAR}` | ❌ | ❌ | Limitado |
-| **Versionável** | ✅ Sim | ✅ Sim | ✅ Sim | ✅ Sim |
+| Feature | KFG | Make | Just | Task |
+|---------|-----|------|------|------|
+| **Syntax** | Declarative YAML | Makefile | Justfile | YAML |
+| **Dependencies** | Automatic via DAG | Manual | Manual | Manual |
+| **Step caching** | ✅ Native | ❌ | ❌ | ❌ |
+| **Modular composition** | ✅ Kustomize | ❌ | ❌ | Limited |
+| **Code generation** | ✅ Shell functions | ❌ | ❌ | ❌ |
+| **Placeholders** | ✅ `{env:VAR}` | ❌ | ❌ | Limited |
+| **Versionable** | ✅ Yes | ✅ Yes | ✅ Yes | ✅ Yes |
 
-**Quando usar KFG?**
-- Quando você precisa de **dependências automáticas** entre tarefas
-- Quando você quer **cache inteligente** para evitar re-execuções
-- Quando você precisa **compor manifests** de diferentes fontes (Kustomize)
-- Quando você quer **gerar funções shell** reutilizáveis
-- Quando você está trabalhando com **AI agents** que precisam de comandos estruturados
+**When to use KFG?**
+- When you need **automatic dependencies** between tasks
+- When you want **smart caching** to avoid re-executions
+- When you need to **compose manifests** from different sources (Kustomize)
+- When you want to **generate reusable shell functions**
+- When you're working with **AI agents** that need structured commands
 
 ## Environment Variables
 
-| Variável | Descrição | Exemplo |
-|----------|-----------|---------|
-| `KFG_VERBOSE` | Nível de verbosidade (0-5) | `KFG_VERBOSE=3` |
-| `KFG_STORE_DIR` | Diretório do store (cache) | `~/.kfg/store` |
-| `KFG_LOG_FILE` | Caminho do arquivo de log | `/tmp/kfg.log` |
-| `KFG_LOG_DIR` | Diretório de logs | `~/.local/state/kfg/logs` |
-| `KFG_LOG_COLOR` | Modo de cor (auto/always/never) | `auto` |
-| `KFG_KPATH` | Caminho padrão para kustomization | `./manifests` |
-| `KFG_REFRESH` | Invalida cache (set to "1") | `1` |
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `KFG_VERBOSE` | Verbosity level (0-5) | `KFG_VERBOSE=3` |
+| `KFG_STORE_DIR` | Store directory (cache) | `~/.kfg/store` |
+| `KFG_LOG_FILE` | Log file path | `/tmp/kfg.log` |
+| `KFG_LOG_DIR` | Log directory | `~/.local/state/kfg/logs` |
+| `KFG_LOG_COLOR` | Color mode (auto/always/never) | `auto` |
+| `KFG_KPATH` | Default kustomization path | `./manifests` |
+| `KFG_REFRESH` | Invalidate cache (set to "1") | `1` |
 
-📖 **Referência completa**: Veja [docs/cli-reference.md](docs/cli-reference.md#environment-variables).
+📖 **Full reference**: See [docs/cli-reference.md](docs/cli-reference.md#environment-variables).
 
 ## API Version
 
-KFG usa `kfg.dev/v1alpha1` como versão de API para manifests:
+KFG uses `kfg.dev/v1alpha1` as the API version for manifests:
 
 ```yaml
 apiVersion: kfg.dev/v1alpha1
@@ -211,76 +211,76 @@ spec:
   run: echo "Hello, World!"
 ```
 
-📖 **Schema completo**: Veja [docs/manifest-model.md](docs/manifest-model.md) para todos os tipos de recursos.
+📖 **Full schema**: See [docs/manifest-model.md](docs/manifest-model.md) for all resource types.
 
-## Exemplos Reais
+## Real-World Examples
 
-O KFG é usado no próprio repositório para gerenciar workflows de AI agents:
+KFG is used in this repository itself to manage AI agent workflows:
 
 ```bash
-# Aplicar overlay de desenvolvimento
+# Apply development overlay
 kfg apply -k packages/domains/ai-agents/overlays/dev --workflow agents
 
-# Executar agent específico
+# Run a specific agent
 kfg run -k packages/domains/ai-agents/overlays/dev openspec
 ```
 
-Veja mais exemplos em `packages/domains/ai-agents/manifests/`.
+See more examples in `packages/domains/ai-agents/manifests/`.
 
 ## Development
 
 ### DevShells
 
-KFG fornece três devShells via Nix flakes:
+KFG provides three devShells via Nix flakes:
 
-| Shell | Uso | Descrição |
-|-------|-----|-----------|
-| `default` | `nix develop` | **Consumer shell** — ferramentas para usar KFG |
-| `dev` | `nix develop .#dev` | **Development shell** — ambiente completo para desenvolvimento |
-| `ci` | `nix develop .#ci` | **CI shell** — mínimo para build e testes |
+| Shell | Usage | Description |
+|-------|-------|-------------|
+| `default` | `nix develop` | **Consumer shell** — tools for using KFG |
+| `dev` | `nix develop .#dev` | **Development shell** — full development environment |
+| `ci` | `nix develop .#ci` | **CI shell** — minimal for build and tests |
 
 ### Building
 
 ```bash
-# Usando o dev shell
+# Using the dev shell
 nix develop .#dev --command make build        # → ./bin/kfg
-nix develop .#dev --command make test         # Testes unitários Go
-nix develop .#dev --command make test-bats    # Testes de integração Bats
+nix develop .#dev --command make test         # Go unit tests
+nix develop .#dev --command make test-bats    # Bats integration tests
 ```
 
 ### Repository Structure
 
 ```
-├── src/                          # Implementação do engine (Go)
-│   ├── cmd/kfg/                  # Comandos CLI
-│   └── internal/                 # Pacotes internos
+├── src/                          # Engine implementation (Go)
+│   ├── cmd/kfg/                  # CLI commands
+│   └── internal/                 # Internal packages
 ├── packages/
-│   ├── framework/                # Primitivas de manifest compartilhadas
-│   │   ├── manifests/            # Steps reutilizáveis
-│   │   └── tests/                # Testes do framework
+│   ├── framework/                # Shared manifest primitives
+│   │   ├── manifests/            # Reusable steps
+│   │   └── tests/                # Framework tests
 │   └── domains/
-│       └── ai-agents/            # Pacote de domínio AI agents
-│           ├── manifests/        # Recursos de AI agents
-│           ├── overlays/dev/     # Overlay de desenvolvimento
-│           └── tests/            # Testes do domínio
+│       └── ai-agents/            # AI agents domain package
+│           ├── manifests/        # AI agent resources
+│           ├── overlays/dev/     # Development overlay
+│           └── tests/            # Domain tests
 ├── docs/
-│   ├── AGENTS.md                 # Contexto para AI agents
+│   ├── AGENTS.md                 # AI agent operating context
 │   └── context/
-│       └── openspec/             # Especificações OpenSpec
+│       └── openspec/             # OpenSpec specifications
 ├── tests/
-│   └── bats/                     # Testes de engine e integração
-└── Makefile                      # Targets de build e teste
+│   └── bats/                     # Engine and integration tests
+└── Makefile                      # Build and test targets
 ```
 
-📖 **Arquitetura detalhada**: Veja [docs/architecture.md](docs/architecture.md).
+📖 **Detailed architecture**: See [docs/architecture.md](docs/architecture.md).
 
 ## License
 
-MIT License - veja [LICENSE](LICENSE) para detalhes.
+MIT License — see [LICENSE](LICENSE) for details.
 
 ## Links
 
-- **Repositório**: https://github.com/seregatte/kfg
+- **Repository**: https://github.com/seregatte/kfg
 - **Releases**: https://github.com/seregatte/kfg/releases
 - **Issues**: https://github.com/seregatte/kfg/issues
 - **Discussions**: https://github.com/seregatte/kfg/discussions
