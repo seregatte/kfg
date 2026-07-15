@@ -1,159 +1,159 @@
 # Contributing to KFG
 
-Obrigado pelo interesse em contribuir com o KFG! Este guia vai te ajudar a entender como contribuir de forma eficaz.
+Thank you for your interest in contributing to KFG! This guide will help you understand how to contribute effectively.
 
-## Código de Conduta
+## Code of Conduct
 
-Ao participar deste projeto, você concorda em manter um ambiente respeitoso e inclusivo. Seja respeitoso com todos os contribuidores, independente de experiência, gênero, orientação sexual, deficiência, etnia, religião ou qualquer outra característica pessoal.
+By participating in this project, you agree to maintain a respectful and inclusive environment. Be respectful to all contributors regardless of experience, gender, sexual orientation, disability, ethnicity, religion, or any other personal characteristic.
 
-## Como Contribuir
+## How to Contribute
 
-### Reportando Bugs
+### Reporting Bugs
 
-Antes de reportar um bug:
+Before reporting a bug:
 
-1. **Verifique issues existentes**: https://github.com/seregatte/kfg/issues
-2. **Consulte o troubleshooting**: [docs/troubleshooting.md](docs/troubleshooting.md)
+1. **Check existing issues**: https://github.com/seregatte/kfg/issues
+2. **Consult the troubleshooting guide**: [docs/troubleshooting.md](docs/troubleshooting.md)
 
-Se o bug não foi reportado, [abra uma issue](https://github.com/seregatte/kfg/issues/new) incluindo:
+If the bug hasn't been reported, [open an issue](https://github.com/seregatte/kfg/issues/new) including:
 
-- **Descrição clara** do problema
-- **Passos para reproduzir** o problema
-- **Comportamento esperado** vs **comportamento atual**
-- **Ambiente**: SO, versão do KFG, versão do Go/Nix
-- **Logs**: Execute com `KFG_VERBOSE=5` e inclua os logs
-- **Manifests**: Inclua o YAML mínimo que reproduz o problema (remova dados sensíveis)
+- **Clear description** of the problem
+- **Steps to reproduce** the issue
+- **Expected behavior** vs **actual behavior**
+- **Environment**: OS, KFG version, Go/Nix version
+- **Logs**: Run with `KFG_VERBOSE=5` and include the logs
+- **Manifests**: Include the minimal YAML that reproduces the issue (remove sensitive data)
 
-### Sugerindo Melhorias
+### Suggesting Enhancements
 
-Ideias e sugestões são bem-vindas! Abra uma issue com a label `enhancement` descrevendo:
+Ideas and suggestions are welcome! Open an issue with the `enhancement` label describing:
 
-- **Caso de uso**: Qual problema essa melhoria resolve?
-- **Proposta**: Como você imagina essa funcionalidade?
-- **Alternativas**: Outras soluções consideradas?
+- **Use case**: What problem does this enhancement solve?
+- **Proposal**: How do you envision this feature?
+- **Alternatives**: Other solutions considered?
 
-### Contribuindo com Código
+### Contributing Code
 
-#### Setup do Ambiente de Desenvolvimento
+#### Development Environment Setup
 
-1. **Fork o repositório** no GitHub
+1. **Fork the repository** on GitHub
 
-2. **Clone seu fork**:
+2. **Clone your fork**:
    ```bash
    git clone https://github.com/YOUR_USERNAME/kfg.git
    cd kfg
    ```
 
-3. **Configure o ambiente de desenvolvimento**:
+3. **Set up the development environment**:
    
-   **Opção A: Nix (Recomendado)**
+   **Option A: Nix (Recommended)**
    ```bash
    nix develop .#dev
    ```
    
-   **Opção B: Go nativo**
+   **Option B: Native Go**
    ```bash
-   # Requer Go 1.21+
+   # Requires Go 1.21+
    go mod download
    ```
 
-4. **Adicione o upstream**:
+4. **Add upstream**:
    ```bash
    git remote add upstream https://github.com/seregatte/kfg.git
    ```
 
-#### Workflow de Desenvolvimento
+#### Development Workflow
 
-1. **Sincronize com upstream**:
+1. **Sync with upstream**:
    ```bash
    git checkout main
    git pull upstream main
    ```
 
-2. **Crie uma branch**:
+2. **Create a branch**:
    ```bash
-   git checkout -b feature/nome-da-sua-feature
-   # ou
-   git checkout -b fix/descricao-do-bug
+   git checkout -b feature/your-feature-name
+   # or
+   git checkout -b fix/bug-description
    ```
    
-   **Convenções de nomenclatura**:
-   - `feature/*` - Novas funcionalidades
-   - `fix/*` - Correções de bugs
-   - `docs/*` - Melhorias na documentação
-   - `refactor/*` - Refatorações
-   - `test/*` - Adição de testes
+   **Naming conventions**:
+   - `feature/*` - New features
+   - `fix/*` - Bug fixes
+   - `docs/*` - Documentation improvements
+   - `refactor/*` - Refactoring
+   - `test/*` - Test additions
 
-3. **Faça suas alterações**:
+3. **Make your changes**:
    
-   Siga os padrões do projeto:
-   - Código em Go: siga o estilo padrão do Go (`gofmt`)
-   - Commits: siga [Conventional Commits](https://www.conventionalcommits.org/)
-   - Testes: adicione testes para novas funcionalidades
+   Follow project standards:
+   - Go code: follow standard Go style (`gofmt`)
+   - Commits: follow [Conventional Commits](https://www.conventionalcommits.org/)
+   - Tests: add tests for new features
    
-   **Estrutura de commits**:
+   **Commit structure**:
    ```
-   feat: adicionar suporte a placeholders aninhados
-   fix: corrigir cache invalidation em steps condicionais
-   docs: melhorar exemplos no getting-started
-   refactor: simplificar dependency resolver
-   test: adicionar testes para kustomize overlays
+   feat: add support for nested placeholders
+   fix: fix cache invalidation in conditional steps
+   docs: improve examples in getting-started
+   refactor: simplify dependency resolver
+   test: add tests for kustomize overlays
    ```
 
-4. **Execute os testes**:
+4. **Run tests**:
    ```bash
-   # Testes unitários
+   # Unit tests
    make test
    
-   # Testes de integração
+   # Integration tests
    make test-bats
    
-   # Linting e formatação
+   # Linting and formatting
    make fmt lint vet
    ```
 
-5. **Commit suas alterações**:
+5. **Commit your changes**:
    ```bash
    git add .
-   git commit -m "feat: descrição clara da mudança"
+   git commit -m "feat: clear description of the change"
    ```
 
-6. **Push para seu fork**:
+6. **Push to your fork**:
    ```bash
-   git push origin feature/nome-da-sua-feature
+   git push origin feature/your-feature-name
    ```
 
-7. **Abra um Pull Request** em https://github.com/seregatte/kfg/pulls
+7. **Open a Pull Request** at https://github.com/seregatte/kfg/pulls
 
-#### Guias de Estilo
+#### Style Guides
 
 **Go**:
-- Siga [Effective Go](https://go.dev/doc/effective-go)
-- Use `gofmt` para formatação
-- Execute `go vet` antes de commitar
-- Nomeie variáveis e funções de forma descritiva
+- Follow [Effective Go](https://go.dev/doc/effective-go)
+- Use `gofmt` for formatting
+- Run `go vet` before committing
+- Name variables and functions descriptively
 
 **YAML/Manifests**:
-- Use indentação de 2 espaços
-- Nomes de recursos: `<scope>.<kind>.<name>`
-- Comentários em inglês
+- Use 2-space indentation
+- Resource names: `<scope>.<kind>.<name>`
+- Comments in English
 
-**Documentação**:
-- Markdown com linhas de no máximo 100 caracteres
-- Exemplos de código sempre testados
-- Links relativos dentro do repositório
+**Documentation**:
+- Markdown with maximum 100 characters per line
+- Code examples should always be tested
+- Use relative links within the repository
 
 **Commits**:
 - Use [Conventional Commits](https://www.conventionalcommits.org/)
-- Primeira linha: máximo 72 caracteres
-- Corpo do commit: explique o "porquê", não o "o quê"
-- Inclua "BREAKING CHANGE:" no footer para mudanças incompatíveis
+- First line: maximum 72 characters
+- Commit body: explain the "why", not the "what"
+- Include "BREAKING CHANGE:" in the footer for incompatible changes
 
-#### Testes
+#### Tests
 
-**Tipos de testes**:
+**Test types**:
 
-1. **Unitários** (`src/internal/*_test.go`):
+1. **Unit tests** (`src/internal/*_test.go`):
    ```go
    func TestParser_ValidManifest(t *testing.T) {
        // Arrange
@@ -168,7 +168,7 @@ Ideias e sugestões são bem-vindas! Abra uma issue com a label `enhancement` de
    }
    ```
 
-2. **Integração** (`tests/bats/`):
+2. **Integration tests** (`tests/bats/`):
    ```bash
    @test "apply generates shell code" {
        run kfg apply -f test.yaml --workflow test
@@ -177,99 +177,99 @@ Ideias e sugestões são bem-vindas! Abra uma issue com a label `enhancement` de
    }
    ```
 
-3. **E2E** (`packages/*/tests/`):
-   Testes completos com manifests reais.
+3. **E2E tests** (`packages/*/tests/`):
+   Full tests with real manifests.
 
-**Cobertura**:
-- Novas funcionalidades: mínimo 80% de cobertura
-- Bug fixes: adicione teste que reproduz o bug
+**Coverage**:
+- New features: minimum 80% coverage
+- Bug fixes: add a test that reproduces the bug
 
-#### Documentação
+#### Documentation
 
-Ao contribuir com código, atualize a documentação:
+When contributing code, update the documentation:
 
-- **README.md**: Se mudou uso básico
-- **docs/getting-started.md**: Se mudou fluxo inicial
-- **docs/cli-reference.md**: Se mudou comandos/flags
-- **docs/manifest-model.md**: Se mudou schema
-- **docs/architecture.md**: Se mudou arquitetura interna
-- **Comentários no código**: Para lógica complexa
+- **README.md**: If basic usage changed
+- **docs/getting-started.md**: If the initial flow changed
+- **docs/cli-reference.md**: If commands/flags changed
+- **docs/manifest-model.md**: If schema changed
+- **docs/architecture.md**: If internal architecture changed
+- **Code comments**: For complex logic
 
-### Contribuindo com Documentação
+### Contributing Documentation
 
-Documentação é tão importante quanto código! Você pode:
+Documentation is as important as code! You can:
 
-- Corrigir typos e erros gramaticais
-- Melhorar explicações confusas
-- Adicionar exemplos
-- Traduzir documentação
-- Criar tutoriais
+- Fix typos and grammatical errors
+- Improve confusing explanations
+- Add examples
+- Translate documentation
+- Create tutorials
 
-**Processo**:
-1. Siga o mesmo workflow de código
-2. Use branch `docs/*`
-3. Build local para verificar formatação:
+**Process**:
+1. Follow the same code workflow
+2. Use `docs/*` branch
+3. Build locally to verify formatting:
    ```bash
-   # Se usar MkDocs ou similar
+   # If using MkDocs or similar
    make docs-serve
    ```
 
-### Revisando Pull Requests
+### Reviewing Pull Requests
 
-Revisões são bem-vindas! Ao revisar:
+Reviews are welcome! When reviewing:
 
-- Seja respeitoso e construtivo
-- Foque no código, não na pessoa
-- Explique o "porquê" das sugestões
-- Teste as mudanças localmente se possível
-- Use labels apropriados (`needs-changes`, `approved`, etc.)
+- Be respectful and constructive
+- Focus on the code, not the person
+- Explain the "why" behind suggestions
+- Test changes locally if possible
+- Use appropriate labels (`needs-changes`, `approved`, etc.)
 
-## Política de Versão
+## Versioning Policy
 
-KFG segue [Semantic Versioning](https://semver.org/):
+KFG follows [Semantic Versioning](https://semver.org/):
 
-- **MAJOR** (X.0.0): Mudanças incompatíveis
-- **MINOR** (0.X.0): Novas funcionalidades (backward compatible)
-- **PATCH** (0.0.X): Correções de bugs
+- **MAJOR** (X.0.0): Incompatible changes
+- **MINOR** (0.X.0): New features (backward compatible)
+- **PATCH** (0.0.X): Bug fixes
 
-**Importante**: Mudanças de versão são feitas apenas em branches `release/*` pelo maintainers.
+**Important**: Version changes are only made in `release/*` branches by maintainers.
 
-## Processo de Release
+## Release Process
 
-Releases são feitas pelos maintainers:
+Releases are made by maintainers:
 
-1. Branch `release/vX.Y.Z` é criada
-2. Version bump no `flake.nix`
-3. Tag criada: `git tag vX.Y.Z`
-4. CI builda e publica
-5. PR para `main`
+1. `release/vX.Y.Z` branch is created
+2. Version bump in `flake.nix`
+3. Tag created: `git tag vX.Y.Z`
+4. CI builds and publishes
+5. PR to `main`
 
-Contribuidores não devem fazer version bumps em branches de feature.
+Contributors should not make version bumps in feature branches.
 
-## Comunidade
+## Community
 
 - **GitHub Discussions**: https://github.com/seregatte/kfg/discussions
 - **Issues**: https://github.com/seregatte/kfg/issues
 - **PRs**: https://github.com/seregatte/kfg/pulls
 
-## Reconhecimento
+## Recognition
 
-Contribuidores são reconhecidos no README e nas release notes. Obrigado por ajudar a tornar o KFG melhor!
+Contributors are recognized in the README and release notes. Thank you for helping make KFG better!
 
-## Dúvidas?
+## Questions?
 
-Se tiver dúvidas sobre como contribuir:
+If you have questions about contributing:
 
-1. Consulte este guia
-2. Verifique issues existentes
-3. Abra uma issue com a label `question`
-4. Participe das discussions
+1. Consult this guide
+2. Check existing issues
+3. Open an issue with the `question` label
+4. Participate in discussions
 
 ---
 
-**Resumo do workflow**:
+**Workflow summary**:
 ```
 1. Fork → 2. Branch → 3. Code → 4. Test → 5. Commit → 6. Push → 7. PR
 ```
 
-Obrigado por contribuir! 🎉
+Thank you for contributing! 🎉

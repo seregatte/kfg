@@ -1,48 +1,48 @@
 # Getting Started with KFG
 
-Este guia vai te levar do zero ao primeiro workflow funcional em 10 minutos.
+This guide will take you from zero to your first working workflow in 10 minutes.
 
-## Pré-requisitos
+## Prerequisites
 
-Antes de começar, certifique-se de ter:
+Before you start, make sure you have:
 
-- **Nix** (recomendado) ou **Go 1.21+** para build do fonte
-- Um editor de texto
-- Terminal com bash ou zsh
+- **Nix** (recommended) or **Go 1.21+** for building from source
+- A text editor
+- Terminal with bash or zsh
 
-## Instalação
+## Installation
 
-### Opção 1: Via Nix (Recomendado)
+### Option 1: Via Nix (Recommended)
 
-Se você já tem o Nix instalado com flakes habilitados:
+If you already have Nix installed with flakes enabled:
 
 ```bash
-# Adicionar ao shell atual
+# Add to current shell
 nix shell github:seregatte/kfg
 
-# Verificar instalação
+# Verify installation
 kfg version
 ```
 
-### Opção 2: Build do Fonte
+### Option 2: Build from Source
 
 ```bash
 git clone https://github.com/seregatte/kfg.git
 cd kfg
 make build
 
-# Adicionar ao PATH
+# Add to PATH
 export PATH="$PWD/bin:$PATH"
 
-# Verificar instalação
+# Verify installation
 kfg version
 ```
 
-## Primeiro Manifest
+## First Manifest
 
-Vamos criar um comando simples que imprime "Hello, World!".
+Let's create a simple command that prints "Hello, World!".
 
-### 1. Crie o arquivo `hello.yaml`
+### 1. Create the file `hello.yaml`
 
 ```yaml
 apiVersion: kfg.dev/v1alpha1
@@ -54,34 +54,34 @@ spec:
   run: echo "Hello, World!"
 ```
 
-**Explicação:**
-- `apiVersion`: Versão da API do KFG
-- `kind`: Tipo de recurso (Cmd = função shell)
-- `metadata.name`: Nome único do recurso
-- `metadata.commandName`: Nome do comando que será gerado
-- `spec.run`: Código shell a ser executado
+**Explanation**:
+- `apiVersion`: KFG API version
+- `kind`: Resource type (Cmd = shell function)
+- `metadata.name`: Unique resource name
+- `metadata.commandName`: Name of the generated command
+- `spec.run`: Shell code to execute
 
-### 2. Aplique o manifest
+### 2. Apply the manifest
 
 ```bash
 kfg apply -f hello.yaml --workflow default
 ```
 
-O que acontece:
-1. KFG lê o manifest YAML
-2. Gera código shell
-3. Disponibiliza o comando `hello` no seu shell
+What happens:
+1. KFG reads the YAML manifest
+2. Generates shell code
+3. Makes the `hello` command available in your shell
 
-### 3. Execute o comando
+### 3. Run the command
 
 ```bash
 hello
 # Output: Hello, World!
 ```
 
-## Adicionando Variáveis de Ambiente
+## Adding Environment Variables
 
-Vamos modificar o comando para usar variáveis de ambiente:
+Let's modify the command to use environment variables:
 
 ```yaml
 apiVersion: kfg.dev/v1alpha1
@@ -96,28 +96,28 @@ spec:
   run: echo "$GREETING, $NAME!"
 ```
 
-**Explicação:**
-- `{env:VAR}`: Placeholder resolvido em tempo de geração
-- `{env:VAR:-default}`: Com valor padrão
-- Em tempo de execução, vira `$VAR`
+**Explanation**:
+- `{env:VAR}`: Placeholder resolved at generation time
+- `{env:VAR:-default}`: With default value
+- At runtime, becomes `$VAR`
 
-### Teste com diferentes valores:
+### Test with different values:
 
 ```bash
-# Valor padrão
+# Default values
 greet
 # Output: Hello, Anonymous!
 
-# Com variáveis de ambiente
-USER=João GREETING=Olá greet
-# Output: Olá, João!
+# With environment variables
+USER=John GREETING=Hi greet
+# Output: Hi, John!
 ```
 
-## Trabalhando com Steps
+## Working with Steps
 
-Steps são unidades de trabalho reutilizáveis que podem ter outputs.
+Steps are reusable units of work that can have outputs.
 
-### 1. Crie um step
+### 1. Create a step
 
 ```yaml
 apiVersion: kfg.dev/v1alpha1
@@ -136,7 +136,7 @@ spec:
     type: string
 ```
 
-### 2. Use o step em um workflow
+### 2. Use the step in a workflow
 
 ```yaml
 apiVersion: kfg.dev/v1alpha1
@@ -158,18 +158,18 @@ spec:
     - step: tutorial.steps.check-file
 ```
 
-### 3. Aplique e execute
+### 3. Apply and run
 
 ```bash
 kfg apply -f workflow.yaml --workflow deploy
 deploy
 ```
 
-O step `check-file` executa antes do comando `deploy`.
+The `check-file` step runs before the `deploy` command.
 
-## Execução Condicional
+## Conditional Execution
 
-Você pode executar steps condicionalmente baseado em outputs:
+You can run steps conditionally based on outputs:
 
 ```yaml
 apiVersion: kfg.dev/v1alpha1
@@ -188,20 +188,20 @@ spec:
           equals: "found"
 ```
 
-**Operadores disponíveis:**
-- `equals`: Igual a
-- `in`: Em lista
-- `contains`: Contém substring
+**Available operators**:
+- `equals`: Equals value
+- `in`: In list
+- `contains`: Contains substring
 - `matches`: Regex match
-- `allOf`: Todas condições
-- `anyOf`: Qualquer condição
-- `not`: Negação
+- `allOf`: All conditions
+- `anyOf`: Any condition
+- `not`: Negation
 
-## Trabalhando com Kustomization
+## Working with Kustomization
 
-Kustomization permite compor manifests de múltiplas fontes.
+Kustomization allows composing manifests from multiple sources.
 
-### Estrutura de diretórios
+### Directory structure
 
 ```
 myproject/
@@ -235,15 +235,15 @@ resources:
   - cmd-dev.yaml
 ```
 
-### Aplique o overlay
+### Apply the overlay
 
 ```bash
 kfg apply -k overlays/dev --workflow deploy
 ```
 
-## Cache de Steps
+## Step Caching
 
-Steps podem ser cacheadas para evitar re-execuções:
+Steps can be cached to avoid re-executions:
 
 ```yaml
 apiVersion: kfg.dev/v1alpha1
@@ -262,63 +262,63 @@ spec:
     type: string
 ```
 
-### Gerenciando o cache
+### Managing the cache
 
 ```bash
-# Listar entradas do cache
+# List cache entries
 kfg sys cache ls
 
-# Inspecionar entrada específica
+# Inspect specific entry
 kfg sys cache inspect <id>
 
-# Remover entradas antigas
+# Remove old entries
 kfg sys cache prune
 
-# Invalidar cache na próxima execução
+# Invalidate cache on next run
 KFG_REFRESH=1 kfg apply -f workflow.yaml --workflow deploy
 ```
 
-## Debug e Troubleshooting
+## Debug and Troubleshooting
 
-### Aumentar verbosidade
+### Increase verbosity
 
 ```bash
-# Níveis: 0 (quiet) a 5 (máximo debug)
+# Levels: 0 (quiet) to 5 (maximum debug)
 KFG_VERBOSE=3 kfg apply -f workflow.yaml --workflow deploy
 ```
 
-### Ver logs
+### View logs
 
 ```bash
-# Localização padrão dos logs
+# Default log location
 ls ~/.local/state/kfg/logs/
 
-# Ou caminho customizado
+# Or custom path
 KFG_LOG_DIR=/tmp/kfg-logs kfg apply -f workflow.yaml --workflow deploy
 ```
 
-### Ver código gerado
+### View generated code
 
 ```bash
-# Gerar sem executar
+# Generate without executing
 kfg build overlays/dev -o generated.yaml
 
-# Ver conteúdo
+# View content
 cat generated.yaml
 ```
 
-## Próximos Passos
+## Next Steps
 
-Agora que você conhece o básico, explore:
+Now that you know the basics, explore:
 
-- **[Manifest Model](manifest-model.md)** - Schema completo de manifests
-- **[CLI Reference](cli-reference.md)** - Todos os comandos e flags
-- **[Architecture](architecture.md)** - Como o KFG funciona internamente
-- **[Exemplos](../packages/domains/ai-agents/manifests/)** - Manifests reais do projeto
+- **[Manifest Model](manifest-model.md)** - Full manifest schema
+- **[CLI Reference](cli-reference.md)** - All commands and flags
+- **[Architecture](architecture.md)** - How KFG works internally
+- **[Examples](../packages/domains/ai-agents/manifests/)** - Real manifests from the project
 
-## Exemplo Completo: Pipeline de CI/CD
+## Complete Example: CI/CD Pipeline
 
-Aqui está um exemplo real de pipeline de CI/CD:
+Here's a real-world CI/CD pipeline example:
 
 ```yaml
 # steps.yaml
@@ -419,26 +419,26 @@ spec:
       weight: 100
 ```
 
-### Use o pipeline
+### Use the pipeline
 
 ```bash
-# Pipeline completo
+# Full pipeline
 REPO_URL=https://github.com/user/repo kfg apply -f cicd.yaml --workflow full-pipeline
 
-# Executar deploy
+# Run deploy
 deploy-staging
 
-# Ou deploy de produção (com outro workflow)
+# Or production deploy (with another workflow)
 deploy-production
 ```
 
-Este pipeline:
-1. Faz checkout do código
-2. Roda testes (se checkout OK)
-3. Builda (se testes passaram)
-4. Deploy para staging
-5. Limpa recursos temporários
+This pipeline:
+1. Checks out the code
+2. Runs tests (if checkout OK)
+3. Builds (if tests passed)
+4. Deploys to staging
+5. Cleans up temporary resources
 
 ---
 
-**Dúvidas?** Veja [Troubleshooting](troubleshooting.md) ou abra uma [issue](https://github.com/seregatte/kfg/issues).
+**Questions?** See [Troubleshooting](troubleshooting.md) or open an [issue](https://github.com/seregatte/kfg/issues).

@@ -105,13 +105,23 @@ All specs consolidated at: `docs/context/openspec/`
 
 ## Language Policy
 
-All repository-facing content in **en-US**:
+**CRITICAL RULE: All code and documentation must be written in en-US (American English).**
+
+This applies to:
 - Files under `docs/` and `docs/context/`
 - All OpenSpec content
 - Code comments and user-facing strings
 - Examples and guides
+- README.md, CONTRIBUTING.md, and all Markdown files
+- Commit messages (following Conventional Commits)
+- Issue/PR descriptions
+- Variable names, function names, and error messages
 
-No Portuguese/mixed-language unless recording third-party content.
+**No Portuguese or mixed-language content** unless recording third-party content verbatim.
+
+When contributing translations or localizations, keep the canonical documentation in en-US and add localized versions only as separate files (e.g., `docs/pt-BR/getting-started.md`).
+
+Agents must proactively translate any Portuguese content encountered to en-US before committing changes.
 
 ## Release Process
 
