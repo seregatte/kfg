@@ -7,7 +7,7 @@
 
   outputs = { self, nixpkgs }:
     let
-      version = "0.0.10";
+      version = "0.0.11";
 
       # Platform-specific SHA-256 hashes (updated by release workflow)
       platformHashes = {
