@@ -32,8 +32,8 @@ spec:
     __kfg_log_info "Installed OpenSpec skills"
 
   env:
-    TOOLS_FLAG: "--tools=claude"
-    OUTPUT_DIR: ".claude/skills/"
+    TOOLS_FLAG: "--tools=opencode"
+    OUTPUT_DIR: ".opencode/skills/"
   output:
     name: installed
     type: string

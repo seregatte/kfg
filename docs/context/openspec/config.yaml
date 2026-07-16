@@ -103,7 +103,7 @@ context: |
   Package: kfg ai-agents domain - AI-specific manifests, steps, and capabilities.
   
   Domain responsibilities:
-  - Provide AI agent manifest resources (Claude, Gemini, Pi, etc.)
+  - Provide AI agent manifest resources (OpenCode, Gemini, Pi, etc.)
   - Support development and production overlays
   - Maintain domain-specific capabilities and extensions
   - Document domain-specific behavior

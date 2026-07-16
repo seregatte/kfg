@@ -30,15 +30,15 @@ func TestSplitArgsAtDash(t *testing.T) {
 		{
 			name:          "command only",
 			dashIndex:     -1,
-			args:          []string{"claude"},
-			expectedCmd:   "claude",
+			args:          []string{"opencode"},
+			expectedCmd:   "opencode",
 			expectedExtra: []string{},
 		},
 		{
 			name:          "command with forwarded args after --",
 			dashIndex:     1,
-			args:          []string{"claude", "--model", "gpt-4"},
-			expectedCmd:   "claude",
+			args:          []string{"opencode", "--model", "gpt-4"},
+			expectedCmd:   "opencode",
 			expectedExtra: []string{"--model", "gpt-4"},
 		},
 		{
@@ -58,15 +58,15 @@ func TestSplitArgsAtDash(t *testing.T) {
 		{
 			name:          "single forwarded arg",
 			dashIndex:     1,
-			args:          []string{"claude", "--model"},
-			expectedCmd:   "claude",
+			args:          []string{"opencode", "--model"},
+			expectedCmd:   "opencode",
 			expectedExtra: []string{"--model"},
 		},
 		{
 			name:          "no separator with multiple args (all before --)",
 			dashIndex:     -1,
-			args:          []string{"claude", "extra"},
-			expectedCmd:   "claude",
+			args:          []string{"opencode", "extra"},
+			expectedCmd:   "opencode",
 			expectedExtra: []string{},
 		},
 	}
@@ -84,8 +84,8 @@ func TestParseLaunchArgs(t *testing.T) {
 	// parseLaunchArgs delegates to splitArgsAtDash using cmd.ArgsLenAtDash().
 	// When cmd is nil (unit test convenience), dashIndex defaults to -1.
 	t.Run("nil cmd returns first arg as command", func(t *testing.T) {
-		cmdName, extraArgs := parseLaunchArgs(nil, []string{"claude"})
-		assert.Equal(t, "claude", cmdName)
+		cmdName, extraArgs := parseLaunchArgs(nil, []string{"opencode"})
+		assert.Equal(t, "opencode", cmdName)
 		assert.Empty(t, extraArgs)
 	})
 
@@ -100,11 +100,11 @@ func TestFindCmd(t *testing.T) {
 	// Create test index with Cmds and CmdWorkflows
 	cmdClaude := &manifest.Cmd{
 		Metadata: manifest.Metadata{
-			Name:        "dev.agents.claude",
-			CommandName: "claude",
+			Name:        "dev.agents.opencode",
+			CommandName: "opencode",
 		},
 		Spec: manifest.CmdSpec{
-			Run: "command claude \"$@\"",
+			Run: "command opencode \"$@\"",
 		},
 	}
 	cmdGemini := &manifest.Cmd{
@@ -131,7 +131,7 @@ func TestFindCmd(t *testing.T) {
 			Name: "dev.workflows.dev",
 		},
 		Spec: manifest.CmdWorkflowSpec{
-			Cmds: []string{"dev.agents.claude", "dev.agents.gemini"},
+			Cmds: []string{"dev.agents.opencode", "dev.agents.gemini"},
 		},
 	}
 	wfOpenspec := &manifest.CmdWorkflow{
@@ -159,10 +159,10 @@ func TestFindCmd(t *testing.T) {
 	}{
 		{
 			name:             "command found",
-			cmdName:          "claude",
+			cmdName:          "opencode",
 			workflowFilter:   "",
 			expectError:      false,
-			expectedCmdName:  "dev.agents.claude",
+			expectedCmdName:  "dev.agents.opencode",
 			expectedWorkflow: "dev.workflows.dev",
 		},
 		{
@@ -173,16 +173,16 @@ func TestFindCmd(t *testing.T) {
 		},
 		{
 			name:           "command not in specified workflow",
-			cmdName:        "claude",
+			cmdName:        "opencode",
 			workflowFilter: "dev.workflows.openspec",
 			expectError:    true,
 		},
 		{
 			name:             "workflow filter match",
-			cmdName:          "claude",
+			cmdName:          "opencode",
 			workflowFilter:   "dev.workflows.dev",
 			expectError:      false,
-			expectedCmdName:  "dev.agents.claude",
+			expectedCmdName:  "dev.agents.opencode",
 			expectedWorkflow: "dev.workflows.dev",
 		},
 		{
@@ -236,8 +236,8 @@ func TestListAvailableCmds(t *testing.T) {
 	// Test with populated index
 	cmdClaude := &manifest.Cmd{
 		Metadata: manifest.Metadata{
-			Name:        "dev.agents.claude",
-			CommandName: "claude",
+			Name:        "dev.agents.opencode",
+			CommandName: "opencode",
 		},
 	}
 	cmdGemini := &manifest.Cmd{
@@ -251,7 +251,7 @@ func TestListAvailableCmds(t *testing.T) {
 			Name: "dev.workflows.dev",
 		},
 		Spec: manifest.CmdWorkflowSpec{
-			Cmds: []string{"dev.agents.claude", "dev.agents.gemini"},
+			Cmds: []string{"dev.agents.opencode", "dev.agents.gemini"},
 		},
 	}
 
@@ -271,7 +271,7 @@ func TestListAvailableCmds(t *testing.T) {
 
 	output2 := buf2.String()
 	assert.Contains(t, output2, "Available commands:")
-	assert.Contains(t, output2, "claude")
+	assert.Contains(t, output2, "opencode")
 	assert.Contains(t, output2, "gemini")
 	assert.Contains(t, output2, "workflow:")
 }

@@ -204,7 +204,7 @@ spec:
       exit 1
     fi
     ctx7 setup --cli --project $FLAGS
-    cp -Rf .claude/skills/* "$OUTPUT_DIR/"
+    cp -Rf .opencode/skills/* "$OUTPUT_DIR/"
   env:
     FLAGS: "--yes"
     OUTPUT_DIR: ""
@@ -224,8 +224,8 @@ Convert one or more assets to individual outputs:
   env:
     MODE: "per-item"
     ASSETS: "ai.prompts.git-commit"
-    CONVERTER: "ai.claude.conv.command"
-    OUTPUTS: ".claude/commands/git-commit.md"
+    CONVERTER: "ai.opencode.conv.command"
+    OUTPUTS: ".opencode/commands/git-commit.md"
 ```
 
 ### Aggregate Mode
@@ -238,7 +238,7 @@ Merge multiple assets into single output:
   env:
     MODE: "aggregate"
     ASSETS: "ctx7.assets.mcp:chrome.assets.mcp:playwright.assets.mcp"
-    CONVERTER: "ai.claude.conv.mcp"
+    CONVERTER: "ai.opencode.conv.mcp"
     OUTPUTS: ".mcp.json"
     WRAP_KEY: "mcpServers"
 ```
@@ -273,7 +273,7 @@ spec:
       env:
         MODE: "aggregate"
         ASSETS: "myproject.mcp.local:kfg.extension.ctx7.mcp"
-        CONVERTER: "kfg.convert.self.mcp.claude"
+        CONVERTER: "kfg.convert.self.mcp.opencode"
         OUTPUTS: ".mcp.json"
         WRAP_KEY: "mcpServers"
 ```

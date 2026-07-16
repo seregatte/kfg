@@ -901,8 +901,8 @@ func TestGenerateAllWorkflows_MultipleCmdsPerWorkflow(t *testing.T) {
 	cmd1 := &manifest.Cmd{
 		APIVersion: "kfg.dev/v1alpha1",
 		Kind:       "Cmd",
-		Metadata:   manifest.Metadata{Name: "claude", CommandName: "claude"},
-		Spec:       manifest.CmdSpec{Run: "echo claude"},
+		Metadata:   manifest.Metadata{Name: "opencode", CommandName: "opencode"},
+		Spec:       manifest.CmdSpec{Run: "echo opencode"},
 	}
 
 	cmd2 := &manifest.Cmd{
@@ -924,7 +924,7 @@ func TestGenerateAllWorkflows_MultipleCmdsPerWorkflow(t *testing.T) {
 		APIVersion: "kfg.dev/v1alpha1",
 		Kind:       "CmdWorkflow",
 		Metadata:   manifest.Metadata{Name: "dev", Shell: "bash"},
-		Spec:       manifest.CmdWorkflowSpec{Cmds: []string{"claude", "gemini"}},
+		Spec:       manifest.CmdWorkflowSpec{Cmds: []string{"opencode", "gemini"}},
 	}
 
 	workflow2 := &manifest.CmdWorkflow{
@@ -937,7 +937,7 @@ func TestGenerateAllWorkflows_MultipleCmdsPerWorkflow(t *testing.T) {
 	resolvedWorkflow1 := &resolve.ResolvedCmdWorkflow{
 		Workflow: workflow1,
 		Cmds: map[string]*resolve.ResolvedCmdEntry{
-			"claude": {Cmd: cmd1},
+			"opencode": {Cmd: cmd1},
 			"gemini": {Cmd: cmd2},
 		},
 		Shell: "bash",
@@ -954,7 +954,7 @@ func TestGenerateAllWorkflows_MultipleCmdsPerWorkflow(t *testing.T) {
 		Shell:     "bash",
 		Workflows: []*resolve.ResolvedCmdWorkflow{resolvedWorkflow1, resolvedWorkflow2},
 		Steps:     map[string]*manifest.Step{},
-		Cmds:      map[string]*manifest.Cmd{"claude": cmd1, "gemini": cmd2, "openspec": cmd3},
+		Cmds:      map[string]*manifest.Cmd{"opencode": cmd1, "gemini": cmd2, "openspec": cmd3},
 	}
 
 	// Generate
@@ -963,7 +963,7 @@ func TestGenerateAllWorkflows_MultipleCmdsPerWorkflow(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Verify all cmds are present
-	assert.Contains(t, code, "claude()")
+	assert.Contains(t, code, "opencode()")
 	assert.Contains(t, code, "gemini()")
 	assert.Contains(t, code, "openspec()")
 }

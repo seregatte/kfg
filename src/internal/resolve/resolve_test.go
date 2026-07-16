@@ -521,7 +521,7 @@ func TestResolveStepReferences_EnvPopulation(t *testing.T) {
 				{
 					Step: "copy-step",
 					Env: map[string]string{
-						"DEST":  "CLAUDE.md",
+						"DEST":  "OPENCODE.md",
 						"DEBUG": "true",
 					},
 				},
@@ -543,7 +543,7 @@ func TestResolveStepReferences_EnvPopulation(t *testing.T) {
 	resolvedStep := resolved.Workflow.BeforeSteps[0]
 	assert.NotNil(t, resolvedStep.Env)
 	assert.Equal(t, "docs/AGENTS.md", resolvedStep.Env["SRC"])
-	assert.Equal(t, "CLAUDE.md", resolvedStep.Env["DEST"])
+	assert.Equal(t, "OPENCODE.md", resolvedStep.Env["DEST"])
 	assert.Equal(t, "true", resolvedStep.Env["DEBUG"])
 }
 
@@ -951,10 +951,10 @@ func TestResolveStepReference_StepRefNameWithEnvOverride(t *testing.T) {
 			Cmds: []string{},
 			Before: []manifest.StepReference{
 				{
-					Name: "setup-claude", // StepReference.Name
+					Name: "setup-opencode", // StepReference.Name
 					Step: "setup-step",
 					Env: map[string]string{
-						"DEST": "CLAUDE.md",
+						"DEST": "OPENCODE.md",
 					},
 				},
 			},
@@ -973,12 +973,12 @@ func TestResolveStepReference_StepRefNameWithEnvOverride(t *testing.T) {
 	assert.Len(t, resolved.Workflow.BeforeSteps, 1)
 
 	resolvedStep := resolved.Workflow.BeforeSteps[0]
-	assert.Equal(t, "setup-claude", resolvedStep.Name)
+	assert.Equal(t, "setup-opencode", resolvedStep.Name)
 	assert.Equal(t, "setup-step", resolvedStep.Step.Metadata.Name)
 
 	// Verify env is merged properly
 	assert.Equal(t, "default", resolvedStep.Env["SRC"])
-	assert.Equal(t, "CLAUDE.md", resolvedStep.Env["DEST"])
+	assert.Equal(t, "OPENCODE.md", resolvedStep.Env["DEST"])
 }
 
 func TestResolveStepReference_MultipleSameStepDifferentNames(t *testing.T) {
@@ -1005,9 +1005,9 @@ func TestResolveStepReference_MultipleSameStepDifferentNames(t *testing.T) {
 			Cmds: []string{},
 			Before: []manifest.StepReference{
 				{
-					Name: "copy-claude",
+					Name: "copy-opencode",
 					Step: "copy-step",
-					Env:  map[string]string{"DEST": "CLAUDE.md"},
+					Env:  map[string]string{"DEST": "OPENCODE.md"},
 				},
 				{
 					Name: "copy-gemini",
@@ -1030,9 +1030,9 @@ func TestResolveStepReference_MultipleSameStepDifferentNames(t *testing.T) {
 	assert.Len(t, resolved.Workflow.BeforeSteps, 2)
 
 	// Verify both step references have different names but same step
-	assert.Equal(t, "copy-claude", resolved.Workflow.BeforeSteps[0].Name)
+	assert.Equal(t, "copy-opencode", resolved.Workflow.BeforeSteps[0].Name)
 	assert.Equal(t, "copy-step", resolved.Workflow.BeforeSteps[0].Step.Metadata.Name)
-	assert.Equal(t, "CLAUDE.md", resolved.Workflow.BeforeSteps[0].Env["DEST"])
+	assert.Equal(t, "OPENCODE.md", resolved.Workflow.BeforeSteps[0].Env["DEST"])
 
 	assert.Equal(t, "copy-gemini", resolved.Workflow.BeforeSteps[1].Name)
 	assert.Equal(t, "copy-step", resolved.Workflow.BeforeSteps[1].Step.Metadata.Name)

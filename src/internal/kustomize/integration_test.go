@@ -91,7 +91,7 @@ spec:
     servers:
       - enabled: true
         type: anthropic
-        command: claude
+        command: opencode
 `
 
 	// Write files
@@ -155,7 +155,7 @@ resources:
 apiVersion: kfg.dev/v1alpha1
 kind: Converter
 metadata:
-  name: providers-to-claude
+  name: providers-to-opencode
 spec:
   input:
     schemaRef: schema://providers
@@ -203,8 +203,8 @@ spec:
 	if converterResources[0].Kind() != "Converter" {
 		t.Errorf("Expected kind 'Converter', got '%s'", converterResources[0].Kind())
 	}
-	if converterResources[0].Name() != "providers-to-claude" {
-		t.Errorf("Expected name 'providers-to-claude', got '%s'", converterResources[0].Name())
+	if converterResources[0].Name() != "providers-to-opencode" {
+		t.Errorf("Expected name 'providers-to-opencode', got '%s'", converterResources[0].Name())
 	}
 
 	t.Logf("Successfully loaded Converter: %s", converterResources[0].Name())
@@ -267,14 +267,14 @@ spec:
     servers:
       - enabled: true
         type: anthropic
-        command: claude
+        command: opencode
 `
 
 	converterYAML := `
 apiVersion: kfg.dev/v1alpha1
 kind: Converter
 metadata:
-  name: providers-to-claude
+  name: providers-to-opencode
 spec:
   input:
     schemaRef: schema://providers
