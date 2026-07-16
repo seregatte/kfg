@@ -42,14 +42,6 @@ load '../../../tests/bats/helpers/manifests'
     [ -d "$TEST_TMPDIR/.opencode/subagents" ]
 }
 
-@test "creates nested directories for gemini agent" {
-    run_step "materialize-scaffold" ".gemini:.gemini/skills:.gemini/commands"
-    
-    [ -d "$TEST_TMPDIR/.gemini" ]
-    [ -d "$TEST_TMPDIR/.gemini/skills" ]
-    [ -d "$TEST_TMPDIR/.gemini/commands" ]
-}
-
 @test "creates nested directories for pi agent" {
     run_step "materialize-scaffold" ".pi:.pi/skills:.pi/commands"
     

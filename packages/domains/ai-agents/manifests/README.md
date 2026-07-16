@@ -10,7 +10,6 @@ ai-agents/
 │   ├── claude/
 │   │   ├── assets/            # Agent settings (ai.claude.asset.settings)
 │   │   └── converters/        # Per-agent converters (ai.claude.conv.*)
-│   ├── gemini/
 │   ├── opencode/
 │   └── pi/
 ├── cmds/                      # Shared command wrappers (ai.cmds.*)

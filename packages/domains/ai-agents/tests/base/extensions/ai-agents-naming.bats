@@ -15,11 +15,6 @@ _extract_name() {
     [ "$name" = "ai.claude.asset.settings" ]
 }
 
-@test "gemini asset settings name is ai.gemini.asset.settings" {
-    name=$(_extract_name "$MANIFESTS_BASE/agents/gemini/assets/settings.yaml")
-    [ "$name" = "ai.gemini.asset.settings" ]
-}
-
 @test "opencode asset settings name is ai.opencode.asset.settings" {
     name=$(_extract_name "$MANIFESTS_BASE/agents/opencode/assets/settings.yaml")
     [ "$name" = "ai.opencode.asset.settings" ]
@@ -37,11 +32,6 @@ _extract_name() {
     [ "$name" = "ai.claude.conv.command" ]
 }
 
-@test "gemini command converter name is ai.gemini.conv.command" {
-    name=$(_extract_name "$MANIFESTS_BASE/agents/gemini/converters/command.yaml")
-    [ "$name" = "ai.gemini.conv.command" ]
-}
-
 @test "opencode command converter name is ai.opencode.conv.command" {
     name=$(_extract_name "$MANIFESTS_BASE/agents/opencode/converters/command.yaml")
     [ "$name" = "ai.opencode.conv.command" ]
@@ -57,11 +47,6 @@ _extract_name() {
 @test "claude MCP converter name is ai.claude.conv.mcp" {
     name=$(_extract_name "$MANIFESTS_BASE/agents/claude/converters/mcp.yaml")
     [ "$name" = "ai.claude.conv.mcp" ]
-}
-
-@test "gemini MCP converter name is ai.gemini.conv.mcp" {
-    name=$(_extract_name "$MANIFESTS_BASE/agents/gemini/converters/mcp.yaml")
-    [ "$name" = "ai.gemini.conv.mcp" ]
 }
 
 @test "opencode MCP converter name is ai.opencode.conv.mcp" {
@@ -99,7 +84,6 @@ _extract_name() {
 
 @test "agents.yaml contains ai.*.cmd.main names" {
     grep -q 'name: ai.claude.cmd.main' "$MANIFESTS_BASE/cmds/agents.yaml"
-    grep -q 'name: ai.gemini.cmd.main' "$MANIFESTS_BASE/cmds/agents.yaml"
     grep -q 'name: ai.opencode.cmd.main' "$MANIFESTS_BASE/cmds/agents.yaml"
     grep -q 'name: ai.pi.cmd.main' "$MANIFESTS_BASE/cmds/agents.yaml"
 }

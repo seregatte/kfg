@@ -28,8 +28,6 @@ spec:
     elif echo "$FLAGS" | grep -q "opencode"; then
       AGENT="opencode"
       SKILL_SRC=".agents/skills"
-    elif echo "$FLAGS" | grep -q "gemini"; then
-      AGENT="gemini"
     elif echo "$FLAGS" | grep -q "pi"; then
       AGENT="pi"
       SKILL_SRC=".agents/skills"

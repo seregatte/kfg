@@ -49,16 +49,6 @@ MANIFESTS_BASE="packages/domains/ai-agents/manifests"
     [ -f "$MANIFESTS_BASE/agents/claude/converters/subagent.yaml" ]
 }
 
-@test "gemini agent structure exists" {
-    [ -d "$MANIFESTS_BASE/agents/gemini" ]
-    [ -f "$MANIFESTS_BASE/agents/gemini/kustomization.yaml" ]
-    [ -f "$MANIFESTS_BASE/agents/gemini/assets/kustomization.yaml" ]
-    [ -f "$MANIFESTS_BASE/agents/gemini/assets/settings.yaml" ]
-    [ -f "$MANIFESTS_BASE/agents/gemini/converters/kustomization.yaml" ]
-    [ -f "$MANIFESTS_BASE/agents/gemini/converters/command.yaml" ]
-    [ -f "$MANIFESTS_BASE/agents/gemini/converters/mcp.yaml" ]
-}
-
 @test "opencode agent structure exists" {
     [ -d "$MANIFESTS_BASE/agents/opencode" ]
     [ -f "$MANIFESTS_BASE/agents/opencode/kustomization.yaml" ]

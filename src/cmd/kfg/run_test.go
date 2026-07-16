@@ -107,15 +107,6 @@ func TestFindCmd(t *testing.T) {
 			Run: "command claude \"$@\"",
 		},
 	}
-	cmdGemini := &manifest.Cmd{
-		Metadata: manifest.Metadata{
-			Name:        "dev.agents.gemini",
-			CommandName: "gemini",
-		},
-		Spec: manifest.CmdSpec{
-			Run: "command gemini \"$@\"",
-		},
-	}
 	cmdOpenspec := &manifest.Cmd{
 		Metadata: manifest.Metadata{
 			Name:        "dev.openspec",
@@ -131,7 +122,7 @@ func TestFindCmd(t *testing.T) {
 			Name: "dev.workflows.dev",
 		},
 		Spec: manifest.CmdWorkflowSpec{
-			Cmds: []string{"dev.agents.claude", "dev.agents.gemini"},
+			Cmds: []string{"dev.agents.claude"},
 		},
 	}
 	wfOpenspec := &manifest.CmdWorkflow{
@@ -144,7 +135,7 @@ func TestFindCmd(t *testing.T) {
 	}
 
 	resources := []manifest.ParsedResource{
-		{Cmd: cmdClaude}, {Cmd: cmdGemini}, {Cmd: cmdOpenspec},
+		{Cmd: cmdClaude}, {Cmd: cmdOpenspec},
 		{CmdWorkflow: wfDev}, {CmdWorkflow: wfOpenspec},
 	}
 	index := resolve.NewIndex(resources)
@@ -240,22 +231,16 @@ func TestListAvailableCmds(t *testing.T) {
 			CommandName: "claude",
 		},
 	}
-	cmdGemini := &manifest.Cmd{
-		Metadata: manifest.Metadata{
-			Name:        "dev.agents.gemini",
-			CommandName: "gemini",
-		},
-	}
 	wfDev := &manifest.CmdWorkflow{
 		Metadata: manifest.Metadata{
 			Name: "dev.workflows.dev",
 		},
 		Spec: manifest.CmdWorkflowSpec{
-			Cmds: []string{"dev.agents.claude", "dev.agents.gemini"},
+			Cmds: []string{"dev.agents.claude"},
 		},
 	}
 
-	populatedResources := []manifest.ParsedResource{{Cmd: cmdClaude}, {Cmd: cmdGemini}, {CmdWorkflow: wfDev}}
+	populatedResources := []manifest.ParsedResource{{Cmd: cmdClaude}, {CmdWorkflow: wfDev}}
 	populatedIndex := resolve.NewIndex(populatedResources)
 
 	// Capture output
@@ -272,7 +257,6 @@ func TestListAvailableCmds(t *testing.T) {
 	output2 := buf2.String()
 	assert.Contains(t, output2, "Available commands:")
 	assert.Contains(t, output2, "claude")
-	assert.Contains(t, output2, "gemini")
 	assert.Contains(t, output2, "workflow:")
 }
 

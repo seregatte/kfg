@@ -6,7 +6,6 @@ metadata:
 spec:
   cmds:
     - ai.claude.cmd.main
-    - ai.gemini.cmd.main
     - ai.opencode.cmd.main
     - ai.pi.cmd.main
     - ai.cmds.openspec
@@ -21,7 +20,7 @@ spec:
       step: kfg.ensure-gitignore
       weight: -90
       env:
-        GITIGNORE_ENTRIES: "/.opencode/:/.gemini/:/.pi/:/opencode.json:/.mcp.json"
+        GITIGNORE_ENTRIES: "/.opencode/:/.pi/:/opencode.json:/.mcp.json"
 
     # Phase 2 (-70): Detection
     - name: agents.detect-agent
@@ -53,18 +52,6 @@ spec:
         DIRECTORIES: ".opencode:.opencode/skills:.opencode/commands:.opencode/subagents"
       artifacts:
         - .opencode/
-    - name: agents.materialize-scaffold-gemini
-      step: kfg.materialize-scaffold
-      weight: -65
-      when:
-        output:
-          step: agents.detect-agent
-          name: AGENT
-          equals: "gemini"
-      env:
-        DIRECTORIES: ".gemini:.gemini/skills:.gemini/commands"
-      artifacts:
-        - .gemini/
     - name: agents.materialize-scaffold-pi
       step: kfg.materialize-scaffold
       weight: -65
@@ -91,19 +78,6 @@ spec:
         ASSETS: "ai.claude.asset.settings"
         CONVERTER: "ai.conv.to-json"
         OUTPUTS: ".claude/settings.json"
-    - name: agents.settings-gemini
-      step: kfg.materialize
-      weight: -63
-      when:
-        output:
-          step: agents.detect-agent
-          name: AGENT
-          equals: "gemini"
-      env:
-        MODE: "per-item"
-        ASSETS: "ai.gemini.asset.settings"
-        CONVERTER: "ai.conv.to-json"
-        OUTPUTS: ".gemini/settings.json"
     - name: agents.settings-pi
       step: kfg.materialize
       weight: -63
@@ -160,7 +134,7 @@ spec:
         output:
           step: agents.detect-agent
           name: AGENT
-          in: ["opencode", "gemini", "pi"]
+          in: ["opencode", "pi"]
 
     # Phase 6 (-55): ctx7 install (per-agent)
     - name: agents.ctx7.install.claude
@@ -174,17 +148,6 @@ spec:
       env:
         FLAGS: "--claude --yes"
         OUTPUT_DIR: ".claude/skills/"
-    - name: agents.ctx7.install.gemini
-      step: ctx7.steps.install
-      weight: -55
-      when:
-        output:
-          step: agents.detect-agent
-          name: AGENT
-          equals: "gemini"
-      env:
-        FLAGS: "--gemini --yes"
-        OUTPUT_DIR: ".gemini/skills/"
     - name: agents.ctx7.install.opencode
       step: ctx7.steps.install
       weight: -55
@@ -222,19 +185,6 @@ spec:
         TOOLS_FLAG: "--tools=claude"
         AGENT_HOME: ".claude"
         OUTPUT_DIR: ".claude/skills/"
-    - name: agents.openspec.install.gemini
-      step: openspec.steps.install
-      weight: -53
-      failurePolicy: Ignore
-      when:
-        output:
-          step: agents.detect-agent
-          name: AGENT
-          equals: "gemini"
-      env:
-        TOOLS_FLAG: "--tools=gemini"
-        AGENT_HOME: ".gemini"
-        OUTPUT_DIR: ".gemini/skills/"
     - name: agents.openspec.install.opencode
       step: openspec.steps.install
       weight: -53
@@ -322,19 +272,6 @@ spec:
           step: agents.detect-agent
           name: AGENT
           equals: "claude"
-    - name: agents.commands.gemini
-      step: kfg.materialize
-      weight: -45
-      env:
-        MODE: "per-item"
-        ASSETS: "ai.prompts.git-commit"
-        CONVERTER: "ai.gemini.conv.command"
-        OUTPUTS: ".gemini/commands/git-commit.toml"
-      when:
-        output:
-          step: agents.detect-agent
-          name: AGENT
-          equals: "gemini"
     - name: agents.commands.opencode
       step: kfg.materialize
       weight: -45
@@ -379,20 +316,6 @@ spec:
           equals: "claude"
       artifacts:
         - .mcp.json
-    - name: agents.mcp.gemini
-      step: kfg.materialize
-      weight: -40
-      env:
-        MODE: "aggregate"
-        ASSETS: "ctx7.assets.mcp:chrome.assets.mcp:playwright.assets.mcp"
-        CONVERTER: "ai.gemini.conv.mcp"
-        OUTPUTS: ".gemini/settings.json"
-        WRAP_KEY: "mcpServers"
-      when:
-        output:
-          step: agents.detect-agent
-          name: AGENT
-          equals: "gemini"
     - name: agents.mcp.opencode
       step: kfg.materialize
       weight: -40
@@ -443,4 +366,4 @@ spec:
         output:
           step: agents.detect-agent
           name: AGENT
-          in: ["claude", "gemini", "opencode", "pi"]
+          in: ["claude", "opencode", "pi"]

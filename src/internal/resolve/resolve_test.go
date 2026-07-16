@@ -1010,7 +1010,7 @@ func TestResolveStepReference_MultipleSameStepDifferentNames(t *testing.T) {
 					Env:  map[string]string{"DEST": "CLAUDE.md"},
 				},
 				{
-					Name: "copy-gemini",
+					Name: "copy-opencode",
 					Step: "copy-step",
 					Env:  map[string]string{"DEST": "GEMINI.md"},
 				},
@@ -1034,7 +1034,7 @@ func TestResolveStepReference_MultipleSameStepDifferentNames(t *testing.T) {
 	assert.Equal(t, "copy-step", resolved.Workflow.BeforeSteps[0].Step.Metadata.Name)
 	assert.Equal(t, "CLAUDE.md", resolved.Workflow.BeforeSteps[0].Env["DEST"])
 
-	assert.Equal(t, "copy-gemini", resolved.Workflow.BeforeSteps[1].Name)
+	assert.Equal(t, "copy-opencode", resolved.Workflow.BeforeSteps[1].Name)
 	assert.Equal(t, "copy-step", resolved.Workflow.BeforeSteps[1].Step.Metadata.Name)
 	assert.Equal(t, "GEMINI.md", resolved.Workflow.BeforeSteps[1].Env["DEST"])
 }

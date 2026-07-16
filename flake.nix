@@ -140,7 +140,6 @@
               notebooklmWrapper
               nblmWrapper
               pkgs.claude-code
-              pkgs.gemini-cli-bin
               pkgs.opencode
               pkgs.playwright-test
             ];
