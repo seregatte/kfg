@@ -81,9 +81,9 @@ spec:
           equals: "opencode"
       env:
         MODE: "per-item"
-        ASSETS: "ai.prompts.kfg-wizard"
+        ASSETS: "ai.prompts.wizard"
         CONVERTER: "ai.opencode.conv.command"
-        OUTPUTS: ".opencode/commands/kfg-wizard.md"
+        OUTPUTS: ".opencode/commands/wizard.md"
     - name: ai.wizard.pi
       step: kfg.materialize
       weight: -45
@@ -94,9 +94,9 @@ spec:
           equals: "pi"
       env:
         MODE: "per-item"
-        ASSETS: "ai.prompts.kfg-wizard"
+        ASSETS: "ai.prompts.wizard"
         CONVERTER: "ai.pi.conv.command"
-        OUTPUTS: ".pi/prompts/kfg-wizard.md"
+        OUTPUTS: ".pi/prompts/wizard.md"
 
   after:
     - name: ai.cleanup.final

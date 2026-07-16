@@ -107,7 +107,7 @@ kfg ai -- --model sonnet "create project"       # Forward args to agent
 
 - CLI command: `src/cmd/kfg/ai.go`
 - Overlay: `packages/domains/ai-agents/overlays/ai/`
-- Wizard skill prompt: `packages/domains/ai-agents/overlays/ai/assets/prompts/kfg-wizard.yaml`
+- Wizard skill prompt: `packages/domains/ai-agents/overlays/ai/assets/prompts/wizard.yaml`
 - The command wraps `kfg run -k packages/domains/ai-agents/overlays/ai <agent> -- <args>` via subprocess
 
 ### Deprecation Notice

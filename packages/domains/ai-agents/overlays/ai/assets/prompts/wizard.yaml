@@ -1,12 +1,12 @@
 apiVersion: kfg.dev/v1alpha1
 kind: Assets
 metadata:
-  name: ai.prompts.kfg-wizard
+  name: ai.prompts.wizard
 spec:
   input:
     format: yaml
   data:
-    name: kfg-wizard
+    name: wizard
     description: Interactive wizard for generating kfg project configurations
     prompt: |
       You are a kfg configuration wizard. Your role is to help users create complete, 
@@ -34,7 +34,7 @@ spec:
       
       - What type of project is this? (web app, API, CLI tool, library, infrastructure, etc.)
       - What's the primary language/stack? (Go, TypeScript, Python, Rust, etc.)
-      - Which AI agents do you want to support? (pi, opencode, claude, gemini)
+      - Which AI agents do you want to support? (pi, opencode)
       - What capabilities do you need?
         - Library documentation lookup (ctx7)
         - Browser automation (playwright)
@@ -52,7 +52,7 @@ spec:
       **Available in ai-agents domain:**
       - Steps: `ai.steps.detect`, `ctx7.steps.install`, `openspec.steps.install`, 
                `playwright.steps.install`, `gws.steps.install`, `notebooklm.steps.install`
-      - Cmds: `ai.pi.cmd.main`, `ai.opencode.cmd.main`, `ai.claude.cmd.main`, `ai.gemini.cmd.main`
+      - Cmds: `ai.pi.cmd.main`, `ai.opencode.cmd.main`
       - Converters: `ai.{agent}.conv.command`, `ai.{agent}.conv.mcp`, `ai.{agent}.conv.subagent`
       - Assets: `ai.prompts.git-commit`, `ai.{agent}.asset.settings`, 
                 `ctx7.assets.mcp`, `playwright.assets.mcp`, `chrome.assets.mcp`
