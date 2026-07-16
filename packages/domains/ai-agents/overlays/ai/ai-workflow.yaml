@@ -81,7 +81,7 @@ spec:
           equals: "opencode"
       env:
         MODE: "per-item"
-        ASSETS: "ai.prompts.wizard-command"
+        ASSETS: "ai.prompts.wizard"
         CONVERTER: "ai.opencode.conv.command"
         OUTPUTS: ".opencode/commands/wizard.md"
     - name: ai.wizard.pi
@@ -94,37 +94,9 @@ spec:
           equals: "pi"
       env:
         MODE: "per-item"
-        ASSETS: "ai.prompts.wizard-command"
+        ASSETS: "ai.prompts.wizard"
         CONVERTER: "ai.pi.conv.command"
         OUTPUTS: ".pi/prompts/wizard.md"
-
-    # Phase 5b (-44): Wizard skill materialize (per-agent)
-    - name: ai.wizard.skill.opencode
-      step: kfg.materialize
-      weight: -44
-      when:
-        output:
-          step: ai.detect-agent
-          name: AGENT
-          equals: "opencode"
-      env:
-        MODE: "per-item"
-        ASSETS: "ai.prompts.wizard"
-        CONVERTER: "ai.opencode.conv.skill"
-        OUTPUTS: ".opencode/skills/wizard/SKILL.md"
-    - name: ai.wizard.skill.pi
-      step: kfg.materialize
-      weight: -44
-      when:
-        output:
-          step: ai.detect-agent
-          name: AGENT
-          equals: "pi"
-      env:
-        MODE: "per-item"
-        ASSETS: "ai.prompts.wizard"
-        CONVERTER: "ai.pi.conv.command"
-        OUTPUTS: ".pi/skills/wizard/SKILL.md"
 
   after:
     - name: ai.cleanup.final
