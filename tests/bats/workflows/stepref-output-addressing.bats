@@ -21,7 +21,7 @@ kind: Step
 metadata:
   name: test.detect
 spec:
-  run: echo "claude"
+  run: echo "opencode"
   output:
     name: AGENT
     type: string
@@ -45,14 +45,14 @@ spec:
     - name: detect-agent
       step: test.detect
       weight: -90
-    - name: setup-claude
+    - name: setup-opencode
       step: test.setup
       weight: -80
       when:
         output:
           step: detect-agent
           name: AGENT
-          equals: "claude"
+          equals: "opencode"
 ---
 apiVersion: kfg.dev/v1alpha1
 kind: Cmd

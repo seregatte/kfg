@@ -5,7 +5,6 @@ metadata:
   shell: bash
 spec:
   cmds:
-    - ai.claude.cmd.main
     - ai.opencode.cmd.main
     - ai.pi.cmd.main
     - ai.cmds.openspec
@@ -28,18 +27,6 @@ spec:
       weight: -70
 
     # Phase 3 (-65): Scaffold (per-agent)
-    - name: agents.materialize-scaffold-claude
-      step: kfg.materialize-scaffold
-      weight: -65
-      when:
-        output:
-          step: agents.detect-agent
-          name: AGENT
-          equals: "claude"
-      env:
-        DIRECTORIES: ".claude:.claude/skills:.claude/commands:.claude/subagents"
-      artifacts:
-        - .claude/
     - name: agents.materialize-scaffold-opencode
       step: kfg.materialize-scaffold
       weight: -65
@@ -64,20 +51,6 @@ spec:
         DIRECTORIES: ".pi:.pi/skills:.pi/prompts"
       artifacts:
         - .pi/
-    # Phase 4 (-63): Settings (per-agent)
-    - name: agents.settings-claude
-      step: kfg.materialize
-      weight: -63
-      when:
-        output:
-          step: agents.detect-agent
-          name: AGENT
-          equals: "claude"
-      env:
-        MODE: "per-item"
-        ASSETS: "ai.claude.asset.settings"
-        CONVERTER: "ai.conv.to-json"
-        OUTPUTS: ".claude/settings.json"
     - name: agents.settings-pi
       step: kfg.materialize
       weight: -63
@@ -107,21 +80,6 @@ spec:
       artifacts:
         - opencode.json
 
-    # Phase 5 (-60): Context
-    - name: agents.copy-context-claude
-      step: kfg.copy-context
-      weight: -60
-      failurePolicy: Ignore
-      env:
-        SRC: "docs/AGENTS.md"
-        DEST: "CLAUDE.md"
-      when:
-        output:
-          step: agents.detect-agent
-          name: AGENT
-          equals: "claude"
-      artifacts:
-        - CLAUDE.md
     - name: agents.copy-context-others
       step: kfg.copy-context
       weight: -60
@@ -137,17 +95,6 @@ spec:
           in: ["opencode", "pi"]
 
     # Phase 6 (-55): ctx7 install (per-agent)
-    - name: agents.ctx7.install.claude
-      step: ctx7.steps.install
-      weight: -55
-      when:
-        output:
-          step: agents.detect-agent
-          name: AGENT
-          equals: "claude"
-      env:
-        FLAGS: "--claude --yes"
-        OUTPUT_DIR: ".claude/skills/"
     - name: agents.ctx7.install.opencode
       step: ctx7.steps.install
       weight: -55
@@ -172,19 +119,6 @@ spec:
         OUTPUT_DIR: ".pi/skills"
 
     # Phase 7 (-53): openspec install (per-agent)
-    - name: agents.openspec.install.claude
-      step: openspec.steps.install
-      weight: -53
-      failurePolicy: Ignore
-      when:
-        output:
-          step: agents.detect-agent
-          name: AGENT
-          equals: "claude"
-      env:
-        TOOLS_FLAG: "--tools=claude"
-        AGENT_HOME: ".claude"
-        OUTPUT_DIR: ".claude/skills/"
     - name: agents.openspec.install.opencode
       step: openspec.steps.install
       weight: -53
@@ -212,18 +146,6 @@ spec:
         AGENT_HOME: ".pi"
         OUTPUT_DIR: ".pi/skills/"
 
-    # Phase 8 (-50): inject ctx7 context (per-agent)
-    # - name: agents.inject-ctx7-context.claude
-    #   step: ctx7.steps.inject
-    #   weight: -50
-    #   when:
-    #     output:
-    #       step: agents.detect-agent
-    #       name: AGENT
-    #       equals: "claude"
-    #   env:
-    #     TARGET_FILE: "CLAUDE.md"
-    #     CTX7_CONTEXT: "$kfg.output(agents.ctx7.install.claude)"
     # - name: agents.inject-ctx7-context.opencode
     #   step: ctx7.steps.inject
     #   weight: -50
@@ -259,19 +181,6 @@ spec:
     #     CTX7_CONTEXT: "$kfg.output(agents.ctx7.install.pi)"
 
     # Phase 9 (-45): Commands (per-agent)
-    - name: agents.commands.claude
-      step: kfg.materialize
-      weight: -45
-      env:
-        MODE: "per-item"
-        ASSETS: "ai.prompts.git-commit"
-        CONVERTER: "ai.claude.conv.command"
-        OUTPUTS: ".claude/commands/git-commit.md"
-      when:
-        output:
-          step: agents.detect-agent
-          name: AGENT
-          equals: "claude"
     - name: agents.commands.opencode
       step: kfg.materialize
       weight: -45
@@ -300,22 +209,6 @@ spec:
           equals: "pi"
 
     # Phase 10 (-40): MCP (per-agent)
-    - name: agents.mcp.claude
-      step: kfg.materialize
-      weight: -40
-      env:
-        MODE: "aggregate"
-        ASSETS: "ctx7.assets.mcp:chrome.assets.mcp:playwright.assets.mcp"
-        CONVERTER: "ai.claude.conv.mcp"
-        OUTPUTS: ".mcp.json"
-        WRAP_KEY: "mcpServers"
-      when:
-        output:
-          step: agents.detect-agent
-          name: AGENT
-          equals: "claude"
-      artifacts:
-        - .mcp.json
     - name: agents.mcp.opencode
       step: kfg.materialize
       weight: -40
@@ -332,19 +225,6 @@ spec:
           equals: "opencode"
 
     # Phase 11 (-35): Subagent (per-agent)
-    - name: agents.subagent.claude
-      step: kfg.materialize
-      weight: -35
-      env:
-        MODE: "per-item"
-        ASSETS: "ai.subagents.review-minimal"
-        CONVERTER: "ai.claude.conv.subagent"
-        OUTPUTS: ".claude/agents/review-minimal.md"
-      when:
-        output:
-          step: agents.detect-agent
-          name: AGENT
-          equals: "claude"
     - name: agents.subagent.opencode
       step: kfg.materialize
       weight: -35
@@ -366,4 +246,4 @@ spec:
         output:
           step: agents.detect-agent
           name: AGENT
-          in: ["claude", "opencode", "pi"]
+          in: ["opencode", "pi"]

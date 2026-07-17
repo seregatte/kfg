@@ -60,9 +60,7 @@ generated/
 bin-tools//.opencode/
 
 /.pi/
-/.claude/
 /AGENTS.md
-/CLAUDE.md
 /opencode.json
 /.self
 /openspec

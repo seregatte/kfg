@@ -22,8 +22,8 @@ When `MODE` is `per-item`, `kfg.materialize` SHALL convert each asset named in `
 #### Scenario: Single-item per-item materialization
 - **WHEN** `kfg.materialize` runs with `MODE="per-item"`
 - **AND** `ASSETS` contains `kfg.extension.self.commands.git-commit`
-- **AND** `OUTPUTS` contains `.claude/commands/git-commit.md`
-- **THEN** the step SHALL write the converted result to `.claude/commands/git-commit.md`
+- **AND** `OUTPUTS` contains `.opencode/commands/git-commit.md`
+- **THEN** the step SHALL write the converted result to `.opencode/commands/git-commit.md`
 - **AND** it SHALL register that path as an artifact
 
 #### Scenario: Multi-item per-item materialization
@@ -102,19 +102,19 @@ env:
 ### Per-item mode for command materialization
 
 ```yaml
-- name: agents.commands.claude
+- name: agents.commands.opencode
   step: kfg.materialize
   weight: -45
   env:
     MODE: "per-item"
     ASSETS: "kfg.extension.self.commands.git-commit"
-    CONVERTER: "kfg.convert.self.command.claude"
-    OUTPUTS: ".claude/commands/git-commit.md"
+    CONVERTER: "kfg.convert.self.command.opencode"
+    OUTPUTS: ".opencode/commands/git-commit.md"
   when:
     output:
       step: kfg.detect-agent
       name: AGENT
-      equals: "claude"
+      equals: "opencode"
 ```
 
 ### Per-item mode for multi-item materialization
@@ -126,27 +126,27 @@ env:
   env:
     MODE: "per-item"
     ASSETS: "kfg.extension.self.commands.git-commit:kfg.extension.self.commands.pr-review"
-    CONVERTER: "kfg.convert.self.command.claude"
-    OUTPUTS: ".claude/commands/git-commit.md:.claude/commands/pr-review.md"
+    CONVERTER: "kfg.convert.self.command.opencode"
+    OUTPUTS: ".opencode/commands/git-commit.md:.opencode/commands/pr-review.md"
 ```
 
 ### Aggregate mode for MCP aggregation
 
 ```yaml
-- name: agents.mcp.claude
+- name: agents.mcp.opencode
   step: kfg.materialize
   weight: -40
   env:
     MODE: "aggregate"
     ASSETS: "kfg.extension.ctx7.mcp:kfg.extension.chrome-devtools.mcp:kfg.extension.playwright.mcp"
-    CONVERTER: "kfg.convert.self.mcp.claude"
+    CONVERTER: "kfg.convert.self.mcp.opencode"
     OUTPUTS: ".mcp.json"
     WRAP_KEY: "mcpServers"
   when:
     output:
       step: kfg.detect-agent
       name: AGENT
-      equals: "claude"
+      equals: "opencode"
 ```
 
 ### Aggregate mode without wrapper key

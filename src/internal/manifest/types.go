@@ -137,10 +137,10 @@ type CmdWorkflowSpec struct {
 //
 //	spec:
 //	  before:
-//	    - name: install-claude      # Runtime identity for this reference
+//	    - name: install-opencode      # Runtime identity for this reference
 //	      step: ctx7.steps.install  # Points to Step metadata.name
 //	      env:
-//	        FLAGS: "--claude"
+//	        FLAGS: "--opencode"
 //	    - name: install-opencode    # Different runtime identity
 //	      step: ctx7.steps.install  # Same Step, different Name
 //	      env:
@@ -148,7 +148,7 @@ type CmdWorkflowSpec struct {
 //
 // Outputs are stored under Name, not Step:
 //
-//	$kfg.output(install-claude.ctx7_context)  # Correct: uses StepReference.Name
+//	$kfg.output(install-opencode.ctx7_context)  # Correct: uses StepReference.Name
 //	$kfg.output(ctx7.steps.install.ctx7_context)  # Incorrect: would conflict
 type StepReference struct {
 	Name          string            `yaml:"name"`          // Required: unique name for this step reference within the workflow
@@ -180,13 +180,13 @@ type WhenClause struct {
 //	  before:
 //	    - name: detect-agent
 //	      step: agents.detect
-//	    - name: setup-claude
+//	    - name: setup-opencode
 //	      step: agents.setup
 //	      when:
 //	        output:
 //	          step: detect-agent  # References StepReference.Name
 //	          name: AGENT
-//	          equals: "claude"
+//	          equals: "opencode"
 type OutputCondition struct {
 	Step     string   `yaml:"step"`     // Required: StepReference.Name that produced the output
 	Name     string   `yaml:"name"`     // Required: output variable name

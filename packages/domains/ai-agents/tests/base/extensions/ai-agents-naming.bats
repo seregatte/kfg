@@ -10,10 +10,7 @@ _extract_name() {
 
 # --- Per-agent assets ---
 
-@test "claude asset settings name is ai.claude.asset.settings" {
-    name=$(_extract_name "$MANIFESTS_BASE/agents/claude/assets/settings.yaml")
-    [ "$name" = "ai.claude.asset.settings" ]
-}
+
 
 @test "opencode asset settings name is ai.opencode.asset.settings" {
     name=$(_extract_name "$MANIFESTS_BASE/agents/opencode/assets/settings.yaml")
@@ -27,10 +24,7 @@ _extract_name() {
 
 # --- Per-agent command converters ---
 
-@test "claude command converter name is ai.claude.conv.command" {
-    name=$(_extract_name "$MANIFESTS_BASE/agents/claude/converters/command.yaml")
-    [ "$name" = "ai.claude.conv.command" ]
-}
+
 
 @test "opencode command converter name is ai.opencode.conv.command" {
     name=$(_extract_name "$MANIFESTS_BASE/agents/opencode/converters/command.yaml")
@@ -44,10 +38,7 @@ _extract_name() {
 
 # --- Per-agent MCP converters ---
 
-@test "claude MCP converter name is ai.claude.conv.mcp" {
-    name=$(_extract_name "$MANIFESTS_BASE/agents/claude/converters/mcp.yaml")
-    [ "$name" = "ai.claude.conv.mcp" ]
-}
+
 
 @test "opencode MCP converter name is ai.opencode.conv.mcp" {
     name=$(_extract_name "$MANIFESTS_BASE/agents/opencode/converters/mcp.yaml")
@@ -55,11 +46,6 @@ _extract_name() {
 }
 
 # --- Per-agent subagent converters ---
-
-@test "claude subagent converter name is ai.claude.conv.subagent" {
-    name=$(_extract_name "$MANIFESTS_BASE/agents/claude/converters/subagent.yaml")
-    [ "$name" = "ai.claude.conv.subagent" ]
-}
 
 @test "opencode subagent converter name is ai.opencode.conv.subagent" {
     name=$(_extract_name "$MANIFESTS_BASE/agents/opencode/converters/subagent.yaml")
@@ -83,7 +69,6 @@ _extract_name() {
 # --- Shared cmds ---
 
 @test "agents.yaml contains ai.*.cmd.main names" {
-    grep -q 'name: ai.claude.cmd.main' "$MANIFESTS_BASE/cmds/agents.yaml"
     grep -q 'name: ai.opencode.cmd.main' "$MANIFESTS_BASE/cmds/agents.yaml"
     grep -q 'name: ai.pi.cmd.main' "$MANIFESTS_BASE/cmds/agents.yaml"
 }

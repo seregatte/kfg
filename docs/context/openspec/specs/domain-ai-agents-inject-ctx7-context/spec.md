@@ -23,14 +23,14 @@ The step `kfg.inject-ctx7-context` SHALL read ctx7 documentation from `CTX7_CONT
 The step MUST use `$AGENT` env var (not `$NIXAI_AGENT`) to construct the source file path `.$AGENT/ctx7-agents.md`, consistent with kfg's detect-agent convention.
 
 #### Scenario: AGENT env var drives path
-- **WHEN** `AGENT` is `claude` and `TARGET_FILE` is `CLAUDE.md`
-- **THEN** the step reads from `.claude/ctx7-agents.md` and injects into `CLAUDE.md`
+- **WHEN** `AGENT` is `opencode` and `TARGET_FILE` is `OPENCODE.md`
+- **THEN** the step reads from `.opencode/ctx7-agents.md` and injects into `OPENCODE.md`
 
 ### Requirement: Configurable target file
 
 The step SHALL use `TARGET_FILE` env var to determine the injection target, defaulting to `AGENTS.md`.
 
 #### Scenario: Custom target file
-- **WHEN** `TARGET_FILE` is `CLAUDE.md` and `CTX7_CONTEXT` contains ctx7 content
-- **THEN** the step injects ctx7 context into `CLAUDE.md`
+- **WHEN** `TARGET_FILE` is `OPENCODE.md` and `CTX7_CONTEXT` contains ctx7 content
+- **THEN** the step injects ctx7 context into `OPENCODE.md`
 

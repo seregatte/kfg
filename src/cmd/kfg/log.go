@@ -32,7 +32,7 @@ Session IDs enable per-invocation log correlation. Each generated command wrappe
 auto-generates a session ID at invocation start (format: timestamp-random).
 
 Examples:
-  kfg sys log info "feature:mcps" "syncing for claude"
+  kfg sys log info "feature:mcps" "syncing completed"
   kfg sys log error "cmd:build" "failed to parse manifest"
   kfg sys log debug "store:push" "artifact already exists"
   kfg sys log detail "resolve:workflow" ""

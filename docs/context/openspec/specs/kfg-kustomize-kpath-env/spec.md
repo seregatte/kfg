@@ -72,7 +72,7 @@ Each command MUST handle `KFG_KPATH` appropriately.
 - **THEN** uses `KFG_KPATH` as kustomize path
 
 #### Scenario: Run command
-- **WHEN** user runs `kfg run claude` without `-k`
+- **WHEN** user runs `kfg run opencode` without `-k`
 - **AND** `KFG_KPATH` is set
 - **THEN** uses `KFG_KPATH` as kustomize path
 
