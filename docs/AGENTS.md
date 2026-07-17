@@ -30,19 +30,72 @@ Example: `nixai-absort` → `feature/nixai-absort`
 ### Workflow Steps
 
 1. Determine normalized branch name
-2. Create/switch worktree:
+2. Create/switch worktree from the **originating branch**:
    ```bash
-   git worktree add ../wkt/kfg/<branch> -b <branch>  # New branch
-   git worktree add ../wkt/kfg/<branch> <branch>     # Existing
+   git worktree add ../wkt/kfg/<branch> -b <branch> <base>  # New branch from base
+   git worktree add ../wkt/kfg/<branch> <branch>             # Existing
    ```
-3. Push to remote: `git push -u origin <branch>`
-4. Create draft PR (base: `main` for feature/fix/docs, ask for release branches)
-5. Work in worktree; all commands execute inside `../wkt/kfg/<branch>` using the **development shell**:
+3. Develop the feature inside the worktree following the **Feature Development Workflow** (see below)
+4. Push to remote: `git push -u origin <branch>`
+5. Create draft PR targeting the **originating branch** (the base the worktree was created from):
    ```bash
-   nix develop .#dev --command make build
+   gh pr create --draft --base <originating-branch>
    ```
+   Typically `main`, or `release/vX.Y.Z` during a release cycle.
 
 **Important:** NEVER modify files outside a worktree. Main repo stays untouched. Always use the explicit `.#dev` shell for kfg development (the default shell is for consumers).
+
+## Feature Development Workflow
+
+**CRITICAL RULE: Every feature SHALL follow the OpenSpec cycle inside its own git worktree.**
+
+The OpenSpec cycle creates structured artifacts (proposal, design, tasks) that guide implementation and provide traceability.
+
+### Per-Feature Cycle
+
+For each feature, follow this exact sequence:
+
+1. **Create worktree** from the originating branch (see Git Worktree Workflow above).
+
+2. **Create OpenSpec change** directory INSIDE the worktree at `docs/context/openspec/changes/<change-name>/` with:
+   - `.openspec.yaml` — schema and creation date
+   - `proposal.md` — what changes and why
+   - `design.md` — how to implement
+   - `tasks.md` — implementation checklist
+
+3. **Implement** following `/opsx-propose` → `/opsx-apply` → `/opsx-archive`:
+   - **`/opsx-propose`**: Generates proposal, design, tasks artifacts from the change description
+   - **`/opsx-apply`**: Implements each task, marking `- [ ]` → `- [x]` as work is completed
+   - **`/opsx-archive`**: Moves the change to `archive/YYYY-MM-DD-<name>/` after all tasks are done
+
+4. **Commit and push** the implementation along with the archived change:
+   ```bash
+   git add -A
+   git commit -m "feat: <description>"
+   git push -u origin <branch>
+   ```
+
+5. **Create draft PR** back to the originating branch:
+   ```bash
+   gh pr create --draft --base <originating-branch>
+   ```
+
+### OpenSpec Change Placement
+
+Each OpenSpec change MUST live at `docs/context/openspec/changes/<name>/` **INSIDE its feature worktree**, not in the main repo. This ensures the change artifacts are versioned alongside the implementation.
+
+After all tasks are complete and the change is archived, commit everything together. The PR will contain both the implementation code and the archived OpenSpec artifacts.
+
+> **Note:** The `openspec new change` CLI command auto-creates changes at `openspec/changes/` (auto-detected root at CWD), which differs from the project's configured OpenSpec root at `docs/context/openspec/`. Agents SHOULD create the change directory and artifacts manually using `mkdir` + file writes at `docs/context/openspec/changes/<name>/` to keep changes in the correct root.
+
+### Multiple Features
+
+When developing multiple features against the same originating branch:
+
+- Each feature gets its **own independent worktree** branching from the same base.
+- **Execute features sequentially**, not in parallel. This avoids merge conflicts in shared files (e.g., `manifest/cmds/agents.yaml` when removing multiple agents).
+- Features can be merged in any order once complete. Each PR is independent.
+- After all feature PRs are merged into the originating branch, the complete set of changes is consolidated.
 
 ## Versioning Policy
 

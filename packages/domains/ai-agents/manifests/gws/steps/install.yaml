@@ -27,7 +27,7 @@ spec:
 
   env:
     SKILL_NAME: "googleworkspace/cli"
-    AGENT_FLAG: "claude-code"
+    AGENT_FLAG: "opencode"
   artifacts:
     - .agents
   output:

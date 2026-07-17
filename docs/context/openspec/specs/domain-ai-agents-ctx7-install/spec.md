@@ -10,9 +10,9 @@ This specification defines the ctx7 CLI install step contract, including flag va
 The step `kfg.extension.ctx7.install` SHALL use an explicit extension-install contract. The step SHALL validate that `FLAGS` and `OUTPUT_DIR` are set before execution. The step SHALL execute the ctx7 CLI setup flow requested by `FLAGS`, copy generated skills into `OUTPUT_DIR`, and expose the canonical Context7 MCP asset through `kfg.extension.ctx7.mcp` for overlays.
 
 #### Scenario: Install with explicit output directory
-- **WHEN** `FLAGS` is `--claude --yes` and `OUTPUT_DIR` is `.claude/skills/`
-- **THEN** the step runs `ctx7 setup --cli --project --claude --yes`
-- **AND** it copies generated skills into `.claude/skills/`
+- **WHEN** `FLAGS` is `--opencode --yes` and `OUTPUT_DIR` is `.opencode/skills/`
+- **THEN** the step runs `ctx7 setup --cli --project --opencode --yes`
+- **AND** it copies generated skills into `.opencode/skills/`
 
 #### Scenario: Missing required env var
 - **WHEN** `OUTPUT_DIR` is empty or unset

@@ -23,9 +23,7 @@ spec:
     # Determine agent from FLAGS
     AGENT=""
     SKILL_SRC=""
-    if echo "$FLAGS" | grep -q "claude"; then
-      AGENT="claude"
-    elif echo "$FLAGS" | grep -q "opencode"; then
+    if echo "$FLAGS" | grep -q "opencode"; then
       AGENT="opencode"
       SKILL_SRC=".agents/skills"
     elif echo "$FLAGS" | grep -q "gemini"; then

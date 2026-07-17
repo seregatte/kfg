@@ -73,7 +73,7 @@ The CLI MUST support specific flags.
 - **THEN** uses specified workflow name
 
 #### Scenario: Command filter
-- **WHEN** user runs `kfg apply -c claude,gemini`
+- **WHEN** user runs `kfg apply -c opencode,gemini`
 - **THEN** generates only specified commands
 
 #### Scenario: Inline expression flag
@@ -241,8 +241,8 @@ The apply MUST resolve workflow correctly.
 The apply MUST resolve cmds correctly.
 
 #### Scenario: Command filter
-- **WHEN** user runs with `-c claude`
-- **THEN** generates only `claude` function
+- **WHEN** user runs with `-c opencode`
+- **THEN** generates only `opencode` function
 
 #### Scenario: Command not in workflow
 - **WHEN** filtered cmd not in workflow

@@ -38,17 +38,6 @@ MANIFESTS_BASE="packages/domains/ai-agents/manifests"
     [ -f "$MANIFESTS_BASE/converters/kustomization.yaml" ]
 }
 
-@test "claude agent structure exists" {
-    [ -d "$MANIFESTS_BASE/agents/claude" ]
-    [ -f "$MANIFESTS_BASE/agents/claude/kustomization.yaml" ]
-    [ -f "$MANIFESTS_BASE/agents/claude/assets/kustomization.yaml" ]
-    [ -f "$MANIFESTS_BASE/agents/claude/assets/settings.yaml" ]
-    [ -f "$MANIFESTS_BASE/agents/claude/converters/kustomization.yaml" ]
-    [ -f "$MANIFESTS_BASE/agents/claude/converters/command.yaml" ]
-    [ -f "$MANIFESTS_BASE/agents/claude/converters/mcp.yaml" ]
-    [ -f "$MANIFESTS_BASE/agents/claude/converters/subagent.yaml" ]
-}
-
 @test "gemini agent structure exists" {
     [ -d "$MANIFESTS_BASE/agents/gemini" ]
     [ -f "$MANIFESTS_BASE/agents/gemini/kustomization.yaml" ]

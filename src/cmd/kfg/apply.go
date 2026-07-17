@@ -167,7 +167,7 @@ Examples:
   kfg apply -k https://github.com/owner/repo//manifests
   kfg apply packages/domains/ai-agents/overlays/dev --workflow dev,openspec
   kfg apply -k packages/domains/ai-agents/overlays/dev --workflow ai-agents
-  kfg apply -k packages/domains/ai-agents/overlays/dev --cmds claude
+  kfg apply -k packages/domains/ai-agents/overlays/dev --cmds my-cmd
   kfg apply -f manifest.yaml
   kfg apply -f - (read from stdin)
   kfg apply -k packages/domains/ai-agents/overlays/dev --refresh  (invalidate and rebuild cache entries)

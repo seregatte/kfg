@@ -48,9 +48,9 @@ spec:
 
   env:
     SKILL_NAME: "ChromeDevTools/chrome-devtools-mcp"
-    AGENT_FLAG: "claude-code"
-    AGENT_HOME: ".claude"
-    OUTPUT_DIR: ".claude/skills/"
+    AGENT_FLAG: "opencode"
+    AGENT_HOME: ".opencode"
+    OUTPUT_DIR: ".opencode/skills/"
   output:
     name: installed
     type: string
