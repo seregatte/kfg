@@ -5,18 +5,18 @@
 The wizard overlay SHALL be located at `packages/domains/ai-agents/overlays/ai/` and SHALL contain:
 - `kustomization.yaml` — references framework base, domain manifests, and local resources
 - `ai-workflow.yaml` — CmdWorkflow defining the wizard agent's lifecycle
-- `assets/prompts/kfg-wizard.yaml` — the wizard skill prompt asset
+- `assets/prompts/wizard.yaml` — the wizard skill prompt asset
 
 #### Scenario: Overlay structure verified
 - **WHEN** the directory `packages/domains/ai-agents/overlays/ai/` is listed
-- **THEN** it SHALL contain `kustomization.yaml`, `ai-workflow.yaml`, and `assets/prompts/kfg-wizard.yaml`
+- **THEN** it SHALL contain `kustomization.yaml`, `ai-workflow.yaml`, and `assets/prompts/wizard.yaml`
 
 ### Requirement: KUSTOMIZATION ENTRYPOINT
 
 The `kustomization.yaml` SHALL reference:
 - Framework base at `../../../../framework/`
 - Domain manifests at `../../manifests/`
-- The wizard asset at `assets/prompts/kfg-wizard.yaml`
+- The wizard asset at `assets/prompts/wizard.yaml`
 - The wizard workflow at `ai-workflow.yaml`
 
 #### Scenario: Kustomization loaded
@@ -32,7 +32,7 @@ The `before` phase SHALL include:
 2. An `ai.steps.detect` step (weight: -70)
 3. A `kfg.materialize-scaffold` step (weight: -65, per-agent) creating directories `.opencode/commands/` or `.pi/prompts/`
 4. A `ctx7.steps.install` step (weight: -55, per-agent, conditional on detect-agent output)
-5. A `kfg.materialize` step (weight: -45, per-agent, conditional on detect-agent output) materializing the `ai.prompts.kfg-wizard` asset using the agent's command converter
+5. A `kfg.materialize` step (weight: -45, per-agent, conditional on detect-agent output) materializing the `ai.prompts.wizard` asset using the agent's command converter
 
 The `after` phase SHALL include a `kfg.cleanup` step.
 
@@ -42,10 +42,10 @@ Each per-agent step SHALL use `when.output.step: ai.detect-agent` with `name: AG
 - **WHEN** the wizard workflow is loaded
 - **AND** the detected agent is `opencode`
 - **THEN** the `ctx7.steps.install` step SHALL use `FLAGS: "--opencode --yes"` and `OUTPUT_DIR: ".opencode/skills/"`
-- **AND** the wizard materialization SHALL output to `.opencode/commands/kfg-wizard.md`
+- **AND** the wizard materialization SHALL output to `.opencode/commands/wizard.md`
 
 #### Scenario: Wizard workflow for pi
 - **WHEN** the wizard workflow is loaded
 - **AND** the detected agent is `pi`
 - **THEN** the `ctx7.steps.install` step SHALL use `FLAGS: "--opencode --yes"` and `OUTPUT_DIR: ".pi/skills"`
-- **AND** the wizard materialization SHALL output to `.pi/prompts/kfg-wizard.md`
+- **AND** the wizard materialization SHALL output to `.pi/prompts/wizard.md`

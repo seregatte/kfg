@@ -27,7 +27,7 @@ The kfg engine already provides the building blocks: `kfg run` dispatches agents
 
 1. **CLI command wraps `kfg run` via subprocess (not in-process)**: The `kfg ai` command resolves `KFG_AI_AGENT` (default `pi`), constructs `kfg run -k overlays/ai <agent> -- <args>`, and executes it. Subprocess is simpler than refactoring `run.go`'s execution pipeline and avoids coupling the wizard to the engine's internal dispatch.
 
-2. **Wizard skill as a prompt asset (not system prompt)**: The wizard lives as a command in `.opencode/commands/kfg-wizard.md` or `.pi/prompts/kfg-wizard.md`. This keeps the wizard available on-demand without polluting the agent's system prompt. The agent can invoke `/kfg-wizard` when the user expresses intent to generate configurations.
+2. **Wizard skill as a prompt asset (not system prompt)**: The wizard lives as a command in `.opencode/commands/wizard.md` or `.pi/prompts/wizard.md`. This keeps the wizard available on-demand without polluting the agent's system prompt. The agent can invoke `/wizard` when the user expresses intent to generate configurations.
 
 3. **ctx7 integration for library documentation**: The wizard overlay installs ctx7 so the agent can look up library documentation while generating configurations. This follows the same pattern established by `overlays/dev/`.
 

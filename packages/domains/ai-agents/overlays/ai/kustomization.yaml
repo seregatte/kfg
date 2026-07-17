@@ -9,4 +9,4 @@ resources:
   - ../../../../framework/
   - ../../manifests/
   - ai-workflow.yaml
-  - assets/prompts/kfg-wizard.yaml
+  - assets/prompts/wizard.yaml

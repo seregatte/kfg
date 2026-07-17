@@ -8,7 +8,7 @@ The kfg domain `ai-agents` currently relies on projects inheriting a shared over
 - **New overlay**: `overlays/ai/` — lightweight workspace for the wizard agent (NOT a project template)
 - **New step**: `ai.steps.deprecation-warn` — deprecation notice for `overlays/dev/`
 - **Deprecation**: `overlays/dev/` logs a deprecation warning when used
-- **New skill**: wizard skill prompt in `assets/prompts/kfg-wizard.yaml` — teaches the agent to compose building blocks, only creating custom manifests when nothing in the domain catalog covers the need
+- **New skill**: wizard skill prompt in `assets/prompts/wizard.yaml` — teaches the agent to compose building blocks, only creating custom manifests when nothing in the domain catalog covers the need
 
 ## Capabilities
 

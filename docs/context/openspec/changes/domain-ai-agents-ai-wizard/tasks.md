@@ -9,7 +9,7 @@
 
 - [x] 2.1 Create `packages/domains/ai-agents/overlays/ai/kustomization.yaml` referencing framework base `../../../../framework/`, domain manifests `../../manifests/`, the wizard asset, and the wizard workflow
 - [x] 2.2 Create `packages/domains/ai-agents/overlays/ai/ai-workflow.yaml` with CmdWorkflow `kfg.ai.workflow` supporting `ai.pi.cmd.main` and `ai.opencode.cmd.main`, with before phase steps: ensure-gitignore (-90), detect-agent (-70), scaffold per-agent (-65), ctx7 install per-agent (-55), wizard materialize per-agent (-45), and after phase: cleanup
-- [x] 2.3 Create `packages/domains/ai-agents/overlays/ai/assets/prompts/kfg-wizard.yaml` with `kind: Assets`, `metadata.name: ai.prompts.kfg-wizard` containing the wizard skill prompt with interactive rules and domain building block catalog
+- [x] 2.3 Create `packages/domains/ai-agents/overlays/ai/assets/prompts/wizard.yaml` with `kind: Assets`, `metadata.name: ai.prompts.wizard` containing the wizard skill prompt with interactive rules and domain building block catalog
 - [x] 2.4 Verify `kfg build packages/domains/ai-agents/overlays/ai/` produces valid YAML with `kfg.ai.workflow`
 
 ## 3. CLI Command
