@@ -81,7 +81,7 @@ spec:
           equals: "opencode"
       env:
         MODE: "per-item"
-        ASSETS: "ai.prompts.wizard"
+        ASSETS: "ai.prompts.wizard-command"
         CONVERTER: "ai.opencode.conv.command"
         OUTPUTS: ".opencode/commands/wizard.md"
     - name: ai.wizard.pi
@@ -94,9 +94,10 @@ spec:
           equals: "pi"
       env:
         MODE: "per-item"
-        ASSETS: "ai.prompts.wizard"
+        ASSETS: "ai.prompts.wizard-command"
         CONVERTER: "ai.pi.conv.command"
         OUTPUTS: ".pi/prompts/wizard.md"
+
 
   after:
     - name: ai.cleanup.final
