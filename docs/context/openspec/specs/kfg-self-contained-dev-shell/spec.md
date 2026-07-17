@@ -40,7 +40,7 @@ via `symlinkJoin`.
 - **WHEN** a consumer builds `kfg.packages.${system}.kfg-bundle` (or the dev shell
   is active)
 - **THEN** the following commands SHALL be available: `openspec`, `ctx7`,
-  `chrome-devtools-mcp`, `pi`, `gws`, `notebooklm`, `nblm`, `claude`, `gemini`,
+  `chrome-devtools-mcp`, `pi`, `gws`, `notebooklm`, `nblm`, `gemini`,
   `opencode`, `playwright`
 
 #### Scenario: No circular kfg reference in bundle

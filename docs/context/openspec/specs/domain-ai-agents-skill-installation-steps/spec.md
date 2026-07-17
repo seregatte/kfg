@@ -9,15 +9,15 @@ This specification defines generic skill installation Steps for extensions that 
 
 The system SHALL provide a Step resource for each extension that installs agent skills via external CLIs. Each Step MUST receive all agent-specific configuration via `spec.env` variables. Steps MUST NOT contain `case`, `if`, or other conditional logic for agent selection. Each Step SHALL validate its required inputs, create any required output directories, copy generated files into `OUTPUT_DIR`, and preserve the working install behavior defined by the normalized extension contract.
 
-#### Scenario: ctx7 skill installation for claude agent
-- **WHEN** the workflow invokes `kfg.extension.ctx7.install` with `FLAGS="--claude --yes"` and `OUTPUT_DIR=".claude/skills/"`
-- **THEN** the Step executes `ctx7 setup --cli --project --claude --yes`
-- **AND** it copies generated skills into `.claude/skills/`
+#### Scenario: ctx7 skill installation for opencode agent
+- **WHEN** the workflow invokes `kfg.extension.ctx7.install` with `FLAGS="--opencode --yes"` and `OUTPUT_DIR=".opencode/skills/"`
+- **THEN** the Step executes `ctx7 setup --cli --project --opencode --yes`
+- **AND** it copies generated skills into `.opencode/skills/`
 
 #### Scenario: chrome-devtools skill installation
-- **WHEN** the workflow invokes `kfg.extension.chrome-devtools.install` with `SKILL_NAME="ChromeDevTools/chrome-devtools-mcp"`, `AGENT_FLAG="claude-code"`, `AGENT_HOME=".claude"`, and `OUTPUT_DIR=".claude/skills/"`
-- **THEN** the Step executes `npx skills add ChromeDevTools/chrome-devtools-mcp --agent claude-code --copy --yes`
-- **AND** it copies generated skills from `.claude/skills/` into `OUTPUT_DIR`
+- **WHEN** the workflow invokes `kfg.extension.chrome-devtools.install` with `SKILL_NAME="ChromeDevTools/chrome-devtools-mcp"`, `AGENT_FLAG="opencode"`, `AGENT_HOME=".opencode"`, and `OUTPUT_DIR=".opencode/skills/"`
+- **THEN** the Step executes `npx skills add ChromeDevTools/chrome-devtools-mcp --agent opencode --copy --yes`
+- **AND** it copies generated skills from `.opencode/skills/` into `OUTPUT_DIR`
 
 #### Scenario: playwright skill installation for opencode-style agent home
 - **WHEN** the workflow invokes `kfg.extension.playwright.install` with `AGENT_HOME=".agents"` and `OUTPUT_DIR=".opencode/skills/"`
@@ -25,12 +25,12 @@ The system SHALL provide a Step resource for each extension that installs agent 
 - **AND** it copies generated skills from the temporary agent home into `OUTPUT_DIR`
 
 #### Scenario: gws skill installation
-- **WHEN** the workflow invokes `kfg.extension.gws.install` with `SKILL_NAME="googleworkspace/cli"`, `AGENT_FLAG="claude-code"`, `AGENT_HOME=".claude"`, and `OUTPUT_DIR=".claude/skills/"`
-- **THEN** the Step executes `npx skills add googleworkspace/cli --agent claude-code --copy --yes`
+- **WHEN** the workflow invokes `kfg.extension.gws.install` with `SKILL_NAME="googleworkspace/cli"`, `AGENT_FLAG="opencode"`, `AGENT_HOME=".opencode"`, and `OUTPUT_DIR=".opencode/skills/"`
+- **THEN** the Step executes `npx skills add googleworkspace/cli --agent opencode --copy --yes`
 - **AND** it copies generated skills into `OUTPUT_DIR`
 
 #### Scenario: notebooklm skill installation
-- **WHEN** the workflow invokes `kfg.extension.notebooklm.install` with `INSTALL_CMD="notebooklm skill install"`, `AGENT_HOME=".claude"`, and `OUTPUT_DIR=".claude/skills/"`
+- **WHEN** the workflow invokes `kfg.extension.notebooklm.install` with `INSTALL_CMD="notebooklm skill install"`, `AGENT_HOME=".opencode"`, and `OUTPUT_DIR=".opencode/skills/"`
 - **THEN** the Step executes `notebooklm skill install`
 - **AND** it copies generated NotebookLM skill files into `OUTPUT_DIR`
 
