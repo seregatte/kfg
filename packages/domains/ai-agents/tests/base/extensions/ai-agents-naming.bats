@@ -10,10 +10,7 @@ _extract_name() {
 
 # --- Per-agent assets ---
 
-@test "gemini asset settings name is ai.gemini.asset.settings" {
-    name=$(_extract_name "$MANIFESTS_BASE/agents/gemini/assets/settings.yaml")
-    [ "$name" = "ai.gemini.asset.settings" ]
-}
+
 
 @test "opencode asset settings name is ai.opencode.asset.settings" {
     name=$(_extract_name "$MANIFESTS_BASE/agents/opencode/assets/settings.yaml")
@@ -27,10 +24,7 @@ _extract_name() {
 
 # --- Per-agent command converters ---
 
-@test "gemini command converter name is ai.gemini.conv.command" {
-    name=$(_extract_name "$MANIFESTS_BASE/agents/gemini/converters/command.yaml")
-    [ "$name" = "ai.gemini.conv.command" ]
-}
+
 
 @test "opencode command converter name is ai.opencode.conv.command" {
     name=$(_extract_name "$MANIFESTS_BASE/agents/opencode/converters/command.yaml")
@@ -44,10 +38,7 @@ _extract_name() {
 
 # --- Per-agent MCP converters ---
 
-@test "gemini MCP converter name is ai.gemini.conv.mcp" {
-    name=$(_extract_name "$MANIFESTS_BASE/agents/gemini/converters/mcp.yaml")
-    [ "$name" = "ai.gemini.conv.mcp" ]
-}
+
 
 @test "opencode MCP converter name is ai.opencode.conv.mcp" {
     name=$(_extract_name "$MANIFESTS_BASE/agents/opencode/converters/mcp.yaml")
@@ -78,7 +69,6 @@ _extract_name() {
 # --- Shared cmds ---
 
 @test "agents.yaml contains ai.*.cmd.main names" {
-    grep -q 'name: ai.gemini.cmd.main' "$MANIFESTS_BASE/cmds/agents.yaml"
     grep -q 'name: ai.opencode.cmd.main' "$MANIFESTS_BASE/cmds/agents.yaml"
     grep -q 'name: ai.pi.cmd.main' "$MANIFESTS_BASE/cmds/agents.yaml"
 }

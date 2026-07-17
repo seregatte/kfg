@@ -1,15 +1,3 @@
-
-apiVersion: kfg.dev/v1alpha1
-kind: Cmd
-metadata:
-  name: ai.gemini.cmd.main
-  commandName: gemini
-spec:
-  run: |
-    command gemini "$@"
-  env:
-    AGENT: "gemini"
----
 apiVersion: kfg.dev/v1alpha1
 kind: Cmd
 metadata:

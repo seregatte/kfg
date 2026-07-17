@@ -141,10 +141,10 @@ type CmdWorkflowSpec struct {
 //	      step: ctx7.steps.install  # Points to Step metadata.name
 //	      env:
 //	        FLAGS: "--opencode"
-//	    - name: install-gemini      # Different runtime identity
+//	    - name: install-opencode    # Different runtime identity
 //	      step: ctx7.steps.install  # Same Step, different Name
 //	      env:
-//	        FLAGS: "--gemini"
+//	        FLAGS: "--opencode"
 //
 // Outputs are stored under Name, not Step:
 //

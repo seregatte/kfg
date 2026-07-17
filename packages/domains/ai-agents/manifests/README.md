@@ -7,7 +7,7 @@ This extension consolidates all AI agent resources into a single, organized stru
 ```
 ai-agents/
 ├── agents/                    # Per-agent resources
-│   ├── gemini/
+
 │   ├── opencode/
 │   └── pi/
 ├── cmds/                      # Shared command wrappers (ai.cmds.*)

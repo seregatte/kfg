@@ -139,7 +139,7 @@
               gws-bin
               notebooklmWrapper
               nblmWrapper
-              pkgs.gemini-cli-bin
+
               pkgs.opencode
               pkgs.playwright-test
             ];
