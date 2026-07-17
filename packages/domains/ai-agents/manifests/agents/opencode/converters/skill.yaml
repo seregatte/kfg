@@ -1,0 +1,12 @@
+apiVersion: kfg.dev/v1alpha1
+kind: Converter
+metadata:
+  name: ai.opencode.conv.skill
+spec:
+  input:
+    format: yaml
+  engine:
+    expression: |
+      "---\nname: " + .name + "\ndescription: |\n  " + (.description | gsub("\n"; "\n  ")) + "\nlicense: MIT\ncompatibility: Requires kfg CLI.\nmetadata:\n  author: kfg\n  version: \"1.0\"\n---\n\n" + .prompt
+  output:
+    format: raw

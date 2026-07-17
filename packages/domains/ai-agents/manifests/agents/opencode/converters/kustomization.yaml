@@ -3,6 +3,7 @@ kind: Kustomization
 
 resources:
   - command.yaml
+  - skill.yaml
   - mcp.yaml
   - subagent.yaml
   - cfg.yaml
