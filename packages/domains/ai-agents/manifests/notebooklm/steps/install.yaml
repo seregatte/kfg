@@ -21,10 +21,12 @@ spec:
     notebooklm skill install > /dev/null 2>&1
 
     # Copy generated NotebookLM skill files into overlay-owned output paths
-    if [ -d "$HOME/.opencode/skills/notebooklm" ]; then
-      cp -r "$HOME/.opencode/skills/notebooklm"/* "$OUTPUT_DIR/" 2>/dev/null || rm -Rf "$HOME/.opencode/skills/notebooklm" || true
-      rm -Rf "$HOME/.agents/skills/notebooklm" || true
-      __kfg_log_info "Copied NotebookLM skills from ~/.opencode/skills/notebooklm to $OUTPUT_DIR"
+    NOTEBOOKLM_SKILL_DIR="$HOME/.opencode/skills/notebooklm"
+    if [ -d "$NOTEBOOKLM_SKILL_DIR" ]; then
+      cp -r "$NOTEBOOKLM_SKILL_DIR"/* "$OUTPUT_DIR/" 2>/dev/null || true
+      rm -rf "$NOTEBOOKLM_SKILL_DIR" 2>/dev/null || true
+      rm -rf "$HOME/.agents/skills/notebooklm" 2>/dev/null || true
+      __kfg_log_info "Copied NotebookLM skills from $NOTEBOOKLM_SKILL_DIR to $OUTPUT_DIR"
     fi
 
     __kfg_log_info "Installed NotebookLM skills"

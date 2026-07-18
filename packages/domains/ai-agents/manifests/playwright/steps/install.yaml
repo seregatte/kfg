@@ -21,14 +21,13 @@ spec:
     npx --yes @playwright/cli install --skills > /dev/null 2>&1
 
     # Copy generated skills to output directory
-    if [ -d ".opencode/skills/playwright-cli" ]; then
-      cp -R ".opencode/skills/playwright-cli" "$OUTPUT_DIR/" 2>/dev/null || true
+    TEMP_SKILL_DIR=".opencode/skills/playwright-cli"
+    if [ -d "$TEMP_SKILL_DIR" ]; then
+      cp -R "$TEMP_SKILL_DIR" "$OUTPUT_DIR/" 2>/dev/null || true
       __kfg_log_info "Copied Playwright CLI skills to $OUTPUT_DIR"
+      # Cleanup only the temporary playwright-cli directory, not all of .opencode
+      rm -rf "$TEMP_SKILL_DIR" 2>/dev/null || true
     fi
-
-    # Cleanup temporary .opencode directory if it was created by this install
-    # (only cleanup the playwright-cli subdirectory to avoid affecting other skills)
-    rm -rf ".opencode" 2>/dev/null || true
 
     __kfg_log_info "Installed Playwright skills"
 

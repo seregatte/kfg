@@ -24,9 +24,11 @@ spec:
     mkdir -p "$OUTPUT_DIR"
 
     # Execute openspec init command
+    # This installs agent integration files (skills) for the specified tool.
+    # It does NOT create or modify a project openspec/ root directory.
     command openspec init "$TOOLS_FLAG" --force > /dev/null 2>&1
 
-    # Cleanup
+    # Cleanup temporary binary created by openspec init (not the project openspec/ directory)
     rm -f openspec
 
     __kfg_log_info "Installed OpenSpec skills"

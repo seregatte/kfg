@@ -62,15 +62,16 @@ MANIFESTS_BASE="packages/domains/ai-agents/manifests"
 }
 
 @test "shared resource files exist" {
-    [ -f "$MANIFESTS_BASE/cmds/agents.yaml" ]
-    [ -f "$MANIFESTS_BASE/cmds/openspec.yaml" ]
-    [ -f "$MANIFESTS_BASE/steps/detect.yaml" ]
-    [ -f "$MANIFESTS_BASE/prompts/git-commit.yaml" ]
-    [ -f "$MANIFESTS_BASE/prompts/refactor-pure.yaml" ]
-    [ -f "$MANIFESTS_BASE/prompts/review-code.yaml" ]
-    [ -f "$MANIFESTS_BASE/prompts/review-search.yaml" ]
-    [ -f "$MANIFESTS_BASE/subagents/review-minimal.yaml" ]
-    [ -f "$MANIFESTS_BASE/converters/to-json.yaml" ]
+    [ -f "$MANIFESTS_BASE/cmds/agents/opencode.yaml" ]
+    [ -f "$MANIFESTS_BASE/cmds/agents/pi.yaml" ]
+    [ -f "$MANIFESTS_BASE/cmds/openspec/openspec.yaml" ]
+    [ -f "$MANIFESTS_BASE/steps/detect/detect.yaml" ]
+    [ -f "$MANIFESTS_BASE/prompts/git-commit/git-commit.yaml" ]
+    [ -f "$MANIFESTS_BASE/prompts/refactor-pure/refactor-pure.yaml" ]
+    [ -f "$MANIFESTS_BASE/prompts/review-code/review-code.yaml" ]
+    [ -f "$MANIFESTS_BASE/prompts/review-search/review-search.yaml" ]
+    [ -f "$MANIFESTS_BASE/subagents/review-minimal/review-minimal.yaml" ]
+    [ -f "$MANIFESTS_BASE/converters/to-json/to-json.yaml" ]
 }
 
 @test "old directories are removed" {

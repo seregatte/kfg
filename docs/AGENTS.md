@@ -57,7 +57,7 @@ For each feature, follow this exact sequence:
 
 1. **Create worktree** from the originating branch (see Git Worktree Workflow above).
 
-2. **Create OpenSpec change** directory INSIDE the worktree at `docs/context/openspec/changes/<change-name>/` with:
+2. **Create OpenSpec change** directory INSIDE the worktree at `openspec/changes/<change-name>/` with:
    - `.openspec.yaml` — schema and creation date
    - `proposal.md` — what changes and why
    - `design.md` — how to implement
@@ -82,11 +82,11 @@ For each feature, follow this exact sequence:
 
 ### OpenSpec Change Placement
 
-Each OpenSpec change MUST live at `docs/context/openspec/changes/<name>/` **INSIDE its feature worktree**, not in the main repo. This ensures the change artifacts are versioned alongside the implementation.
+Each OpenSpec change MUST live at `openspec/changes/<name>/` **INSIDE its feature worktree**, not in the main repo. This ensures the change artifacts are versioned alongside the implementation.
 
 After all tasks are complete and the change is archived, commit everything together. The PR will contain both the implementation code and the archived OpenSpec artifacts.
 
-> **Note:** The `openspec new change` CLI command auto-creates changes at `openspec/changes/` (auto-detected root at CWD), which differs from the project's configured OpenSpec root at `docs/context/openspec/`. Agents SHOULD create the change directory and artifacts manually using `mkdir` + file writes at `docs/context/openspec/changes/<name>/` to keep changes in the correct root.
+> **Note:** The `openspec new change` CLI command auto-creates changes at `openspec/changes/` (auto-detected root at CWD). Agents SHOULD create the change directory and artifacts manually using `mkdir` + file writes at `openspec/changes/<name>/` to keep changes in the correct root.
 
 ### Multiple Features
 
@@ -177,7 +177,7 @@ The `overlays/dev/` overlay is deprecated. When used, it displays a warning dire
 
 Refer to OpenSpec specs for authoritative behavior:
 
-- **Engine specs** (`docs/context/openspec/specs/kfg-*`):
+- **Engine specs** (`openspec/specs/kfg-*`):
   - `kfg-project-structure` - Repository layout
   - `kfg-manifest-model` - Resource kinds
   - `kfg-manifest-placeholder` - Placeholder resolution
@@ -187,10 +187,10 @@ Refer to OpenSpec specs for authoritative behavior:
   - `kfg-logging-session-system` - Logging API
   - `kfg-cache-step` - Cache behavior
 
-- **Framework specs** (`docs/context/openspec/specs/framework-*`)
-- **Domain specs** (`docs/context/openspec/specs/domain-ai-agents-*`)
+- **Framework specs** (`openspec/specs/framework-*`)
+- **Domain specs** (`openspec/specs/domain-ai-agents-*`)
 
-All specs consolidated at: `docs/context/openspec/`
+All specs consolidated at: `openspec/`
 
 ## Language Policy
 
@@ -211,6 +211,46 @@ This applies to:
 When contributing translations or localizations, keep the canonical documentation in en-US and add localized versions only as separate files (e.g., `docs/pt-BR/getting-started.md`).
 
 Agents must proactively translate any Portuguese content encountered to en-US before committing changes.
+
+## AI Agents Capability Documentation Contract
+
+**CRITICAL RULE: Every public AI agents domain capability MUST have an adjacent README with standardized sections.**
+
+When changing any of the following in `packages/domains/ai-agents/`, the adjacent capability README MUST be updated in the same commit:
+
+- Public resource names or kinds
+- Default configuration values
+- Configurable fields or JSON Patch targets
+- Agent compatibility rules
+- Generated artifacts or output paths
+- Cache or cleanup behavior
+- Kustomization entrypoints
+- Workflow usage references
+
+### Capability Documentation Locations
+
+Each independently consumable capability has a `README.md` adjacent to its `kustomization.yaml`:
+
+- `packages/domains/ai-agents/manifests/agents/opencode/README.md`
+- `packages/domains/ai-agents/manifests/agents/pi/README.md`
+- `packages/domains/ai-agents/manifests/chrome-devtools/README.md`
+- `packages/domains/ai-agents/manifests/ctx7/README.md`
+- `packages/domains/ai-agents/manifests/gws/README.md`
+- `packages/domains/ai-agents/manifests/notebooklm/README.md`
+- `packages/domains/ai-agents/manifests/openspec/README.md`
+- `packages/domains/ai-agents/manifests/playwright/README.md`
+
+### Required README Sections
+
+Every capability README MUST include: Purpose, Prerequisites, Entrypoints, Exported Resources, Agent Compatibility, Configuration, JSON Patch Examples, Workflow Usage, Generated Artifacts, Cache and Cleanup, Limitations, Validation, and Canonical Specs.
+
+See [CAPABILITY-README-TEMPLATE.md](../packages/domains/ai-agents/CAPABILITY-README-TEMPLATE.md) for the template.
+
+### Enforcement
+
+- Domain Bats tests verify README presence, required sections, advertised resource names, and entrypoint builds
+- The wizard discovers capabilities through README files and adjacent Kustomizations
+- Never hardcode capability details in the wizard prompt; always reference documentation
 
 ## Release Process
 
