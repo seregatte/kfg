@@ -189,11 +189,41 @@
             coreutils findutils gnused gnugrep
             bash nodejs uv bats
           ];
+
+          # Prefer host-installed tools over Nix devShell versions for a configurable
+          # set of commands. Controlled by:
+          #   - KFG_PREFER_SYSTEM=0          — disables entirely
+          #   - KFG_PREFER_SYSTEM_COMMANDS  — space-separated allowlist override
+          sharedShellHook = ''
+            if [ "''${KFG_PREFER_SYSTEM:-1}" != "0" ]; then
+              DEFAULT_COMMANDS="go node npm npx corepack uv uvx bats openspec pi ctx7 chrome-devtools-mcp gws notebooklm nblm opencode playwright"
+              COMMANDS="''${KFG_PREFER_SYSTEM_COMMANDS:-$DEFAULT_COMMANDS}"
+              HOST_PATH=""
+              IFS=':' read -ra PATH_ENTRIES <<< "$PATH"
+              for entry in "''${PATH_ENTRIES[@]}"; do
+                case "$entry" in
+                  */nix/store/*) ;;
+                  *) HOST_PATH="''${HOST_PATH:+$HOST_PATH:}$entry" ;;
+                esac
+              done
+              KFG_SYSTEM_BIN_DIR="$(mktemp -d /tmp/kfg-system-bin-XXXXXX 2>/dev/null)"
+              if [ -n "$KFG_SYSTEM_BIN_DIR" ]; then
+                for cmd in $COMMANDS; do
+                  host_bin="$(PATH="$HOST_PATH" command -v "$cmd" 2>/dev/null)"
+                  if [ -n "$host_bin" ] && [ -x "$host_bin" ]; then
+                    ln -sf "$host_bin" "$KFG_SYSTEM_BIN_DIR/$cmd"
+                  fi
+                done
+                export PATH="$KFG_SYSTEM_BIN_DIR:$PATH"
+              fi
+            fi
+          '';
         in
         {
            default = pkgs.mkShell {
              buildInputs = devInputs ++ [ kfg-bundle ];
             shellHook = ''
+              ${sharedShellHook}
               export KFG_DIR=${self.outPath}
               if [ "$COLUMNS" -lt 45 ] 2>/dev/null; then
                 export STARSHIP_CONFIG=${self.outPath}/assets/starship/mobile.toml
@@ -206,6 +236,7 @@
            dev = pkgs.mkShell {
              buildInputs = devInputs ++ [ pkgs.go kfg-bundle ];
             shellHook = ''
+              ${sharedShellHook}
               export KFG_DIR=${self.outPath}
               export PATH="./bin:$PATH"
               export OPENSPEC_ROOT_DIR=docs/context
@@ -222,6 +253,7 @@
            ci = pkgs.mkShell {
              buildInputs = devInputs ++ [ pkgs.go pkgs.gnumake ];
             shellHook = ''
+              ${sharedShellHook}
               export PATH="./bin:$PATH"
               export OPENSPEC_ROOT_DIR=docs/context
               # Set up vendor directory for bats test helpers
