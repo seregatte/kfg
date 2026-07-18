@@ -1,0 +1,9 @@
+apiVersion: kfg.dev/v1alpha1
+kind: Assets
+metadata:
+  name: openspec.assets.config.references
+spec:
+  input:
+    format: yaml
+  data:
+    references: []

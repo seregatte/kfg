@@ -239,7 +239,6 @@
               ${sharedShellHook}
               export KFG_DIR=${self.outPath}
               export PATH="./bin:$PATH"
-              export OPENSPEC_ROOT_DIR=docs/context
               if [ "$COLUMNS" -lt 45 ] 2>/dev/null; then
                 export STARSHIP_CONFIG=${self.outPath}/assets/starship/mobile.toml
               else
@@ -255,7 +254,6 @@
             shellHook = ''
               ${sharedShellHook}
               export PATH="./bin:$PATH"
-              export OPENSPEC_ROOT_DIR=docs/context
               # Set up vendor directory for bats test helpers
               VENDOR_DIR=tests/bats/helpers/vendor
               rm -rf "$VENDOR_DIR/bats-support" "$VENDOR_DIR/bats-assert"

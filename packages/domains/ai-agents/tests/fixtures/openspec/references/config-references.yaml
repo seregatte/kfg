@@ -1,0 +1,12 @@
+apiVersion: kfg.dev/v1alpha1
+kind: Assets
+metadata:
+  name: ai.openspec.references
+spec:
+  input:
+    format: yaml
+  data:
+    kind: references
+    entries:
+      - name: project-spec
+        path: docs/context/openspec/specs

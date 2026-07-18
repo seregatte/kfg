@@ -1,0 +1,9 @@
+apiVersion: kfg.dev/v1alpha1
+kind: Assets
+metadata:
+  name: fixture.test.settings
+spec:
+  input:
+    format: yaml
+  data:
+    model: original-model

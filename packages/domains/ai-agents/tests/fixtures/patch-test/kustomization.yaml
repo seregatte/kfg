@@ -1,0 +1,14 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - settings.yaml
+
+patches:
+  - target:
+      kind: Assets
+      name: fixture.test.settings
+    patch: |
+      - op: replace
+        path: /spec/data/model
+        value: overridden-model

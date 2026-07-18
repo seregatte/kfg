@@ -1,0 +1,10 @@
+apiVersion: kfg.dev/v1alpha1
+kind: Assets
+metadata:
+  name: ai.openspec.local
+spec:
+  input:
+    format: yaml
+  data:
+    kind: local
+    path: docs/context/openspec

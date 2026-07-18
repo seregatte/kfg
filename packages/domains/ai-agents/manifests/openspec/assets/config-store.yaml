@@ -1,0 +1,9 @@
+apiVersion: kfg.dev/v1alpha1
+kind: Assets
+metadata:
+  name: openspec.assets.config.store
+spec:
+  input:
+    format: yaml
+  data:
+    store: ""
