@@ -8,14 +8,3 @@ spec:
     command opencode "$@"
   env:
     AGENT: "opencode"
----
-apiVersion: kfg.dev/v1alpha1
-kind: Cmd
-metadata:
-  name: ai.pi.cmd.main
-  commandName: pi
-spec:
-  run: |
-    command pi "$@"
-  env:
-    AGENT: "pi"
