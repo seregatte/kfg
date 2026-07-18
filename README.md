@@ -239,6 +239,19 @@ KFG provides three devShells via Nix flakes:
 | `dev` | `nix develop .#dev` | **Development shell** — full development environment |
 | `ci` | `nix develop .#ci` | **CI shell** — minimal for build and tests |
 
+#### Preferring System-Installed Tools
+
+By default, every devShell prefers your host-installed tools (Homebrew, system profiles, `/usr/local/bin`, etc.) over the Nix devShell versions for a preconfigured list of commands. When a tool is not found on the host, the Nix version is used as a fallback.
+
+**Default allowlist:** `go`, `node`, `npm`, `npx`, `corepack`, `uv`, `uvx`, `bats`, `openspec`, `pi`, `ctx7`, `chrome-devtools-mcp`, `gws`, `notebooklm`, `nblm`, `opencode`, `playwright`
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `KFG_PREFER_SYSTEM` | Set to `0` to disable and use Nix versions only | `KFG_PREFER_SYSTEM=0 nix develop` |
+| `KFG_PREFER_SYSTEM_COMMANDS` | Space-separated list of commands to prefer from host | `KFG_PREFER_SYSTEM_COMMANDS="go opencode" nix develop` |
+
+**Note:** This changes which executable is resolved at runtime, but does not prevent Nix from realizing the declared packages. The Nix versions remain available as immediate fallback on PATH.
+
 ### Building
 
 ```bash
