@@ -8,3 +8,4 @@ resources:
   - ensure-gitignore.yaml
   - materialize.yaml
   - materialize-scaffold.yaml
+  - merge-local.yaml
