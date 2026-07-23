@@ -1,0 +1,7 @@
+- [x] 1.1 Create `packages/framework/manifests/steps/merge-local.yaml` Step manifest
+- [x] 1.2 Update `packages/framework/manifests/steps/kustomization.yaml` to include merge-local.yaml
+- [x] 2.1 Update `wizard.yaml` wizard prompt with Phase 3.5 local customization support
+- [x] 3.1 Build and verify (`make build`)
+- [x] 3.2 Run Bats tests (`make test-bats`)
+- [x] 4.1 Archive change to `docs/context/openspec/changes/archive/`
+- [x] 4.2 Commit, push, and create draft PR targeting `release/v0.1.12`
