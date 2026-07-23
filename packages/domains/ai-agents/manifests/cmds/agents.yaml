@@ -1,0 +1,21 @@
+apiVersion: kfg.dev/v1alpha1
+kind: Cmd
+metadata:
+  name: ai.opencode.cmd.main
+  commandName: opencode
+spec:
+  run: |
+    command opencode "$@"
+  env:
+    AGENT: "opencode"
+---
+apiVersion: kfg.dev/v1alpha1
+kind: Cmd
+metadata:
+  name: ai.pi.cmd.main
+  commandName: pi
+spec:
+  run: |
+    command pi "$@"
+  env:
+    AGENT: "pi"

@@ -6,16 +6,17 @@ WIZARD_PROMPT="$BATS_TEST_DIRNAME/../../../overlays/ai/assets/prompts/wizard.yam
   [ -f "$WIZARD_PROMPT" ]
 }
 
-@test "wizard prompt does not contain hardcoded resource catalog" {
-  # The wizard should NOT contain hardcoded lists of resource names
-  # It should reference documentation discovery instead
-  ! grep -q "ai.steps.detect.*ctx7.steps.install.*openspec.steps.install" "$WIZARD_PROMPT"
+@test "wizard prompt contains resource catalog for building blocks" {
+  # The wizard should contain a catalog of available building blocks
+  # This is used for the Catalog Check (Mental Inventory) phase
+  grep -q "ai.steps.detect" "$WIZARD_PROMPT"
+  grep -q "ctx7.steps.install" "$WIZARD_PROMPT"
 }
 
 @test "wizard prompt references documentation discovery" {
   grep -qi "read.*README\|capability.*index\|documentation\|discover" "$WIZARD_PROMPT"
 }
 
-@test "wizard prompt references Kustomization verification" {
-  grep -qi "kustomiz.*build\|verify.*kustomiz\|adjacent.*kustomiz" "$WIZARD_PROMPT"
+@test "wizard prompt references kfg build verification" {
+  grep -qi "kfg build\|kfg apply" "$WIZARD_PROMPT"
 }

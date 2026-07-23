@@ -10,8 +10,6 @@ _extract_name() {
 
 # --- Per-agent assets ---
 
-
-
 @test "opencode asset settings name is ai.opencode.asset.settings" {
     name=$(_extract_name "$MANIFESTS_BASE/agents/opencode/assets/settings.yaml")
     [ "$name" = "ai.opencode.asset.settings" ]
@@ -24,8 +22,6 @@ _extract_name() {
 
 # --- Per-agent command converters ---
 
-
-
 @test "opencode command converter name is ai.opencode.conv.command" {
     name=$(_extract_name "$MANIFESTS_BASE/agents/opencode/converters/command.yaml")
     [ "$name" = "ai.opencode.conv.command" ]
@@ -37,8 +33,6 @@ _extract_name() {
 }
 
 # --- Per-agent MCP converters ---
-
-
 
 @test "opencode MCP converter name is ai.opencode.conv.mcp" {
     name=$(_extract_name "$MANIFESTS_BASE/agents/opencode/converters/mcp.yaml")
@@ -62,54 +56,54 @@ _extract_name() {
 # --- Shared converters ---
 
 @test "shared to-json converter name is ai.conv.to-json" {
-    name=$(_extract_name "$MANIFESTS_BASE/converters/to-json/to-json.yaml")
+    name=$(_extract_name "$MANIFESTS_BASE/converters/to-json.yaml")
     [ "$name" = "ai.conv.to-json" ]
 }
 
 # --- Shared cmds ---
 
-@test "agent cmd files contain ai.*.cmd.main names" {
-    grep -q 'name: ai.opencode.cmd.main' "$MANIFESTS_BASE/cmds/agents/opencode.yaml"
-    grep -q 'name: ai.pi.cmd.main' "$MANIFESTS_BASE/cmds/agents/pi.yaml"
+@test "agents.yaml contains ai.*.cmd.main names" {
+    grep -q 'name: ai.opencode.cmd.main' "$MANIFESTS_BASE/cmds/agents.yaml"
+    grep -q 'name: ai.pi.cmd.main' "$MANIFESTS_BASE/cmds/agents.yaml"
 }
 
 @test "openspec cmd name is ai.cmds.openspec" {
-    name=$(_extract_name "$MANIFESTS_BASE/cmds/openspec/openspec.yaml")
+    name=$(_extract_name "$MANIFESTS_BASE/cmds/openspec.yaml")
     [ "$name" = "ai.cmds.openspec" ]
 }
 
 # --- Shared steps ---
 
 @test "detect step name is ai.steps.detect" {
-    name=$(_extract_name "$MANIFESTS_BASE/steps/detect/detect.yaml")
+    name=$(_extract_name "$MANIFESTS_BASE/steps/detect.yaml")
     [ "$name" = "ai.steps.detect" ]
 }
 
 # --- Shared prompts ---
 
 @test "git-commit prompt name is ai.prompts.git-commit" {
-    name=$(_extract_name "$MANIFESTS_BASE/prompts/git-commit/git-commit.yaml")
+    name=$(_extract_name "$MANIFESTS_BASE/prompts/git-commit.yaml")
     [ "$name" = "ai.prompts.git-commit" ]
 }
 
 @test "refactor-pure prompt name is ai.prompts.refactor-pure" {
-    name=$(_extract_name "$MANIFESTS_BASE/prompts/refactor-pure/refactor-pure.yaml")
+    name=$(_extract_name "$MANIFESTS_BASE/prompts/refactor-pure.yaml")
     [ "$name" = "ai.prompts.refactor-pure" ]
 }
 
 @test "review-code prompt name is ai.prompts.review-code" {
-    name=$(_extract_name "$MANIFESTS_BASE/prompts/review-code/review-code.yaml")
+    name=$(_extract_name "$MANIFESTS_BASE/prompts/review-code.yaml")
     [ "$name" = "ai.prompts.review-code" ]
 }
 
 @test "review-search prompt name is ai.prompts.review-search" {
-    name=$(_extract_name "$MANIFESTS_BASE/prompts/review-search/review-search.yaml")
+    name=$(_extract_name "$MANIFESTS_BASE/prompts/review-search.yaml")
     [ "$name" = "ai.prompts.review-search" ]
 }
 
 # --- Shared subagents ---
 
 @test "review-minimal subagent name is ai.subagents.review-minimal" {
-    name=$(_extract_name "$MANIFESTS_BASE/subagents/review-minimal/review-minimal.yaml")
+    name=$(_extract_name "$MANIFESTS_BASE/subagents/review-minimal.yaml")
     [ "$name" = "ai.subagents.review-minimal" ]
 }
