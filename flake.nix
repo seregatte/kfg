@@ -7,14 +7,14 @@
 
   outputs = { self, nixpkgs }:
     let
-      version = "0.1.12";
+      version = "0.0.12";
 
       # Platform-specific SHA-256 hashes (updated by release workflow)
       platformHashes = {
-        x86_64-linux   = "sha256-B6kMoteqq8cUrgimRTvR4ad1S8vOlulrVPUifLP+H5c=";
-        aarch64-linux  = "sha256-YRtN13YgUIPHrGqVq44BgT8ADdix+XNyfR12F1REeHs=";
-        x86_64-darwin  = "sha256-AlCsBA8AX94b9N2rSRSuj7HmyCmCXwcRJEGDFpL3MVk=";
-        aarch64-darwin = "sha256-1dpyhwGyrT/769vm+FetPKcS9fDn59PYx9XQg/BYmHQ=";
+        x86_64-linux   = "sha256-vm6GmL4CxUdkkoj/e/rwogwGe4zfLlpzzIuhKq4LzfY=";
+        aarch64-linux  = "sha256-shiUq/SWYYq9G1xK1NbIS6Sd2Pd/mp4Df6bmV3cAylw=";
+        x86_64-darwin  = "sha256-f45XgcUE3wcO5VH+DwSnfDn+smjIiAymQcLW5sB1hgo=";
+        aarch64-darwin = "sha256-LHhW2YDUB7jLCwGdkSC15mbH1/2gIm2AO1/XURsgz5Y=";
       };
 
       # Map Nix system to GoReleaser archive name components
@@ -112,7 +112,7 @@
               hash = target.hash;
             };
             nativeBuildInputs = pkgs.lib.optionals pkgs.stdenv.isLinux [ pkgs.autoPatchelfHook ];
-            buildInputs = pkgs.lib.optionals pkgs.stdenv.isDarwin [ pkgs.libiconv ];
+            buildInputs = with pkgs.lib; optionals pkgs.stdenv.isLinux [ pkgs.libgcc.lib ] ++ optionals pkgs.stdenv.isDarwin [ pkgs.libiconv ];
             sourceRoot = ".";
             installPhase = ''
               mkdir -p $out/bin
@@ -189,11 +189,41 @@
             coreutils findutils gnused gnugrep
             bash nodejs uv bats
           ];
+
+          # Prefer host-installed tools over Nix devShell versions for a configurable
+          # set of commands. Controlled by:
+          #   - KFG_PREFER_SYSTEM=0          — disables entirely
+          #   - KFG_PREFER_SYSTEM_COMMANDS  — space-separated allowlist override
+          sharedShellHook = ''
+            if [ "''${KFG_PREFER_SYSTEM:-1}" != "0" ]; then
+              DEFAULT_COMMANDS="go node npm npx corepack uv uvx bats openspec pi ctx7 chrome-devtools-mcp gws notebooklm nblm opencode playwright"
+              COMMANDS="''${KFG_PREFER_SYSTEM_COMMANDS:-$DEFAULT_COMMANDS}"
+              HOST_PATH=""
+              IFS=':' read -ra PATH_ENTRIES <<< "$PATH"
+              for entry in "''${PATH_ENTRIES[@]}"; do
+                case "$entry" in
+                  */nix/store/*) ;;
+                  *) HOST_PATH="''${HOST_PATH:+$HOST_PATH:}$entry" ;;
+                esac
+              done
+              KFG_SYSTEM_BIN_DIR="$(mktemp -d /tmp/kfg-system-bin-XXXXXX 2>/dev/null)"
+              if [ -n "$KFG_SYSTEM_BIN_DIR" ]; then
+                for cmd in $COMMANDS; do
+                  host_bin="$(PATH="$HOST_PATH" command -v "$cmd" 2>/dev/null)"
+                  if [ -n "$host_bin" ] && [ -x "$host_bin" ]; then
+                    ln -sf "$host_bin" "$KFG_SYSTEM_BIN_DIR/$cmd"
+                  fi
+                done
+                export PATH="$KFG_SYSTEM_BIN_DIR:$PATH"
+              fi
+            fi
+          '';
         in
         {
            default = pkgs.mkShell {
              buildInputs = devInputs ++ [ kfg-bundle ];
             shellHook = ''
+              ${sharedShellHook}
               export KFG_DIR=${self.outPath}
               if [ "$COLUMNS" -lt 45 ] 2>/dev/null; then
                 export STARSHIP_CONFIG=${self.outPath}/assets/starship/mobile.toml
@@ -206,9 +236,9 @@
            dev = pkgs.mkShell {
              buildInputs = devInputs ++ [ pkgs.go kfg-bundle ];
             shellHook = ''
+              ${sharedShellHook}
               export KFG_DIR=${self.outPath}
               export PATH="./bin:$PATH"
-              export OPENSPEC_ROOT_DIR=docs/context
               if [ "$COLUMNS" -lt 45 ] 2>/dev/null; then
                 export STARSHIP_CONFIG=${self.outPath}/assets/starship/mobile.toml
               else
@@ -222,8 +252,8 @@
            ci = pkgs.mkShell {
              buildInputs = devInputs ++ [ pkgs.go pkgs.gnumake ];
             shellHook = ''
+              ${sharedShellHook}
               export PATH="./bin:$PATH"
-              export OPENSPEC_ROOT_DIR=docs/context
               # Set up vendor directory for bats test helpers
               VENDOR_DIR=tests/bats/helpers/vendor
               rm -rf "$VENDOR_DIR/bats-support" "$VENDOR_DIR/bats-assert"

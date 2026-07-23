@@ -38,8 +38,6 @@ MANIFESTS_BASE="packages/domains/ai-agents/manifests"
     [ -f "$MANIFESTS_BASE/converters/kustomization.yaml" ]
 }
 
-
-
 @test "opencode agent structure exists" {
     [ -d "$MANIFESTS_BASE/agents/opencode" ]
     [ -f "$MANIFESTS_BASE/agents/opencode/kustomization.yaml" ]

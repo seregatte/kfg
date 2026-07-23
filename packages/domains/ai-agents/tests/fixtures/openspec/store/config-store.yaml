@@ -1,0 +1,10 @@
+apiVersion: kfg.dev/v1alpha1
+kind: Assets
+metadata:
+  name: ai.openspec.store
+spec:
+  input:
+    format: yaml
+  data:
+    kind: store
+    storeId: fixture-store-001

@@ -1,0 +1,11 @@
+apiVersion: kfg.dev/v1alpha1
+kind: Converter
+metadata:
+  name: openspec.conv.to-yaml
+spec:
+  input:
+    format: yaml
+  engine:
+    expression: "."
+  output:
+    format: yaml

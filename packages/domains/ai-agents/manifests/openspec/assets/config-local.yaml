@@ -1,0 +1,20 @@
+apiVersion: kfg.dev/v1alpha1
+kind: Assets
+metadata:
+  name: openspec.assets.config.local
+spec:
+  input:
+    format: yaml
+  data:
+    schema: spec-driven
+    context:
+      rules: []
+    artifacts:
+      proposal:
+        outputPath: proposal.md
+      specs:
+        outputPath: "specs/**/*.md"
+      design:
+        outputPath: design.md
+      tasks:
+        outputPath: tasks.md

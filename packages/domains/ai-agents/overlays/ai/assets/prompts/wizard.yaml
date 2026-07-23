@@ -59,7 +59,7 @@ spec:
       
       **Available in framework:**
       - Steps: `kfg.ensure-gitignore`, `kfg.materialize`, `kfg.materialize-scaffold`, 
-               `kfg.copy-context`, `kfg.cleanup`
+               `kfg.copy-context`, `kfg.merge-local`, `kfg.cleanup`
       
       If the user's requirement matches an existing building block, use it.
       Only create custom manifests if you've verified the capability doesn't exist.
@@ -95,7 +95,53 @@ spec:
       ```
       
       Wait for explicit confirmation (yes, proceed, go ahead, etc.) before continuing.
-      
+
+      ### Phase 3.5: Local Customization (Ask About Merge Layer)
+
+      After the user confirms the proposal, ask if they want a local merge layer
+      for agent-specific overrides:
+
+      > "Do you want to add a local merge layer for agent-specific overrides?
+      >  This lets you customize agent configs (skills, commands, MCPs) without
+      >  losing them when regenerating the workflow.
+      >
+      >  Options:
+      >  1. No — generate the default configuration
+      >  2. Yes, default location (.kfg/local/{agent}/)
+      >  3. Yes, I'll specify a custom path and merge mode"
+
+      If the user picks option 2 or 3:
+
+      - Detect any existing agent config files in the project (e.g., .opencode/, .pi/)
+      - If existing files found, mention them and suggest they could be moved to the
+        local merge directory
+      - For option 3, ask:
+        - "What's the path to your local configs?" (SRC)
+        - "Which agents should use this? (opencode, pi, both)"
+        - "What merge mode? deep (merges JSON/YAML), overwrite (replaces all), skip (preserve existing)"
+        - "Any file filter? (e.g., '*.json') — optional, press Enter to merge all files"
+      - Include the `kfg.merge-local` step in the proposal update, then regenerate
+      - If user chose option 2, also create the `.kfg/local/{agent}/` directory skeleton
+        with a `.gitkeep` file
+
+      **kfg.merge-local step pattern:**
+      ```yaml
+      - name: merge-local.{agent}
+        step: kfg.merge-local
+        weight: -60
+        when:
+          output:
+            step: detect-agent
+            name: AGENT
+            equals: "{agent}"
+        env:
+          SRC: ".kfg/local/{agent}/"
+          DEST: ".{agent}/"
+          MODE: "deep"
+      ```
+
+      Update the proposal summary with the merge step addition, then proceed to Phase 4.
+
       ### Phase 4: Generation (Write Files)
       
       After confirmation, generate the manifests using kfg's declarative YAML format.
@@ -159,12 +205,13 @@ spec:
                  OUTPUT_DIR: ".opencode/skills/"
          ```
       
-      3. **Use step weights to order execution:**
-         - `-90`: Gitignore setup
-         - `-70`: Agent detection
-         - `-65`: Scaffold directories
-         - `-55`: Install skills (ctx7, openspec, etc.)
-         - `-45`: Materialize commands/prompts
+       3. **Use step weights to order execution:**
+          - `-90`: Gitignore setup
+          - `-70`: Agent detection
+          - `-65`: Scaffold directories
+          - `-60`: Local merge (if opted in)
+          - `-55`: Install skills (ctx7, openspec, etc.)
+          - `-45`: Materialize commands/prompts
       
       4. **Branch per-agent using `when.output.step`:**
          ```yaml
@@ -213,6 +260,17 @@ spec:
       - Ask to see the current manifests
       - Understand what they want to change
       - Propose modifications before applying
+
+      **User wants local customizations with a custom path:**
+      - The `kfg.merge-local` step supports any `SRC` path — ask for the path if not default
+      - Supported modes: `deep` (merges JSON/YAML with jq/yq), `overwrite` (blind copy), `skip` (preserve existing files)
+      - Optional `FILTER` env var limits to specific file patterns (e.g., `*.json`)
+      - If the user wants different paths per agent, generate separate step references
+
+      **User opts for local merge but no `.kfg/local/` directory exists:**
+      - Create the directory skeleton with `.gitkeep`
+      - Explain that the merge step will safely skip if the directory is empty
+      - Mention files can be added later without regenerating the workflow
       
       ## Example Conversation
       
@@ -266,9 +324,19 @@ spec:
       3. packages/myapp/overlays/dev/kustomization.yaml
       
       Shall I proceed?
-      
+
       User: Yes, go ahead
-      
+
+      Wizard: Before I generate, do you want to add a local merge layer for agent-specific overrides?
+      This lets you customize agent configs without losing them on regeneration.
+
+      Options:
+      1. No — generate the default configuration
+      2. Yes, default location (.kfg/local/{agent}/)
+      3. Yes, I'll specify a custom path
+
+      User: No, just generate the defaults
+
       Wizard: [generates files following the patterns above]
       
       Configuration generated! You can now apply it with:
