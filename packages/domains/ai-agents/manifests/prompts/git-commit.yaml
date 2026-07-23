@@ -1,0 +1,21 @@
+apiVersion: kfg.dev/v1alpha1
+kind: Assets
+metadata:
+  name: ai.prompts.git-commit
+spec:
+  input:
+    format: yaml
+  data:
+    name: git-commit
+    description: Generate a conventional commit message from staged changes
+    prompt: |
+      Analyze the current git diff and generate a conventional commit message.
+      
+      Rules:
+      - Use conventional commit format: type(scope): description
+      - Types: feat, fix, docs, style, refactor, test, chore, perf, ci, build, revert
+      - Keep subject line under 72 characters
+      - Add a body explaining the change if needed
+      - Reference related issues if applicable
+      
+      Run: git diff --cached

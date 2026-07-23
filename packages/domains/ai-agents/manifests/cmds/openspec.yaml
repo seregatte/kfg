@@ -1,0 +1,19 @@
+apiVersion: kfg.dev/v1alpha1
+kind: Cmd
+metadata:
+  name: ai.cmds.openspec
+  commandName: openspec
+spec:
+  run: |
+    __kfg_log_debug "openspec:cmd" "$@"
+    if [ -n "$OPENSPEC_ROOT_DIR" ]; then
+      __kfg_log_debug "openspec:cmd" "Going to $OPENSPEC_ROOT_DIR"
+      cd "$OPENSPEC_ROOT_DIR"
+    fi
+    command openspec "$@"
+    if [ -n "$OPENSPEC_ROOT_DIR" ]; then
+      cd - 
+      __kfg_log_debug "openspec:cmd" "Going back to $OLDPWD"
+    fi
+  env:
+    AGENT: "openspec"
