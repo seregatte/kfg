@@ -2,7 +2,7 @@
 
 ### Requirement: WIZARD SKILL PROMPT
 
-The wizard skill SHALL be defined as a `kind: Assets` resource with `metadata.name: ai.prompts.kfg-wizard`.
+The wizard skill SHALL be defined as a `kind: Assets` resource with `metadata.name: ai.prompts.wizard`.
 
 The prompt content SHALL instruct the agent to:
 1. Learn the user's requirements through interactive questions (never assume)
@@ -12,11 +12,11 @@ The prompt content SHALL instruct the agent to:
 5. Explore the domain manifests directory if uncertain about available building blocks
 
 #### Scenario: Skill defined as Assets resource
-- **WHEN** the asset `ai.prompts.kfg-wizard` is loaded
+- **WHEN** the asset `ai.prompts.wizard` is loaded
 - **THEN** it SHALL have `apiVersion: kfg.dev/v1alpha1`
 - **AND** `kind: Assets`
 - **AND** `spec.input.format: yaml`
-- **AND** `spec.data.name: kfg-wizard`
+- **AND** `spec.data.name: wizard`
 - **AND** `spec.data.description` SHALL not be empty
 - **AND** `spec.data.prompt` SHALL contain agent instructions
 

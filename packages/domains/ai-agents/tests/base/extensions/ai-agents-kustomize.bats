@@ -25,7 +25,6 @@ setup() {
 @test "base build output contains ai-agents resources" {
     run kfg build "$MANIFESTS_BASE"
     [ "$status" -eq 0 ]
-    echo "$output" | grep -q "ai.claude.asset.settings"
     echo "$output" | grep -q "ai.steps.detect"
     echo "$output" | grep -q "ai.conv.to-json"
 }

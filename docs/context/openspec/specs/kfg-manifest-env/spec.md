@@ -45,8 +45,8 @@ Step references MUST support `env` overrides in workflows.
 - **AND** env values do not leak between invocations
 
 #### Scenario: Reference env reads prior step output
-- **GIVEN** a workflow step reference named `agents.ctx7.install.claude` produces a Step output
-- **AND** a later workflow step reference defines `env.CTX7_CONTEXT="$kfg.output(agents.ctx7.install.claude)"`
+- **GIVEN** a workflow step reference named `agents.ctx7.install.opencode` produces a Step output
+- **AND** a later workflow step reference defines `env.CTX7_CONTEXT="$kfg.output(agents.ctx7.install.opencode)"`
 - **WHEN** the later workflow step executes in the same command invocation
 - **THEN** `CTX7_CONTEXT` SHALL equal the referenced step output value
 

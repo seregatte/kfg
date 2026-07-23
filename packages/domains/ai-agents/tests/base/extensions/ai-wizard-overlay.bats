@@ -25,7 +25,7 @@ setup() {
 @test "AI overlay build output contains wizard prompt asset" {
     run kfg build "$MANIFESTS_OVERLAY"
     [ "$status" -eq 0 ]
-    echo "$output" | grep -q "ai.prompts.kfg-wizard"
+    echo "$output" | grep -q "ai.prompts.wizard"
 }
 
 @test "AI overlay build output contains pi and opencode commands" {
@@ -38,5 +38,5 @@ setup() {
 @test "AI overlay directory structure is correct" {
     [ -f "$MANIFESTS_OVERLAY/kustomization.yaml" ]
     [ -f "$MANIFESTS_OVERLAY/ai-workflow.yaml" ]
-    [ -f "$MANIFESTS_OVERLAY/assets/prompts/kfg-wizard.yaml" ]
+    [ -f "$MANIFESTS_OVERLAY/assets/prompts/wizard.yaml" ]
 }

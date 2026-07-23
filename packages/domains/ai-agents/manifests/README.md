@@ -7,10 +7,7 @@ This extension consolidates all AI agent resources into a single, organized stru
 ```
 ai-agents/
 ├── agents/                    # Per-agent resources
-│   ├── claude/
-│   │   ├── assets/            # Agent settings (ai.claude.asset.settings)
-│   │   └── converters/        # Per-agent converters (ai.claude.conv.*)
-│   ├── gemini/
+
 │   ├── opencode/
 │   └── pi/
 ├── cmds/                      # Shared command wrappers (ai.cmds.*)
@@ -26,9 +23,9 @@ All resources follow a short, consistent naming convention:
 
 | Pattern | Example | Description |
 |---------|---------|-------------|
-| `ai.<agent>.asset.settings` | `ai.claude.asset.settings` | Agent settings |
+| `ai.<agent>.asset.settings` | `ai.opencode.asset.settings` | Agent settings |
 | `ai.<agent>.cmd.main` | `ai.opencode.cmd.main` | Agent command wrapper |
-| `ai.<agent>.conv.<type>` | `ai.claude.conv.mcp` | Agent converter |
+| `ai.<agent>.conv.<type>` | `ai.opencode.conv.mcp` | Agent converter |
 | `ai.cmds.<name>` | `ai.cmds.openspec` | Shared command |
 | `ai.steps.<name>` | `ai.steps.detect` | Shared step |
 | `ai.conv.<name>` | `ai.conv.to-json` | Shared converter |

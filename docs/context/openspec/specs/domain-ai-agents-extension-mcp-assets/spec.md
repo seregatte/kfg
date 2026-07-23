@@ -23,8 +23,8 @@ Each extension that exposes an MCP server SHALL define its canonical MCP asset u
 
 Each extension-owned MCP asset SHALL provide the fields required by `kfg.aggregate-mcp` and the MCP converters: `name`, `description`, `enabled`, `server.command`, `server.args`, and `server.env`.
 
-#### Scenario: Asset can be converted for Claude
-- **WHEN** `kfg.aggregate-mcp` converts `kfg.extension.chrome-devtools.mcp` with `kfg.convert.self.mcp.claude`
+#### Scenario: Asset can be converted for OpenCode
+- **WHEN** `kfg.aggregate-mcp` converts `kfg.extension.chrome-devtools.mcp` with `kfg.convert.self.mcp.opencode`
 - **THEN** the conversion SHALL succeed using the asset's `name`, `server.command`, `server.args`, and `server.env`
 
 #### Scenario: Asset can be converted for OpenCode

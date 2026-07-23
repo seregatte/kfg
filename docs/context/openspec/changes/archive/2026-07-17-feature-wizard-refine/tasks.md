@@ -1,0 +1,7 @@
+- [x] 1.1 Create `overlays/ai/assets/prompts/wizard-command.yaml` asset
+- [x] 1.2 Create `manifests/agents/opencode/converters/skill.yaml` converter
+- [x] 1.3 Update `manifests/agents/opencode/converters/kustomization.yaml` to include skill.yaml
+- [x] 1.4 Update `overlays/ai/ai-workflow.yaml` — command uses wizard-command asset, skill uses skill converter
+- [x] 1.5 Update `overlays/ai/kustomization.yaml` — add wizard-command.yaml
+- [x] 2.1 Build and test
+- [x] 2.2 Archive, commit, push, PR

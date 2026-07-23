@@ -7,7 +7,7 @@
 
   outputs = { self, nixpkgs }:
     let
-      version = "0.0.11";
+      version = "0.1.12";
 
       # Platform-specific SHA-256 hashes (updated by release workflow)
       platformHashes = {
@@ -139,8 +139,7 @@
               gws-bin
               notebooklmWrapper
               nblmWrapper
-              pkgs.claude-code
-              pkgs.gemini-cli-bin
+
               pkgs.opencode
               pkgs.playwright-test
             ];
@@ -188,7 +187,7 @@
           # Shared utilities (PATH at runtime)
           devInputs = with pkgs; [
             coreutils findutils gnused gnugrep
-            bash nodejs uv
+            bash nodejs uv bats
           ];
         in
         {
@@ -205,7 +204,7 @@
           };
 
            dev = pkgs.mkShell {
-             buildInputs = devInputs ++ [ pkgs.bats pkgs.go kfg-bundle ];
+             buildInputs = devInputs ++ [ pkgs.go kfg-bundle ];
             shellHook = ''
               export KFG_DIR=${self.outPath}
               export PATH="./bin:$PATH"
@@ -221,7 +220,7 @@
 
            # Minimal devShell for CI — no kfg-bundle (avoids broken gws-bin on Linux).
            ci = pkgs.mkShell {
-             buildInputs = devInputs ++ [ pkgs.bats pkgs.go pkgs.gnumake ];
+             buildInputs = devInputs ++ [ pkgs.go pkgs.gnumake ];
             shellHook = ''
               export PATH="./bin:$PATH"
               export OPENSPEC_ROOT_DIR=docs/context

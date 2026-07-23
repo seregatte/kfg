@@ -1,0 +1,4 @@
+- [x] 1.1 Add `ai.wizard.skill.opencode` step to ai-workflow.yaml (weight -44)
+- [x] 1.2 Add `ai.wizard.skill.pi` step to ai-workflow.yaml (weight -44)
+- [x] 2.1 Verify build passes (`make build`)
+- [x] 2.2 Archive, commit, push, PR

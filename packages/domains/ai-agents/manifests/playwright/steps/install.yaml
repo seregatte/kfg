@@ -17,23 +17,23 @@ spec:
     # Ensure output directory exists
     mkdir -p "$OUTPUT_DIR"
 
-    # Install playwright CLI skills (installs to .claude/skills/playwright-cli/)
+    # Install playwright CLI skills (installs to .opencode/skills/playwright-cli/)
     npx --yes @playwright/cli install --skills > /dev/null 2>&1
 
     # Copy generated skills to output directory
-    if [ -d ".claude/skills/playwright-cli" ]; then
-      cp -R ".claude/skills/playwright-cli" "$OUTPUT_DIR/" 2>/dev/null || true
+    if [ -d ".opencode/skills/playwright-cli" ]; then
+      cp -R ".opencode/skills/playwright-cli" "$OUTPUT_DIR/" 2>/dev/null || true
       __kfg_log_info "Copied Playwright CLI skills to $OUTPUT_DIR"
     fi
 
-    # Cleanup temporary .claude directory if it was created by this install
+    # Cleanup temporary .opencode directory if it was created by this install
     # (only cleanup the playwright-cli subdirectory to avoid affecting other skills)
-    rm -rf ".claude" 2>/dev/null || true
+    rm -rf ".opencode" 2>/dev/null || true
 
     __kfg_log_info "Installed Playwright skills"
 
   env:
-    OUTPUT_DIR: ".claude/skills/"
+    OUTPUT_DIR: ".opencode/skills/"
   output:
     name: installed
     type: string

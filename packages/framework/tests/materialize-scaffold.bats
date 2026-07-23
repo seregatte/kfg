@@ -24,14 +24,7 @@ load '../../../tests/bats/helpers/manifests'
     [ -d "$TEST_TMPDIR/bar" ]
 }
 
-@test "creates nested directories for claude agent" {
-    run_step "materialize-scaffold" ".claude:.claude/skills:.claude/commands:.claude/subagents"
-    
-    [ -d "$TEST_TMPDIR/.claude" ]
-    [ -d "$TEST_TMPDIR/.claude/skills" ]
-    [ -d "$TEST_TMPDIR/.claude/commands" ]
-    [ -d "$TEST_TMPDIR/.claude/subagents" ]
-}
+
 
 @test "creates nested directories for opencode agent" {
     run_step "materialize-scaffold" ".opencode:.opencode/skills:.opencode/commands:.opencode/subagents"
@@ -40,14 +33,6 @@ load '../../../tests/bats/helpers/manifests'
     [ -d "$TEST_TMPDIR/.opencode/skills" ]
     [ -d "$TEST_TMPDIR/.opencode/commands" ]
     [ -d "$TEST_TMPDIR/.opencode/subagents" ]
-}
-
-@test "creates nested directories for gemini agent" {
-    run_step "materialize-scaffold" ".gemini:.gemini/skills:.gemini/commands"
-    
-    [ -d "$TEST_TMPDIR/.gemini" ]
-    [ -d "$TEST_TMPDIR/.gemini/skills" ]
-    [ -d "$TEST_TMPDIR/.gemini/commands" ]
 }
 
 @test "creates nested directories for pi agent" {
@@ -73,10 +58,10 @@ load '../../../tests/bats/helpers/manifests'
     
     cd "$TEST_TMPDIR"
     local output
-    output=$(DIRECTORIES=".claude:.claude/skills" bash -c "$code")
+    output=$(DIRECTORIES=".pi:.pi/skills" bash -c "$code")
     
-    [ -d "$TEST_TMPDIR/.claude" ]
-    [ -d "$TEST_TMPDIR/.claude/skills" ]
-    echo "$output" | grep -q ".claude"
-    echo "$output" | grep -q ".claude/skills"
+    [ -d "$TEST_TMPDIR/.pi" ]
+    [ -d "$TEST_TMPDIR/.pi/skills" ]
+    echo "$output" | grep -q ".pi"
+    echo "$output" | grep -q ".pi/skills"
 }
