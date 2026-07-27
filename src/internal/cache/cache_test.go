@@ -1,39 +1,32 @@
 package cache
 
 import (
+	"crypto/sha256"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
 )
 
-func TestComputeIdentity(t *testing.T) {
-	tests := []struct {
-		name     string
-		input    string
-		expected string
-	}{
-		{
-			name:     "simple name",
-			input:    "test-step",
-			expected: "a1b2c3d4e5f6", // Will be computed
-		},
-		{
-			name:     "dotted name",
-			input:    "ctx7.steps.install",
-			expected: "", // Will be computed
-		},
+func TestComputeIdentityDeterministic(t *testing.T) {
+	inputs := []string{
+		"test-step",
+		"ctx7.steps.install",
+		"openspec.steps.install",
+		"a",
+		"",
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := ComputeIdentity(tt.input)
+	for _, input := range inputs {
+		t.Run(input, func(t *testing.T) {
+			result := ComputeIdentity(input)
 			if len(result) != 64 { // SHA256 hex is 64 chars
-				t.Errorf("ComputeIdentity(%q) returned %d chars, want 64", tt.input, len(result))
+				t.Errorf("ComputeIdentity(%q) returned %d chars, want 64", input, len(result))
 			}
-			// Same input should produce same output
-			result2 := ComputeIdentity(tt.input)
+			// Same input should produce same output (deterministic)
+			result2 := ComputeIdentity(input)
 			if result != result2 {
-				t.Errorf("ComputeIdentity(%q) not deterministic: %s != %s", tt.input, result, result2)
+				t.Errorf("ComputeIdentity(%q) not deterministic: %s != %s", input, result, result2)
 			}
 		})
 	}
@@ -44,6 +37,56 @@ func TestComputeIdentity(t *testing.T) {
 	if hash1 == hash2 {
 		t.Error("Different inputs should produce different hashes")
 	}
+}
+
+func TestComputeIdentityVersionInvalidation(t *testing.T) {
+	name := "openspec.steps.install"
+
+	// Current version (v2) produces a known hash
+	currentHash := ComputeIdentity(name)
+	if len(currentHash) != 64 {
+		t.Fatalf("ComputeIdentity(%q) returned %d chars, want 64", name, len(currentHash))
+	}
+
+	// Manually compute what the old v1 identity would have been.
+	// v1 used raw SHA256(name) without a version prefix.
+	// If the old identity ever collides with the new one, the engine
+	// would silently restore stale artifacts from a legacy entry.
+	oldKey := name
+	oldHash := sha256Hex(oldKey)
+	if currentHash == oldHash {
+		t.Errorf("v2 identity %s must not collide with v1 identity %s", currentHash, oldHash)
+	}
+
+	// Manually compute what a zero-version identity would have been.
+	zeroKey := "\x00" + name
+	zeroHash := sha256Hex(zeroKey)
+	if currentHash == zeroHash {
+		t.Errorf("v2 identity %s must not collide with zero-version identity %s", currentHash, zeroHash)
+	}
+}
+
+func TestComputeIdentityDifferentVersions(t *testing.T) {
+	// Verify that changing the version constant changes all identities.
+	// We test this by comparing the current ComputeIdentity output with
+	// a manual SHA256("v1\x00"+name) — if the constant is bumped to v3,
+	// this test will need updating, which is the intended safety net.
+	name := "test.step"
+	v2Hash := ComputeIdentity(name)
+
+	v1Key := "v1\x00" + name
+	v1Hash := sha256Hex(v1Key)
+
+	if v2Hash == v1Hash {
+		t.Errorf("v2 identity must differ from v1 identity for %q", name)
+	}
+}
+
+// sha256Hex returns the hex-encoded SHA256 hash of data.
+// Used only in tests to verify version-invalidation properties.
+func sha256Hex(data string) string {
+	h := sha256.Sum256([]byte(data))
+	return fmt.Sprintf("%x", h)
 }
 
 func TestGetCacheDir(t *testing.T) {
@@ -151,24 +194,91 @@ func TestFormatSize(t *testing.T) {
 	}
 }
 
-func TestSnapshotDirectory(t *testing.T) {
+func TestSnapshotDirectoryLeafOnly(t *testing.T) {
 	tmpDir := t.TempDir()
 
-	// Create test structure
-	os.MkdirAll(filepath.Join(tmpDir, "dir1"), 0755)
-	os.WriteFile(filepath.Join(tmpDir, "file1.txt"), []byte("content"), 0644)
-	os.WriteFile(filepath.Join(tmpDir, "dir1", "file2.txt"), []byte("content"), 0644)
+	// Create test structure with files and directories
+	if err := os.MkdirAll(filepath.Join(tmpDir, "dir1"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Join(tmpDir, "dir1", "dir2"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(tmpDir, "file1.txt"), []byte("content"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(tmpDir, "dir1", "file2.txt"), []byte("content"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(tmpDir, "dir1", "dir2", "file3.txt"), []byte("content"), 0644); err != nil {
+		t.Fatal(err)
+	}
 
 	paths, err := SnapshotDirectory(tmpDir)
 	if err != nil {
 		t.Fatalf("SnapshotDirectory() error: %v", err)
 	}
 
-	expected := []string{"dir1", "dir1/file2.txt", "file1.txt"}
+	// Directories (dir1, dir1/dir2) must NOT appear in the snapshot.
+	expected := []string{"dir1/dir2/file3.txt", "dir1/file2.txt", "file1.txt"}
 	if len(paths) != len(expected) {
 		t.Errorf("SnapshotDirectory() returned %d paths, want %d", len(paths), len(expected))
+		for _, p := range paths {
+			t.Logf("  got: %s", p)
+		}
 	}
 
+	for i, exp := range expected {
+		if i >= len(paths) || paths[i] != exp {
+			t.Errorf("paths[%d] = %s, want %s", i, paths[i], exp)
+		}
+	}
+}
+
+func TestSnapshotDirectoryEmpty(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	paths, err := SnapshotDirectory(tmpDir)
+	if err != nil {
+		t.Fatalf("SnapshotDirectory() error: %v", err)
+	}
+
+	if len(paths) != 0 {
+		t.Errorf("SnapshotDirectory() returned %d paths on empty dir, want 0", len(paths))
+	}
+}
+
+func TestSnapshotDirectorySymlinks(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	// Create a file and a symlink to it
+	if err := os.WriteFile(filepath.Join(tmpDir, "real.txt"), []byte("content"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink("real.txt", filepath.Join(tmpDir, "link.txt")); err != nil {
+		t.Fatal(err)
+	}
+	// Create a directory symlink (should be excluded)
+	if err := os.MkdirAll(filepath.Join(tmpDir, "realdir"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink("realdir", filepath.Join(tmpDir, "linkdir")); err != nil {
+		t.Fatal(err)
+	}
+
+	paths, err := SnapshotDirectory(tmpDir)
+	if err != nil {
+		t.Fatalf("SnapshotDirectory() error: %v", err)
+	}
+
+	// link.txt (symlink to file) should appear; linkdir (symlink to dir) should not
+	expected := []string{"link.txt", "real.txt"}
+	if len(paths) != len(expected) {
+		t.Errorf("SnapshotDirectory() returned %d paths, want %d", len(paths), len(expected))
+		for _, p := range paths {
+			t.Logf("  got: %s", p)
+		}
+	}
 	for i, exp := range expected {
 		if i >= len(paths) || paths[i] != exp {
 			t.Errorf("paths[%d] = %s, want %s", i, paths[i], exp)
@@ -203,5 +313,69 @@ func TestMergeArtifacts(t *testing.T) {
 	merged := mergeArtifacts(a, b)
 	if len(merged) != 3 {
 		t.Errorf("mergeArtifacts() returned %d items, want 3", len(merged))
+	}
+}
+
+func TestDiffSnapshotsDirectoryExclusion(t *testing.T) {
+	// Verify that directory paths never appear in snapshot diffs,
+	// even if they exist in the directory tree. This is the core
+	// property that prevents openspec/ from being treated as an artifact.
+	tmpDir := t.TempDir()
+
+	// Initial state: empty directory
+	before, err := SnapshotDirectory(tmpDir)
+	if err != nil {
+		t.Fatalf("SnapshotDirectory() error: %v", err)
+	}
+	if len(before) != 0 {
+		t.Fatalf("Expected empty snapshot, got %d paths", len(before))
+	}
+
+	// Step creates a directory and files
+	if err := os.MkdirAll(filepath.Join(tmpDir, "openspec", "changes", "foo"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(tmpDir, "openspec", "changes", "foo", "proposal.md"), []byte("content"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(tmpDir, "file.txt"), []byte("content"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	after, err := SnapshotDirectory(tmpDir)
+	if err != nil {
+		t.Fatalf("SnapshotDirectory() error: %v", err)
+	}
+
+	// Snapshot should only contain files, not directories
+	for _, p := range after {
+		if p == "openspec" || p == "openspec/changes" || p == "openspec/changes/foo" {
+			t.Errorf("Directory %q should not appear in leaf-only snapshot", p)
+		}
+	}
+
+	// Diff should only show new files, not directories
+	delta := DiffSnapshots(before, after)
+	for _, p := range delta {
+		if p == "openspec" || p == "openspec/changes" || p == "openspec/changes/foo" {
+			t.Errorf("Directory %q should not appear in diff delta", p)
+		}
+	}
+
+	// Only files should be in the delta
+	expectedFiles := map[string]bool{
+		"file.txt":                              false,
+		"openspec/changes/foo/proposal.md":      false,
+	}
+	if len(delta) != len(expectedFiles) {
+		t.Errorf("Delta has %d items, want %d", len(delta), len(expectedFiles))
+		for _, p := range delta {
+			t.Logf("  delta: %s", p)
+		}
+	}
+	for _, p := range delta {
+		if _, ok := expectedFiles[p]; !ok {
+			t.Errorf("Unexpected file in delta: %s", p)
+		}
 	}
 }

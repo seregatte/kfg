@@ -6,21 +6,21 @@
 MANIFESTS_STEPS="$BATS_TEST_DIRNAME/../../../manifests/steps"
 
 @test "deprecation-warn.yaml exists in steps directory" {
-    [ -f "$MANIFESTS_STEPS/deprecation-warn.yaml" ]
+    [ -f "$MANIFESTS_STEPS/deprecation-warn/deprecation-warn.yaml" ]
 }
 
 @test "deprecation-warn.yaml is valid YAML" {
-    run grep -q "apiVersion: kfg.dev/v1alpha1" "$MANIFESTS_STEPS/deprecation-warn.yaml"
+    run grep -q "apiVersion: kfg.dev/v1alpha1" "$MANIFESTS_STEPS/deprecation-warn/deprecation-warn.yaml"
     [ "$status" -eq 0 ]
 }
 
 @test "deprecation-warn.yaml contains ai.steps.deprecation-warn metadata name" {
-    run grep -q "name: ai.steps.deprecation-warn" "$MANIFESTS_STEPS/deprecation-warn.yaml"
+    run grep -q "name: ai.steps.deprecation-warn" "$MANIFESTS_STEPS/deprecation-warn/deprecation-warn.yaml"
     [ "$status" -eq 0 ]
 }
 
 @test "deprecation-warn.yaml is registered in kustomization.yaml" {
-    run grep -q "deprecation-warn.yaml" "$MANIFESTS_STEPS/kustomization.yaml"
+    run grep -q "deprecation-warn" "$MANIFESTS_STEPS/kustomization.yaml"
     [ "$status" -eq 0 ]
 }
 

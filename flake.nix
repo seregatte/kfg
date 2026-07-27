@@ -112,7 +112,7 @@
               hash = target.hash;
             };
             nativeBuildInputs = pkgs.lib.optionals pkgs.stdenv.isLinux [ pkgs.autoPatchelfHook ];
-            buildInputs = with pkgs.lib; optionals pkgs.stdenv.isLinux [ pkgs.libgcc.lib ] ++ optionals pkgs.stdenv.isDarwin [ pkgs.libiconv ];
+            buildInputs = with pkgs.lib; optionals stdenv.isLinux [ pkgs.libgcc.lib ] ++ optionals stdenv.isDarwin [ pkgs.libiconv ];
             sourceRoot = ".";
             installPhase = ''
               mkdir -p $out/bin
