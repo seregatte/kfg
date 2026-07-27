@@ -48,3 +48,87 @@ load '../test_helper'
     [ "$status" -eq 0 ]
     [[ "$output" =~ "forwarded" ]] || [[ "$output" =~ "--" ]]
 }
+
+@test "kfg ai uses local overlay from current directory" {
+    # Create minimal valid AI overlay in temp directory
+    local overlay_dir="${TEST_TMPDIR}/packages/domains/ai-agents/overlays/ai"
+    mkdir -p "$overlay_dir"
+
+    cat > "${overlay_dir}/kustomization.yaml" <<'EOF'
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - manifest.yaml
+EOF
+
+    cat > "${overlay_dir}/manifest.yaml" <<'EOF'
+apiVersion: kfg.dev/v1alpha1
+kind: Cmd
+metadata:
+  name: test.cmd.pi
+  commandName: pi
+spec:
+  run: |
+    echo "AI_WIZARD_OK"
+---
+apiVersion: kfg.dev/v1alpha1
+kind: CmdWorkflow
+metadata:
+  name: kfg.ai.workflow
+  shell: bash
+spec:
+  cmds:
+    - test.cmd.pi
+EOF
+
+    # Run from TEST_TMPDIR so resolveAIOverlay finds the local overlay
+    cd "${TEST_TMPDIR}"
+    run "${KFG_BIN}" ai
+    [ "$status" -eq 0 ]
+    [[ "$output" =~ "AI_WIZARD_OK" ]]
+}
+
+@test "kfg ai ignores KFG_KPATH when local overlay exists" {
+    local overlay_dir="${TEST_TMPDIR}/packages/domains/ai-agents/overlays/ai"
+    mkdir -p "$overlay_dir"
+
+    cat > "${overlay_dir}/kustomization.yaml" <<'EOF'
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - manifest.yaml
+EOF
+
+    cat > "${overlay_dir}/manifest.yaml" <<'EOF'
+apiVersion: kfg.dev/v1alpha1
+kind: Cmd
+metadata:
+  name: test.cmd.pi
+  commandName: pi
+spec:
+  run: |
+    echo "AI_WIZARD_OK"
+---
+apiVersion: kfg.dev/v1alpha1
+kind: CmdWorkflow
+metadata:
+  name: kfg.ai.workflow
+  shell: bash
+spec:
+  cmds:
+    - test.cmd.pi
+EOF
+
+    cd "${TEST_TMPDIR}"
+    KFG_KPATH=/unrelated/path run "${KFG_BIN}" ai
+    [ "$status" -eq 0 ]
+    [[ "$output" =~ "AI_WIZARD_OK" ]]
+}
+
+@test "kfg ai real overlay builds with kfg.ai.workflow" {
+    run "${KFG_BIN}" run -k packages/domains/ai-agents/overlays/ai
+    [ "$status" -eq 1 ]
+    [[ "$output" =~ "Available commands" ]]
+    [[ "$output" =~ "pi" ]]
+    [[ "$output" =~ "opencode" ]]
+}

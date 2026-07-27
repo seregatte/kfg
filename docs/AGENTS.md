@@ -148,6 +148,19 @@ kfg ai -- --model sonnet "create project"       # Forward args to agent
   - Supported values: `pi`, `opencode`
   - Invalid values fall back to `pi` with a warning
 
+### Overlay Source Resolution
+
+The AI overlay is selected with local-first precedence:
+
+1. **Local overlay** — When `packages/domains/ai-agents/overlays/ai` exists relative to the
+   current working directory (e.g., inside a kfg checkout or worktree), it is used directly.
+   This preserves the contributor workflow where manifest edits are tested before publishing.
+
+2. **Online fallback** — Outside a kfg checkout, the canonical overlay is fetched from
+   `https://github.com/seregatte/kfg.git//packages/domains/ai-agents/overlays/ai?ref=main`.
+
+The generic `KFG_KPATH` environment variable does not affect `kfg ai`.
+
 ### What the Wizard Does
 
 1. Asks about your project type, language, and requirements
@@ -161,7 +174,8 @@ kfg ai -- --model sonnet "create project"       # Forward args to agent
 - CLI command: `src/cmd/kfg/ai.go`
 - Overlay: `packages/domains/ai-agents/overlays/ai/`
 - Wizard skill prompt: `packages/domains/ai-agents/overlays/ai/assets/prompts/wizard.yaml`
-- The command wraps `kfg run -k packages/domains/ai-agents/overlays/ai <agent> -- <args>` via subprocess
+- The command wraps `kfg run -k <source> <agent> -- <args>` via subprocess
+  where `<source>` is selected by working-directory local-first resolution
 
 ### Deprecation Notice
 
