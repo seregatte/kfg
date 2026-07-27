@@ -29,9 +29,9 @@ teardown() {
 create_test_cache_entry() {
     local step_ref="$1"
     local cache_dir="${KFG_STORE_DIR}/cache"
-    # Compute SHA256 hash of step ref name
+    # Compute versioned SHA256 hash matching ComputeIdentity in identity.go
     local hash
-    hash=$(printf '%s' "$step_ref" | sha256sum | cut -d' ' -f1)
+    hash=$(printf 'v2\x00%s' "$step_ref" | sha256sum | cut -d' ' -f1)
     local entry_path="${cache_dir}/${hash}"
 
     mkdir -p "${entry_path}/artifacts"
@@ -180,8 +180,9 @@ EOF
     # Create an old entry (manually set timestamp to 35 days ago)
     local step_ref="test.step.old"
     local cache_dir="${KFG_STORE_DIR}/cache"
+    # Compute versioned SHA256 hash matching ComputeIdentity in identity.go
     local hash
-    hash=$(printf '%s' "$step_ref" | sha256sum | cut -d' ' -f1)
+    hash=$(printf 'v2\x00%s' "$step_ref" | sha256sum | cut -d' ' -f1)
     local entry_path="${cache_dir}/${hash}"
 
     mkdir -p "${entry_path}/artifacts"
