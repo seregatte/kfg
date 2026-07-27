@@ -364,8 +364,8 @@ func TestDiffSnapshotsDirectoryExclusion(t *testing.T) {
 
 	// Only files should be in the delta
 	expectedFiles := map[string]bool{
-		"file.txt":                              false,
-		"openspec/changes/foo/proposal.md":      false,
+		"file.txt":                         false,
+		"openspec/changes/foo/proposal.md": false,
 	}
 	if len(delta) != len(expectedFiles) {
 		t.Errorf("Delta has %d items, want %d", len(delta), len(expectedFiles))
