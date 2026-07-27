@@ -54,3 +54,40 @@ The `kfg ai --help` output SHALL document:
 #### Scenario: Help displays correctly
 - **WHEN** user runs `kfg ai --help`
 - **THEN** output SHALL include the purpose, env var documentation, and usage examples
+
+## MODIFIED Requirements
+
+### Requirement: kfg ai OVERLAY SOURCE
+
+The `kfg ai` command SHALL select its AI overlay by checking for a local directory first,
+falling back to a canonical online source. The `KFG_KPATH` environment variable SHALL NOT
+affect the overlay selection.
+
+- The command SHALL use `packages/domains/ai-agents/overlays/ai` when that directory exists
+  relative to the current working directory
+- The command SHALL use `https://github.com/seregatte/kfg.git//packages/domains/ai-agents/overlays/ai?ref=main`
+  when the local overlay directory does not exist
+- The command SHALL return an error when the local overlay path cannot be inspected for a
+  reason other than absence (e.g., permission error)
+- The command SHALL NOT read, clear, or mutate `KFG_KPATH`
+
+#### Scenario: Local overlay selected from checkout root
+- **WHEN** the current working directory contains `packages/domains/ai-agents/overlays/ai`
+- **AND** the user runs `kfg ai -- "create a new project"`
+- **THEN** the command executes `kfg run -k packages/domains/ai-agents/overlays/ai pi -- "create a new project"`
+
+#### Scenario: Remote overlay selected outside checkout
+- **WHEN** `packages/domains/ai-agents/overlays/ai` does not exist relative to the current working directory
+- **AND** the user runs `kfg ai`
+- **THEN** the command selects `https://github.com/seregatte/kfg.git//packages/domains/ai-agents/overlays/ai?ref=main`
+- **AND** passes it as the `-k` argument
+
+#### Scenario: KFG_KPATH ignored
+- **WHEN** `KFG_KPATH` is set to an unrelated kustomization path
+- **AND** the user runs `kfg ai`
+- **THEN** the command SHALL ignore `KFG_KPATH` and select the AI overlay independently
+
+#### Scenario: Local overlay inspection error
+- **WHEN** the local overlay path cannot be inspected for a reason other than absence
+- **AND** the user runs `kfg ai`
+- **THEN** the command returns an error without selecting the remote overlay

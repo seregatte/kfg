@@ -11,3 +11,4 @@ resources:
   - ai-workflow.yaml
   - assets/prompts/wizard.yaml
   - assets/prompts/wizard-command.yaml
+

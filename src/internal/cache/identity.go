@@ -10,10 +10,24 @@ import (
 	"path/filepath"
 )
 
+// cacheVersion is the engine-controlled schema prefix for cache identity.
+// Bump this value whenever the cache format or artifact-discovery semantics
+// change in a backward-incompatible way (e.g. changing from directory-aware
+// to leaf-only filesystem snapshots). All cache commands derive paths through
+// ComputeIdentity, so changing this value automatically invalidates all
+// existing entries under the old namespace.
+const cacheVersion = "v2"
+
 // ComputeIdentity computes the cache identity hash for a StepReference.name.
-// The identity is SHA256(name) used as the directory name on disk.
+// The identity is SHA256(cacheVersion + "\x00" + name) used as the directory
+// name on disk. The version prefix ensures that entries created under
+// incompatible discovery semantics (e.g. directory-inclusive fs snapshots)
+// can never be restored by the current runtime.
 func ComputeIdentity(stepRefName string) string {
-	hash := sha256.Sum256([]byte(stepRefName))
+	// Use null byte as separator to avoid collisions with names containing
+	// version-like prefixes.
+	key := cacheVersion + "\x00" + stepRefName
+	hash := sha256.Sum256([]byte(key))
 	return fmt.Sprintf("%x", hash)
 }
 
