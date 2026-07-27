@@ -9,7 +9,11 @@ import (
 	"strings"
 )
 
-// SnapshotDirectory walks a directory and returns normalized relative paths.
+// SnapshotDirectory walks a directory and returns normalized relative paths
+// for files and symlinks only. Directories are excluded so that directory
+// creation is never treated as an artifact — this prevents the cache restore
+// from re-creating directories (like openspec/) that were created by steps
+// during the session, which would otherwise be deleted by kfg.cleanup.
 // Paths are sorted deterministically for consistent comparison.
 func SnapshotDirectory(rootPath string) ([]string, error) {
 	absRoot, err := filepath.Abs(rootPath)
@@ -26,6 +30,29 @@ func SnapshotDirectory(rootPath string) ([]string, error) {
 
 		if path == absRoot {
 			return nil
+		}
+
+		// Only include files and symlinks to files; skip directories and
+		// symlinks to directories. Use os.Stat to follow symlinks so that
+		// a symlink pointing to a directory is correctly excluded.
+		if d.IsDir() {
+			return nil // don't add directory, but still recurse into it
+		}
+		if d.Type()&os.ModeSymlink != 0 {
+			targetInfo, err := os.Stat(path)
+			if err != nil {
+				// Broken symlink — include it (it's a file-level artifact).
+				relPath, err := filepath.Rel(absRoot, path)
+				if err != nil {
+					return fmt.Errorf("failed to compute relative path: %w", err)
+				}
+				relPath = filepath.ToSlash(relPath)
+				paths = append(paths, relPath)
+				return nil
+			}
+			if targetInfo.IsDir() {
+				return nil // symlink to directory — skip
+			}
 		}
 
 		relPath, err := filepath.Rel(absRoot, path)
