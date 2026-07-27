@@ -11,10 +11,10 @@
 
       # Platform-specific SHA-256 hashes (updated by release workflow)
       platformHashes = {
-        x86_64-linux   = "sha256-vm6GmL4CxUdkkoj/e/rwogwGe4zfLlpzzIuhKq4LzfY=";
-        aarch64-linux  = "sha256-shiUq/SWYYq9G1xK1NbIS6Sd2Pd/mp4Df6bmV3cAylw=";
-        x86_64-darwin  = "sha256-f45XgcUE3wcO5VH+DwSnfDn+smjIiAymQcLW5sB1hgo=";
-        aarch64-darwin = "sha256-LHhW2YDUB7jLCwGdkSC15mbH1/2gIm2AO1/XURsgz5Y=";
+        x86_64-linux   = "sha256-NX43DI89ruOmFlLi7VNOAeL39MzeXNNnb13knCCA9a4=";
+        aarch64-linux  = "sha256-hlDz7WdPITQRhmOO4Sz9H/Cg4EcHI4I1WPhrhseXNxw=";
+        x86_64-darwin  = "sha256-4VNvJFvHbQTGnYw3fuJziCIUdLNXPY9SEF/aXUjtQcg=";
+        aarch64-darwin = "sha256-8jpRdDS8EsON3VzCAGVbXa1sXJG+hsSQWaM7xEAys6M=";
       };
 
       # Map Nix system to GoReleaser archive name components
