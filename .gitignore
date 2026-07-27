@@ -57,8 +57,9 @@ generated/
 
 # Optional: ignore CI artifacts or local tools
 .github/workflows/*.local.yml
-bin-tools//.opencode/
+bin-tools/
 
+/.opencode/
 /.pi/
 /AGENTS.md
 /opencode.json
