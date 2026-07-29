@@ -5,6 +5,16 @@ metadata:
   commandName: opencode
 spec:
   run: |
+    __kfg_dir_created=0
+    if [ -z "${KFG_DIR:-}" ]; then
+      KFG_DIR="$(mktemp -d)"
+      __kfg_dir_created=1
+    fi
+    export KFG_DIR
+    export OPENCODE_CONFIG_DIR="$KFG_DIR"
+    if [ "$__kfg_dir_created" = "1" ]; then
+      trap 'rm -rf "$KFG_DIR"' EXIT
+    fi
     command opencode "$@"
   env:
     AGENT: "opencode"
