@@ -641,3 +641,208 @@ func TestApplyRawWithConverterMcpEnabledFalse(t *testing.T) {
 		t.Fatalf("expected extension arg in output, got: %s", result)
 	}
 }
+
+// --- Subagent converter tests (Issue #51) ---
+
+// subagentExpression is the exact expression from ai.opencode.conv.subagent converter.
+// Uses ireduce + select + // for conditional logic (yq v4.53 does not support
+const subagentExpression = `"---\n" +
+"name: " + .name + "\n" +
+"mode: subagent\n" +
+"description: " + .description + "\n" +
+"model: " + .model +
+"\npermission: " + (
+  (.permissions.allow // [])[] | capture("^(?P<tool>[A-Za-z][A-Za-z0-9_-]*)\((?P<pattern>.*)\)$") as $rule ireduce ({}; . * {($rule.tool): {"*": "deny"}} * {($rule.tool): {($rule.pattern): "allow"}}) | tojson
+) +
+"\n---\n\n" + .prompt`
+
+func TestSubagentConverterWithPermissions(t *testing.T) {
+	engine := NewEngine()
+	conv := Converter{
+		Name:         "ai.opencode.conv.subagent",
+		InputFormat:  "yaml",
+		OutputFormat: "raw",
+		Expression:   subagentExpression,
+	}
+	input := `name: review-minimal
+description: "Lightweight code review: quick feedback for PRs"
+model: claude-sonnet-4-20250514
+tools:
+  - Read
+  - Bash
+permissions:
+  allow:
+    - Read(/**)
+    - Bash(git diff*)
+prompt: |
+  You are a minimal code review assistant.`
+	result, err := engine.ApplyRawWithConverter(input, "yaml", conv)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !strings.HasPrefix(result, "---\n") {
+		t.Errorf("expected frontmatter to start with '---\\n'")
+	}
+	if !strings.Contains(result, "\n---\n\n") {
+		t.Errorf("expected frontmatter end marker")
+	}
+	if !strings.Contains(result, "name: review-minimal") {
+		t.Errorf("expected name field, got: %s", result)
+	}
+	if !strings.Contains(result, "mode: subagent") {
+		t.Errorf("expected mode: subagent")
+	}
+	if !strings.Contains(result, "permission:") {
+		t.Errorf("expected permission block")
+	}
+	if !strings.Contains(result, "\"Read\"") {
+		t.Errorf("expected Read tool permissions")
+	}
+	if !strings.Contains(result, "\"Bash\"") {
+		t.Errorf("expected Bash tool permissions")
+	}
+	if !strings.Contains(result, "\"*\": \"deny\"") {
+		t.Errorf("expected deny-* rules")
+	}
+	if !strings.Contains(result, "You are a minimal code review assistant.") {
+		t.Errorf("expected prompt body to be preserved")
+	}
+}
+
+func TestSubagentConverterWithoutPermissions(t *testing.T) {
+	engine := NewEngine()
+	conv := Converter{
+		Name:         "ai.opencode.conv.subagent",
+		InputFormat:  "yaml",
+		OutputFormat: "raw",
+		Expression:   subagentExpression,
+	}
+	input := `name: simple-agent
+description: A simple agent with no permissions
+model: claude-sonnet-4-20250514
+prompt: |
+  Just a simple prompt.`
+	result, err := engine.ApplyRawWithConverter(input, "yaml", conv)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !strings.Contains(result, "permission: {}") {
+		t.Errorf("expected empty permission block for asset without permissions")
+	}
+	if !strings.Contains(result, "name: simple-agent") {
+		t.Errorf("expected name field")
+	}
+	if !strings.Contains(result, "mode: subagent") {
+		t.Errorf("expected mode: subagent")
+	}
+	if !strings.Contains(result, "Just a simple prompt.") {
+		t.Errorf("expected prompt body")
+	}
+}
+
+func TestSubagentConverterMultipleToolsSamePattern(t *testing.T) {
+	engine := NewEngine()
+	conv := Converter{
+		Name:         "ai.opencode.conv.subagent",
+		InputFormat:  "yaml",
+		OutputFormat: "raw",
+		Expression:   subagentExpression,
+	}
+	input := `name: multi-pattern
+description: Agent with multiple patterns per tool
+model: claude-sonnet-4-20250514
+permissions:
+  allow:
+    - Bash(git diff*)
+    - Bash(grep *)
+    - Read(/**)
+prompt: |
+  Multi-pattern test.`
+	result, err := engine.ApplyRawWithConverter(input, "yaml", conv)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !strings.Contains(result, "permission:") {
+		t.Errorf("expected permission block")
+	}
+	if !strings.Contains(result, "\"git diff*\"") {
+		t.Errorf("expected git diff* pattern")
+	}
+	if !strings.Contains(result, "\"grep *\"") {
+		t.Errorf("expected grep * pattern")
+	}
+	if !strings.Contains(result, "\"/**\"") {
+		t.Errorf("expected /** pattern")
+	}
+}
+
+func TestSubagentConverterWithPunctuation(t *testing.T) {
+	engine := NewEngine()
+	conv := Converter{
+		Name:         "ai.opencode.conv.subagent",
+		InputFormat:  "yaml",
+		OutputFormat: "raw",
+		Expression:   subagentExpression,
+	}
+	input := `name: punct-agent
+description: "Agent with: special punctuation, \"quotes\" and [brackets]"
+model: claude-sonnet-4-20250514
+permissions:
+  allow:
+    - Read(/**)
+prompt: |
+  Test.`
+	result, err := engine.ApplyRawWithConverter(input, "yaml", conv)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !strings.Contains(result, "Agent with: special punctuation") {
+		t.Errorf("expected description with punctuation preserved")
+	}
+}
+
+func TestSubagentConverterInvalidSyntax(t *testing.T) {
+	engine := NewEngine()
+	conv := Converter{
+		Name:         "ai.opencode.conv.subagent",
+		InputFormat:  "yaml",
+		OutputFormat: "raw",
+		Expression:   subagentExpression,
+	}
+	input := `name: bad-agent
+description: Bad permissions
+model: claude-sonnet-4-20250514
+permissions:
+  allow:
+    - Read(/**
+prompt: |
+  Test.`
+	_, err := engine.ApplyRawWithConverter(input, "yaml", conv)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestSubagentConverterEmptyPermissions(t *testing.T) {
+	engine := NewEngine()
+	conv := Converter{
+		Name:         "ai.opencode.conv.subagent",
+		InputFormat:  "yaml",
+		OutputFormat: "raw",
+		Expression:   subagentExpression,
+	}
+	input := `name: empty-perm
+description: Agent with empty permission list
+model: claude-sonnet-4-20250514
+permissions:
+  allow: []
+prompt: |
+  Test empty.`
+	result, err := engine.ApplyRawWithConverter(input, "yaml", conv)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !strings.Contains(result, "permission: {}") {
+		t.Errorf("expected empty permission block for empty allow list, got: %s", result)
+	}
+}
