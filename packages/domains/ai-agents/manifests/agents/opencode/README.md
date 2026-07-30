@@ -88,7 +88,7 @@ This capability is used in:
 
 - Pi converter (`ai.pi.conv.command`) is separate; OpenCode converters are agent-specific
 - MCP converter emits only `type`, `command`, `environment`, and `enabled` fields; does not support `tools`, `permissions`, or other MCP metadata
-- Subagent converter produces Markdown frontmatter only; does not validate model availability
+- Subagent converter now materializes `tools` and `permission` blocks (broad-deny → narrow-allow); does not validate model availability
 - Config converter emits `$schema`, `instructions`, `model`, and `mode` only; does not include all OpenCode config options
 
 ## Validation
