@@ -1,4 +1,12 @@
-# KFG - Declarative Shell Compiler
+# KFG - Declarative Shell Compiler [DEPRECATED]
+
+> ⚠️ **This project is no longer maintained.**
+>
+> KFG served as an experimental declarative shell compiler and AI agent configuration manager from 2024–2026.
+> Its agent configuration manifests have been **materialized directly into projects** (`.pi/` and `.opencode/`),
+> removing the runtime dependency on KFG. The `openspec` tool is now consumed via `npx @fission-ai/openspec`.
+>
+> This repository is **archived and read-only**. See individual project repositories for current agent configurations.
 
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/seregatte/kfg)](https://github.com/seregatte/kfg/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
