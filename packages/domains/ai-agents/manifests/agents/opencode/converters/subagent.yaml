@@ -7,6 +7,14 @@ spec:
     format: yaml
   engine:
     expression: |
-      "---\nname: " + .name + "\nmode: subagent\ndescription: " + .description + "\nmodel: " + .model + "\n---\n\n" + .prompt
+      "---\n" +
+      "name: " + .name + "\n" +
+      "mode: subagent\n" +
+      "description: " + .description + "\n" +
+      "model: " + .model +
+      "\npermission: " + (
+        (.permissions.allow // [])[] | capture("^(?P<tool>[A-Za-z][A-Za-z0-9_-]*)\((?P<pattern>.*)\)$") as $rule ireduce ({}; . * {($rule.tool): {"*": "deny"}} * {($rule.tool): {($rule.pattern): "allow"}}) | tojson
+      ) +
+      "\n---\n\n" + .prompt
   output:
     format: raw
