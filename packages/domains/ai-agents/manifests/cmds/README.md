@@ -26,7 +26,8 @@ Shared command wrappers that launch AI agents or external tools.
 
 ## Configuration
 
-Commands do not have configurable fields. Each command delegates to the underlying
+Commands do not have configurable fields. Each command delegates to the underlying binary and sets the `AGENT` environment variable.
+Agent Cmds also respect `KFG_DIR` for isolated runtime state: when unset, a temporary directory is created and cleaned up on exit; when set explicitly, the directory is used as-is (persistent). The agent-specific config-dir variable is then exported from `KFG_DIR` (e.g. `PI_CODING_AGENT_DIR`, `OPENCODE_CONFIG_DIR`).
 binary and sets the `AGENT` environment variable.
 
 ## JSON Patch Examples
